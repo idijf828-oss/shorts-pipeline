@@ -1,0 +1,53 @@
+# ============================================
+#  SHORTS PIPELINE — barcha sozlamalar shu faylda
+#  (Niche, til, ovoz, jadval — faqat shu yerdan o'zgaradi)
+# ============================================
+
+channel:
+  niche: "Top 5 funny everyday situations"   # niš
+  topics:                                     # mavzular (trend qidiruvi uchun)
+    - work
+    - school
+    - tech fails
+    - family
+    - social life
+  language: "en-US"                           # video tili
+  voice: "en-US-AriaNeural"                   # edge-tts ovozi (gTTS fallback: en/com)
+  # Ovoz variantlari: en-US-AriaNeural (ayol), en-US-JennyNeural (ayol),
+  #                   en-US-GuyNeural (erkak), en-US-ChristopherNeural (erkak)
+  voice_rate: "+8%"                           # ovoz tezligi
+
+video:
+  width: 1080
+  height: 1920
+  fps: 30
+  scenes: 7                                   # HOOK + #5..#1 + OUTRO
+  min_duration: 40                            # sekund
+  max_duration: 50                            # sekund
+  tags: [funny, relatable, top5, everyday, humor, comedy, shorts]
+
+sources:
+  youtube_region: "US"
+  youtube_category: "23"                      # 23 = Comedy
+  days_back: 30
+  max_trend_items: 40
+  # Pexels'da mos klip topilmasa, shu umumiy so'rovlar sinab ko'riladi:
+  generic_queries:
+    - "laughing friends"
+    - "coffee spill accident"
+    - "phone falling"
+    - "office funny moment"
+    - "grocery store fail"
+    - "pet being silly"
+
+behavior:
+  dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)
+  privacy_status: "private"       # API audit o'tgunicha faqat "private" ishlaydi
+  telegram_approval_timeout_min: 120   # Tasdiq kutiladigan vaqt (Actions job 6 soatgacha yuradi)
+  schedule_cron: "0 9 * * *"      # GitHub Actions UTC bo'yicha. Tashkent = +5 (14:00)
+                                  # DIQQAT: cron faqat .github/workflows/daily.yml'da o'zgaradi
+                                  #        (GitHub cheklovi). Qolgan hamma narsa shu faylda.
+
+gemini:
+  model: "gemini-2.5-flash"       # bepul tier; muvaffaqiyatsiz bo'lsa avtomatik fallback
+  temperature: 0.9
