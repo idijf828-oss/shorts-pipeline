@@ -91,7 +91,7 @@ def _render_scene(i, scene, dur, media_path, audio_path, out_seg,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
         "-pix_fmt", "yuv420p", "-r", "30",
         "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
-        "-shortest", out_seg,
+        "-t", f"{dur:.2f}", "-shortest", out_seg,
     ])
 
 
