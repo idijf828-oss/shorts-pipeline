@@ -1,6 +1,7 @@
-"""Asosiy orkestrator:
-  trend tahlili -> skript -> TTS -> SFX -> media -> montaj (+fon musiqasi)
-  -> Telegram tasdig'i -> YouTube yuklash -> tarix saqlash.
+"""Asosiy orkestrator (retention formati):
+  trend tahlili -> skript (hook+5fakt+loop) -> ovoz + so'z vaqtlari ->
+  SFX -> B-roll (must_contain + xarita fallback) -> montaj (kesishlar +
+  subtitr + musiqa + loudnorm) -> Telegram tasdig'i -> YouTube yuklash.
 """
 import argparse
 import datetime
@@ -12,20 +13,15 @@ from src import trends, history, script_gen, tts, sfx, media, render, telegram, 
 
 
 def build_description(cfg, script):
-    """Professional YouTube description (Gemini yozgani yoki strukturali)."""
+    """Professional description (shablon: hook -> faktlar -> CTA -> hashtag)."""
     desc = (script.get("description") or "").strip()
     if not desc:
-        facts = "\n".join(f"{i + 1}. {sc['narration']}"
-                          for i, sc in enumerate(script["scenes"]))
-        desc = (
-            f"{script['title']}\n\n{facts}\n\n"
-            "Which fact surprised you the most? Tell us in the comments! 👇\n"
-            "Like & subscribe for daily geography facts. 🌍\n\n"
-            "All facts are researched and verified. Footage: Pexels/Pixabay "
-            "(royalty-free). Voice-over and script created with AI, "
-            "human-approved.\n"
-        )
-    hashtags = script.get("hashtags") or ["geography", "facts", "shorts"]
+        scenes = script.get("scenes", [])
+        hook = scenes[0]["voice"] if scenes else ""
+        facts = " ".join(sc["voice"] for sc in scenes[1:6])
+        pc = script.get("pinned_comment") or "Which one should I cover next? 👇"
+        desc = (f"{hook}\n{facts}\n\n{pc}\nNew geography fact every day.\n")
+    hashtags = script.get("hashtags") or ["shorts", "geography", "facts"]
     tagline = " ".join("#" + h.lstrip("#") for h in hashtags[:3])
     if tagline and tagline not in desc:
         desc = desc.rstrip() + "\n\n" + tagline
@@ -49,8 +45,6 @@ def build_tags(cfg, script):
 
 
 def run(cfg):
-    t0 = datetime.datetime.now(datetime.UTC).isoformat()
-
     print("== 1/8: YouTube trend tahlili (US, 30 kun) ==")
     try:
         tr = trends.fetch_trending(cfg)
@@ -67,7 +61,7 @@ def run(cfg):
     if tr.get("summary", {}).get("top_titles"):
         print(f"   top: {tr['summary']['top_titles'][0]['title'][:70]}")
 
-    print("== 2/8: Gemini bilan asl skript (geografiya faktlari) ==")
+    print("== 2/8: Gemini skript (hook + 5 fakt + infinite loop) ==")
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):
@@ -76,22 +70,48 @@ def run(cfg):
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
     print(f"   sarlavha: {script['title']}")
 
-    print("== 3/8: Professional ovoz (edge-tts -> gTTS fallback) ==")
-    timeline = tts.prepare(cfg, script["scenes"])
-    audio_files = [p for p, _ in timeline]
+    print("== 3/8: Professional ovoz + so'z vaqtlari ==")
+    items = tts.synth(cfg, script["scenes"])   # [{audio, dur, words}]
 
-    print("== 4/8: Ovoz effektlari (riser/whoosh/ding/impact) ==")
-    timeline = sfx.add_scene_sfx(cfg, script["scenes"], timeline)
-    audio_files = [p for p, _ in timeline]
+    # Timeline: pauzalar + 35-40s ga sig'dirish
+    mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
+    pads = [0.20 if sc.get("type") == "hook" else 0.35 for sc in script["scenes"]]
+    pads[-1] = 0.20   # oxirgi sukunat <= 0.2s (loop uchun)
+    total = sum(it["dur"] for it in items) + sum(pads)
+    if total < mn + 0.5:
+        extra = (mn + 0.5 - total) / len(items)
+        pads = [min(0.80, p + extra) for p in pads]
+    elif total > mx - 1.0:
+        # konteyner yaxitlashi (~0.5s) uchun margin bilan tezlashtirish
+        tempo = min(1.25, total / (mx - 1.5))
+        print(f"   audio {tempo:.3f}x tezlashtiriladi "
+              f"({total:.1f}s -> ~{total / tempo:.1f}s)")
+        for k, it in enumerate(items):
+            fast = os.path.join(cfg["_paths"]["work"], f"fast_{k:02d}.wav")
+            it["audio"] = tts.speed_audio(it["audio"], tempo, fast)
+            it["dur"] = it["dur"] / tempo
+            it["words"] = [(w, s / tempo, e / tempo) for (w, s, e) in it["words"]]
+        # hali ham uzun bo'lsa — pauzalarni qisqartirish
+        if sum(it["dur"] for it in items) + sum(pads) > mx - 0.8:
+            pads = [max(0.12, p * 0.5) for p in pads]
+    for i, it in enumerate(items):
+        it["dur"] = it["dur"] + pads[i]
+        it["scene"] = script["scenes"][i]
+    print(f"   jami timeline: {sum(it['dur'] for it in items):.1f}s")
 
-    print("== 5/8: B-roll kliplar (Pexels -> Pixabay -> kart) ==")
-    media_files = media.fetch_all(cfg, script["scenes"])
+    print("== 4/8: Ovoz effektlari (riser/impact/whoosh) ==")
+    plans = [render.plan_scene_subs(cfg, it["scene"], it["dur"]) for it in items]
+    items = sfx.add_scene_sfx(cfg, script["scenes"], items, plans)
 
-    print("== 6/8: ffmpeg montaj (1080x1920 + fon musiqasi) ==")
+    print("== 5/8: B-roll (must_contain + xarita fallback) ==")
+    media_lists, used_clip_ids = media.fetch_all(
+        cfg, script["scenes"], history.clip_ids())
+    for i, it in enumerate(items):
+        it["media"] = media_lists[i]
+
+    print("== 6/8: Montaj (kesishlar + subtitr + musiqa + loudnorm) ==")
     out = os.path.join(cfg["_paths"]["output"], "short.mp4")
-    out, dur = render.render(cfg, script["scenes"],
-                             [d for _, d in timeline],
-                             media_files, audio_files, out)
+    out, dur = render.render(cfg, script, items)
 
     print("== 7/8: Telegram tasdig'i ==")
     cap = telegram.caption(cfg, tr, script, dur)
@@ -112,9 +132,11 @@ def run(cfg):
     vid = upload.upload(cfg, out, title,
                         build_description(cfg, script),
                         build_tags(cfg, script))
-    history.add(title, script["keywords"], vid)
+    history.add(title, script["keywords"], vid, clips=sorted(used_clip_ids))
+    pc = script.get("pinned_comment") or ""
     telegram.send_message(
-        cfg, f"✅ Yuklandi: {title}\nhttps://youtu.be/{vid}")
+        cfg, f"✅ Yuklandi: {title}\nhttps://youtu.be/{vid}\n"
+             + (f"\n📌 Pinned comment (qo'lda qo'ying):\n{pc}" if pc else ""))
     print("TAYYOR:", f"https://youtu.be/{vid}")
 
 

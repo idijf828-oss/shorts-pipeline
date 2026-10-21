@@ -45,6 +45,9 @@ def caption(cfg, trends, script, duration_s):
         lines.append("📊 US trend (30 kun):")
     for t in top:
         lines.append(f"• {html.escape(t['title'][:80])} — {t['views']:,} views")
+    pc = script.get("pinned_comment") or ""
+    if pc:
+        lines += ["", f"📌 Pinned comment: {html.escape(pc)}"]
     lines += ["", "Tasdiqlaysizmi?"]
     return "\n".join(lines)
 

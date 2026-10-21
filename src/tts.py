@@ -1,14 +1,13 @@
-"""3-qadam: matnni ovozga aylantirish.
+"""3-qadam: professional ovoz + SO'Z VAQTLARI (subtitr uchun).
 
-Muhim (2026-10 holati): edge-tts Microsoft'ning WSS endpoint'i
-o'zgargani sababli 403 beradi (github.com/rany2/edge-tts/issues/490).
-Shuning uchun mantiq: edge-tts'ni sinab ko'ramiz -> ishlamasa
-avtomatik gTTS (Google Translate TTS) ga o'tamiz. Video hech qachon
-ovozsiz qolmaydi.
+edge-tts: WordBoundary xossalari aniq so'z vaqtlarini beradi.
+gTTS fallback: vaqt taxminan (belgi ulushi) taqsimlanadi.
+Qaytaradi: [{"audio": path, "dur": s, "words": [(word, start, end)]}, ...]
 """
 import asyncio
 import os
 import subprocess
+import time
 
 import edge_tts
 from gtts import gTTS
@@ -26,45 +25,76 @@ def _ffprobe_duration(path):
         return 0.0
 
 
-def _edge(text, voice, rate, path):
-    c = edge_tts.Communicate(text, voice, rate=rate)
-    asyncio.run(c.save(path))
+def _edge_words(text, voice, rate, path):
+    """edge-tts: audio fayl + aniq so'z vaqtlari (100ns -> sekund)."""
+    com = edge_tts.Communicate(text, voice, rate=rate)
+    words = []
+
+    async def _go():
+        with open(path, "wb") as f:
+            async for c in com.stream():
+                if c["type"] == "audio":
+                    f.write(c["data"])
+                elif c["type"] == "WordBoundary":
+                    s = c["offset"] / 1e7
+                    words.append((c["text"], s, s + c["duration"] / 1e7))
+
+    asyncio.run(_go())
+    return words
 
 
 def _gtts(text, path):
-    gTTS(text, lang="en", tld="com").save(path)  # tld=com -> US accent
+    gTTS(text, lang="en", tld="com").save(path)
 
 
-def prepare(cfg, scenes):
-    """Har bir sahnani ovozlashtiradi + umumiy timeline (40-50s) hisoblaydi.
+def fallback_words(text, total_sec):
+    """gTTS vaqt bermaydi: umumiy davomiylikni belgilar ulushiga bo'lish."""
+    ws = text.split()
+    tot = sum(len(w) + 1 for w in ws)
+    t, out = 0.0, []
+    for w in ws:
+        d = total_sec * (len(w) + 1) / tot
+        out.append((w, t, t + d))
+        t += d
+    return out
 
-    Qaytaradi: [(audio_path, scene_duration), ...]
-    """
+
+def speed_audio(path, tempo, dest):
+    """Audioni tempo barobar tezlashtirish (timeline sig'dirish uchun)."""
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-i", path, "-filter:a", f"atempo={tempo:.4f}",
+         "-ar", "48000", "-ac", "2", dest],
+        capture_output=True, text=True, timeout=60)
+    if r.returncode != 0:
+        raise RuntimeError("atempo xatosi: " + r.stderr[-300:])
+    return dest
+
+
+def synth(cfg, scenes):
+    """Har sahna uchun ovoz + so'z vaqtlari."""
     tmp = cfg["_paths"]["work"]
     os.makedirs(tmp, exist_ok=True)
     voice = cfg["channel"]["voice"]
     rate = cfg["channel"].get("voice_rate", "+0%")
     engine = "edge"
-
-    paths, durs = [], []
+    out = []
     for i, sc in enumerate(scenes):
+        text = sc["voice"]
         p = os.path.join(tmp, f"scene_{i:02d}.mp3")
-        ok = False
+        words, ok = [], False
         if engine == "edge":
             try:
-                _edge(sc["narration"], voice, rate, p)
-                # edge-tts ba'zan "muvaffaqiyatli" bo'sh fayl yozib qo'yadi
-                if _ffprobe_duration(p) < 0.3:
-                    raise RuntimeError("bo'sh/bytes audio fayl")
+                words = _edge_words(text, voice, rate, p)
+                if _ffprobe_duration(p) < 0.3 or not words:
+                    raise RuntimeError("bo'sh audio/so'zlar")
                 ok = True
             except Exception as e:
-                print(f"[tts] edge-tts ishlamadi ({type(e).__name__}); "
-                      f"qolgan sahnalar gTTS orqali")
+                print(f"[tts] edge-tts ishlamadi ({type(e).__name__}); gTTS'ga o'tamiz")
                 engine = "gtts"
         if not ok:
             for attempt in range(3):
                 try:
-                    _gtts(sc["narration"], p)
+                    _gtts(text, p)
                     ok = True
                     break
                 except Exception as e:
@@ -72,27 +102,11 @@ def prepare(cfg, scenes):
                     if attempt == 2:
                         raise RuntimeError("TTS umuman ishlamayapti")
                     time.sleep(2)
-        paths.append(p)
-        durs.append(_ffprobe_duration(p))
-
-    n = len(scenes)
-    mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
-    speech = sum(durs)
-
-    # Pauzalar: jami 40-50 sekundga sig'dirish
-    pause = 0.5
-    if speech + pause * n > mx:
-        pause = max(0.1, (mx - speech) / n)
-    elif speech + pause * n < mn:
-        pause = min(1.6, (mn - speech) / n)
-    timeline = [d + pause for d in durs]
-
-    total = sum(timeline)
-    if total < mn:
-        timeline[-1] += mn - total
-    elif total > mx:
-        k = mx / total
-        timeline = [d * k for d in timeline]  # render'da atempo siqadi
-
-    print(f"[tts] ovoz: {speech:.1f}s, jami timeline: {sum(timeline):.1f}s")
-    return list(zip(paths, timeline))
+        d = _ffprobe_duration(p)
+        if not words:
+            words = fallback_words(text, d)
+        out.append({"audio": p, "dur": d, "words": words})
+    total = sum(o["dur"] for o in out)
+    print(f"[tts] ovoz: {total:.1f}s ({engine}, so'z vaqtlari: "
+          f"{'aniq' if engine == 'edge' else 'taxminiy'})")
+    return out

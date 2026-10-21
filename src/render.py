@@ -1,26 +1,17 @@
-"""5-qadam: ffmpeg bilan 1080x1920, 40-50s Shorts'yig'ish.
+"""5-qadam: ffmpeg montaj — kesishlar + ASS subtitr + musiqa.
 
-Har bir sahna: clip/yoki kart + burned-in overlay matn + badge,
-keyin ovoz bilan segment -> barcha segmentlar concat -> final.mp4.
+Har sahna:
+  2-3 sekundlik SUB-KLIPLAR (hook'da majburiy cut) -> concat ->
+  sahna audiosi (SFX bilan) + dinamik subtitr (ass) + statik on_screen ->
+  segment.
+Keyin: barcha segmentlar concat -> fon musiqasi (ducking) ->
+loudnorm (-15 LUFS) -> faststart. Rezolyutsiya qattiq tekshiriladi.
 """
+import math
 import os
 import subprocess
 
-FONT_CANDIDATES = [
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "C:/Windows/Fonts/arialbd.ttf",
-    "C:/Windows/Fonts/arial.ttf",
-    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-]
-
-
-def _font():
-    for p in FONT_CANDIDATES:
-        if os.path.exists(p):
-            return p
-    raise RuntimeError("ffmpeg drawtext uchun shrift topilmadi "
-                       "(Ubuntu'da: sudo apt install fonts-dejavu-core)")
+from src import captions
 
 
 def _run(cmd):
@@ -41,65 +32,76 @@ def _ffprobe_duration(path):
         return 0.0
 
 
-def _render_scene(i, scene, dur, media_path, audio_path, out_seg,
-                  tmpdir, font, cfg_w, cfg_h):
-    """Bitta sahna segmentini (video+ovoz) render qiladi."""
-    ov_file = os.path.join(tmpdir, f"ov_{i}.txt")
-    with open(ov_file, "w", encoding="utf-8") as f:
-        f.write(scene.get("overlay", "")[:200])
+def _ffprobe_size(path):
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", path],
+        capture_output=True, text=True, timeout=30)
+    try:
+        w, h = r.stdout.strip().split(",")
+        return int(w), int(h)
+    except Exception:
+        return 0, 0
 
+
+def plan_scene_subs(cfg, scene, dur):
+    """Sahnani 2-3s lik sub-kliplarga bo'lish rejasi.
+    Hook'da kamida 1 cut majburiy (n=2)."""
+    if scene.get("type") == "hook":
+        n = 2
+    else:
+        n = max(1, math.ceil(dur / 3.0))
+    n = max(1, min(n, 3))
+    return {"n": n, "sub": dur / n, "cuts": [dur / n * k for k in range(1, n)]}
+
+
+_SRC_DUR = {}
+
+
+def _src_dur(path):
+    if path not in _SRC_DUR:
+        _SRC_DUR[path] = _ffprobe_duration(path)
+    return _SRC_DUR[path]
+
+
+def _render_sub(media_path, sub_dur, out, cfg_w, cfg_h, variant=0):
+    """Bitta sub-klip (2-3s, ovozsiz). variant — boshqa zoom/oyna har xilligi."""
     is_image = media_path.lower().endswith((".png", ".jpg", ".jpeg"))
     if is_image:
-        vf = (
-            f"scale=2160:3840:force_original_aspect_ratio=increase,"
-            f"crop=2160:3840,"
-            f"zoompan=z='min(zoom+0.0005,1.10)':d=1:"
-            f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
-            f"s={cfg_w}x{cfg_h}:fps=30,setsar=1"
-        )
+        z = 0.0009 * (variant + 1)
+        vf = (f"scale=2160:3840:force_original_aspect_ratio=increase,"
+              f"crop=2160:3840,"
+              f"zoompan=z='min(zoom+{z:.4f},1.15)':d=1:"
+              f"x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+              f"s={cfg_w}x{cfg_h}:fps=30,setsar=1")
         base = ["ffmpeg", "-y", "-loop", "1", "-framerate", "30",
-                "-i", media_path, "-t", f"{dur:.2f}"]
+                "-t", f"{sub_dur:.2f}", "-i", media_path]
     else:
         vf = (f"scale={cfg_w}:{cfg_h}:force_original_aspect_ratio=increase,"
               f"crop={cfg_w}:{cfg_h},setsar=1,fps=30")
-        base = ["ffmpeg", "-y", "-stream_loop", "-1",
-                "-i", media_path, "-t", f"{dur:.2f}"]
+        sd = _src_dur(media_path)
+        if sd and sd > sub_dur + 0.3:
+            span = max(0.0, sd - sub_dur - 0.1)
+            off = min(span, variant * min(2.0, span))
+            base = ["ffmpeg", "-y", "-ss", f"{off:.2f}", "-i", media_path]
+        else:
+            base = ["ffmpeg", "-y", "-stream_loop", "-1", "-i", media_path]
+    _run(base + ["-vf", vf, "-t", f"{sub_dur:.2f}", "-r", "30",
+                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                 "-pix_fmt", "yuv420p", "-an", out])
 
-    badge = scene.get("badge", "")
-    draws = []
-    if badge:
-        draws.append(
-            f"drawtext=fontfile={font}:text='{badge}':fontcolor=yellow:"
-            f"fontsize=110:borderw=3:bordercolor=black:"
-            f"x=w-tw-46:y=84:box=1:boxcolor=black@0.45:boxborderw=18")
-    draws.append(
-        f"drawtext=fontfile={font}:textfile={ov_file}:fontcolor=white:"
-        f"fontsize=76:borderw=4:bordercolor=black@0.85:"
-        f"x=(w-text_w)/2:y=h*0.60:line_spacing=14")
-    vf = vf + "," + ",".join(draws)
 
-    # ovozni segment davomiylikka moslashtirish (kerak bo'lsa tezlashtirish)
-    speech = _ffprobe_duration(audio_path)
-    tempo = min(2.0, max(1.0, speech / max(0.5, dur - 0.05)))
-    af = f"atempo={tempo:.3f},apad"
-
-    # MUHIM: -shortest apad bilan ishlatilmaydi (cheksiz kutish xavfi).
-    # Buning o'rniga har bir input va output aniq -t bilan cheklanadi.
-    _run(base + [
-        "-t", f"{dur + 0.25:.2f}", "-i", audio_path,
-        "-vf", vf,
-        "-af", af,
-        "-map", "0:v:0", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
-        "-pix_fmt", "yuv420p", "-r", "30",
-        "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
-        "-t", f"{dur:.2f}", out_seg,
-    ])
+def _concat(files, out):
+    lst = out + ".txt"
+    with open(lst, "w", encoding="utf-8") as f:
+        for p in files:
+            f.write(f"file '{p}'\n")
+    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
+          "-c", "copy", out])
 
 
 def _mix_music(cfg, out_path, total):
-    """Fon musiqasi: ambient pad (A-minor) + 'havo' shovqini.
-    Narration gapirganda avtomatik pasayadi (sidechain ducking)."""
+    """Fon musiqasi + yakuniy loudnorm (-15 LUFS, telefon uchun)."""
     mv = float(cfg.get("sfx", {}).get("music_volume", 0.12))
     if mv <= 0:
         return
@@ -123,7 +125,7 @@ def _mix_music(cfg, out_path, total):
         "[bgm][sc]sidechaincompress=threshold=0.025:ratio=12:"
         "attack=15:release=450[duck];"
         "[voice][duck]amix=inputs=2:duration=first:normalize=0,"
-        "alimiter=limit=0.95:level=0[aout]"
+        "loudnorm=I=-15:TP=-1.5:LRA=11[aout]"
     )
     tmp = out_path + ".music.mp4"
     cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
@@ -131,34 +133,48 @@ def _mix_music(cfg, out_path, total):
             "-ar", "48000", "-ac", "2", "-movflags", "+faststart", tmp]
     _run(cmd)
     os.replace(tmp, out_path)
-    print(f"[render] fon musiqasi qo'shildi (daraja {mv}, ducking bilan)")
+    print("[render] fon musiqasi + loudnorm(-15 LUFS) qo'shildi")
 
 
-def render(cfg, scenes, timeline, media_files, audio_files, out_path):
+def render(cfg, script, items):
+    """items: [{"scene", "audio", "dur", "words", "media": [{id,path}]}]"""
     tmp = cfg["_paths"]["work"]
     os.makedirs(tmp, exist_ok=True)
-    font = _font()
-    cfg_w = cfg["video"]["width"]
-    cfg_h = cfg["video"]["height"]
+    w, h = cfg["video"]["width"], cfg["video"]["height"]
     segs = []
-    for i, (scene, dur) in enumerate(zip(scenes, timeline)):
+    for i, it in enumerate(items):
+        scene, dur = it["scene"], it["dur"]
+        media = it["media"]
+        plan = plan_scene_subs(cfg, scene, dur)
+        print(f"[render] sahna {i + 1}/{len(items)} — {dur:.1f}s, "
+              f"{plan['n']} sub-klip")
+        subs = []
+        for k in range(plan["n"]):
+            m = media[k % len(media)]
+            sub_out = os.path.join(tmp, f"sub_{i:02d}_{k}.mp4")
+            _render_sub(m["path"], plan["sub"], sub_out, w, h, variant=k)
+            subs.append(sub_out)
+        visual = os.path.join(tmp, f"scenev_{i:02d}.mp4")
+        if len(subs) == 1:
+            os.replace(subs[0], visual)
+        else:
+            _concat(subs, visual)
+        ass = captions.build_scene_ass(
+            cfg, scene, it["words"], dur, os.path.join(tmp, f"scene_{i:02d}.ass"))
         seg = os.path.join(tmp, f"seg_{i:02d}.mp4")
-        print(f"[render] sahna {i + 1}/{len(scenes)} - {dur:.1f}s")
-        _render_scene(i, scene, dur, media_files[i], audio_files[i],
-                      seg, tmp, font, cfg_w, cfg_h)
+        _run(["ffmpeg", "-y", "-i", visual, "-i", it["audio"],
+              "-vf", f"ass={ass}", "-af", "apad",
+              "-map", "0:v:0", "-map", "1:a:0",
+              "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+              "-pix_fmt", "yuv420p", "-r", "30",
+              "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2",
+              "-t", f"{dur:.2f}", seg])
         segs.append(seg)
 
-    # concat (barcha segmentlar bir xil codec/parametrlar)
-    lst = os.path.join(tmp, "concat.txt")
-    with open(lst, "w", encoding="utf-8") as f:
-        for s in segs:
-            f.write(f"file '{s}'\n")
+    out_path = os.path.join(cfg["_paths"]["output"], "short.mp4")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
-          "-c", "copy", "-movflags", "+faststart", out_path])
-
+    _concat(segs, out_path)
     total = _ffprobe_duration(out_path)
-    # Fon musiqasi (sfx yoqilgan bo'lsa) — concat'dan keyin bitta yakuniy pass
     if cfg.get("sfx", {}).get("enabled", True):
         try:
             _mix_music(cfg, out_path, total)
@@ -166,9 +182,12 @@ def render(cfg, scenes, timeline, media_files, audio_files, out_path):
             print(f"[render] fon musiqasi qo'shilmadi ({e}) — davom etamiz")
         total = _ffprobe_duration(out_path)
 
+    # --- QATIY TEKSHIRUV (qabul mezonlari) ---
+    wq, hq = _ffprobe_size(out_path)
+    if (wq, hq) != (w, h):
+        raise RuntimeError(f"Rezolyutsiya {wq}x{hq} — {w}x{h} kutilgan!")
+    print(f"[render] TAYYOR: {out_path} ({total:.1f}s, {wq}x{hq})")
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
-    print(f"[render] tayyor: {out_path} ({total:.1f}s)")
-    if not (mn - 1.5 <= total <= mx + 1.5):
-        print(f"[render] OGOHlantirish: davomiylik {total:.1f}s "
-              f"[{mn}-{mx}] diapazondan tashqari")
+    if not (mn - 2 <= total <= mx + 2):
+        print(f"[render] OGOHLANTIRISH: davomiylik {total:.1f}s [{mn}-{mx}]")
     return out_path, total

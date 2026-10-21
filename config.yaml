@@ -24,11 +24,18 @@ video:
   width: 1080
   height: 1920
   fps: 30
-  scenes: 7                                   # HOOK + #5..#1 fakt + OUTRO
-  min_duration: 40                            # sekund
-  max_duration: 50                            # sekund
+  scenes: 7                                   # HOOK + 5 FAKT + LOOP (outro YO'Q)
+  min_duration: 35                            # sekund (retention formati)
+  max_duration: 40                            # sekund
   tags: [geography, facts, countries, world facts, maps, borders,
          did you know, education, shorts]
+
+captions:
+  enabled: true
+  y: 1150                # dinamik subtitr pozitsiyasi (Shorts UI yopmaydi)
+  safe_w: 860            # maksimal matn kengligi (x: 110..970 safe zone)
+  font_size: 96          # dinamik so'z shrifti
+  top_size: 64           # statik on_screen shrifti (tepa)
 
 sources:
   youtube_region: "US"
@@ -36,20 +43,18 @@ sources:
   days_back: 30
   max_trend_items: 40
   trend_query_template: "{t} facts"           # trend qidiruv shabloni
-  # Pexels'da mos klip topilmasa, shu umumiy so'rovlar sinab ko'riladi:
+  # Xarita fallback'dan oldin emas — bu umumiy B-roll so'rovlari emas,
+  # endi har sahna o'z visual_query ro'yxatini Gemini'dan oladi.
   generic_queries:
     - "world map aerial"
     - "aerial mountains"
     - "ocean drone shot"
-    - "desert aerial"
     - "city skyline aerial"
-    - "island aerial"
-    - "northern lights timelapse"
 
 sfx:
   enabled: true                    # fon musiqasi + effektlar (false = sof ovoz)
   music_volume: 0.12               # fon musiqasi darajasi (0 = juda past)
-  transitions: true                # sahna effektlari: whoosh/ding/impact/riser
+  transitions: true                # riser(hook) + impact(3s) + whoosh(cutlar)
 
 behavior:
   dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)

@@ -1,12 +1,11 @@
-"""SFX moduli: sintez qilingan tovush effektlari + fon musiqasi.
+"""SFX moduli: sintez qilingan tovush effektlari.
 
-Hammasi OFLAYN generatsiya qilinadi (Python wave + ffmpeg lavfi):
-  - mualliflik huquqi muammosi yo'q (royalty-free emas — umuman bizning)
-  - hech qanday API kaliti kerak emas
-
-Effektlar: riser (hook), whoosh + ding (har fakt), impact (№1), chime (outro).
-Fon musiqasi: ambient pad (A-minor akkord) + past shovqin "havo" qatlami,
-narration davomida avtomatik pasayadi (sidechain ducking).
+Yangi qoidalar (retention formati):
+  - HOOK (0-3s): past riser
+  - 3-sekundda (hook tugashi): impact
+  - Har bir kesish (cut) oralig'ida: whoosh (0.1-0.2s)
+Fon musiqasi render.py'da qo'shiladi (ducking bilan).
+Hammasi oflayn sintez — mualliflik huquqi muammosi yo'q.
 """
 import math
 import os
@@ -38,7 +37,6 @@ def _env(t, dur, attack=0.008, release=0.2):
 
 
 def _lowpass_sweep(samples, f_of_t):
-    """Vaqt o'tishi bilan kesish chastotasi o'zgaradigan bir kutupli filtr."""
     out, y = [], 0.0
     for i, s in enumerate(samples):
         f = max(40.0, min(16000.0, f_of_t(i / SR)))
@@ -49,7 +47,7 @@ def _lowpass_sweep(samples, f_of_t):
 
 
 # ---------- Effektlar ----------
-def _whoosh(path, dur=0.8):
+def _whoosh(path, dur=0.55):
     rng = random.Random(42)
     n = int(dur * SR)
     noise = [rng.uniform(-1, 1) for _ in range(n)]
@@ -58,7 +56,7 @@ def _whoosh(path, dur=0.8):
         return 300 + 5200 * math.sin(math.pi * min(1.0, t / dur)) ** 2
 
     filt = _lowpass_sweep(noise, f_of_t)
-    out = [0.85 * s * _env(i / SR, dur, attack=0.25, release=0.30)
+    out = [0.85 * s * _env(i / SR, dur, attack=0.12, release=0.18)
            for i, s in enumerate(filt)]
     _write_wav(path, out)
 
@@ -82,7 +80,7 @@ def _impact(path, dur=0.7):
     out, phase = [], 0.0
     for i in range(n):
         t = i / SR
-        f = 110 * math.exp(-6.0 * t) + 42           # pitch drop
+        f = 110 * math.exp(-6.0 * t) + 42
         phase += 2 * math.pi * f / SR
         thump = math.sin(phase) * math.exp(-4.5 * t)
         burst = rng.uniform(-1, 1) * math.exp(-28 * t) * 0.5
@@ -104,7 +102,7 @@ def _riser(path, dur=1.3):
         t = i / SR
         f = 180 + (760 - 180) * (t / dur) ** 1.4
         phase += 2 * math.pi * f / SR
-        e = (t / dur) ** 1.8                        # kuchayib boradi, keskin tugaydi
+        e = (t / dur) ** 1.8
         out.append(0.5 * s * e + 0.30 * math.sin(phase) * e)
     _write_wav(path, out)
 
@@ -170,30 +168,31 @@ def _mix_scene(narration, picks, dest):
         return False
 
 
-def add_scene_sfx(cfg, scenes, timeline):
-    """Har bir sahna ovoziga mos effekt qo'shadi.
-    timeline: [(audio_path, dur), ...] -> yangi [(path, dur), ...]"""
+def add_scene_sfx(cfg, scenes, items, plans):
+    """Kesish nuqtalariga effektlar: riser(hook) + impact(hook tugashi)
+    + whoosh(har cut). items: [{"audio","dur","words",...}]"""
     sfx_cfg = cfg.get("sfx", {})
     if not sfx_cfg.get("enabled", True) or not sfx_cfg.get("transitions", True):
-        return timeline
+        return items
     work = cfg["_paths"]["work"]
     fx = ensure_sfx(work)
     out = []
-    for i, (audio, dur) in enumerate(timeline):
+    for i, it in enumerate(items):
         sc = scenes[i] if i < len(scenes) else {}
-        st = sc.get("type")
-        if st == "hook":
-            picks = [(fx["riser"], 30, 0.50)]
-        elif st == "outro":
-            picks = [(fx["chime"], 80, 0.40)]
-        elif sc.get("number") == 1:
-            picks = [(fx["impact"], 0, 0.55), (fx["ding"], 300, 0.35)]
-        else:
-            picks = [(fx["whoosh"], 0, 0.30), (fx["ding"], 200, 0.28)]
+        plan = plans[i] if i < len(plans) else {"cuts": []}
+        picks = []
+        if sc.get("type") == "hook":
+            picks.append((fx["riser"], 20, 0.40))
+        if i == 1:   # hook tugashi (~3s) — impact
+            picks.append((fx["impact"], 0, 0.50))
+        for ct in plan.get("cuts", []):
+            picks.append((fx["whoosh"], max(0, int((ct - 0.06) * 1000)), 0.26))
+        if not picks:
+            out.append(it)
+            continue
         dest = os.path.join(work, f"scene_{i:02d}_sfx.wav")
-        if _mix_scene(audio, picks, dest):
-            out.append((dest, dur))
-        else:
-            out.append((audio, dur))
-    print("[sfx] effektlar qo'shildi (riser/whoosh/ding/impact/chime)")
+        if _mix_scene(it["audio"], picks, dest):
+            it = dict(it, audio=dest)
+        out.append(it)
+    print("[sfx] effektlar: riser(hook) + impact(3s) + whoosh(cutlar)")
     return out

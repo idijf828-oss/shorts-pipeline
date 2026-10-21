@@ -1,5 +1,6 @@
-"""Tarix: qo'llanilgan mavzular (GitHub Actions statsiz -> history.json
-commit orqali repo'ga qaytadi, qarang .github/workflows/daily.yml)."""
+"""Tarix: qo'llanilgan mavzular + ishlatilgan klip id'lari.
+GitHub Actions statsiz -> history.json commit orqali repo'ga qaytadi
+(qarang .github/workflows/daily.yml)."""
 import datetime
 import difflib
 import json
@@ -33,6 +34,15 @@ def keywords(entries):
     return out
 
 
+def clip_ids(entries=None):
+    """Hamma ishlatilgan klip id'lari (takrorlanmaslik uchun)."""
+    out = set()
+    for e in (entries if entries is not None else load()):
+        for c in e.get("clips", []):
+            out.add(c)
+    return out
+
+
 def too_similar(new_title, new_keywords, entries, title_thresh=0.6, kw_overlap=3):
     """Yangi mavzu oldingi video'lardan juda o'xshashmi?"""
     new_kw = set(k.lower() for k in new_keywords)
@@ -45,12 +55,13 @@ def too_similar(new_title, new_keywords, entries, title_thresh=0.6, kw_overlap=3
     return False
 
 
-def add(title, keywords_list, video_id=""):
+def add(title, keywords_list, video_id="", clips=None):
     entries = load()
     entries.append({
         "date": datetime.datetime.now(datetime.UTC).isoformat(),
         "title": title,
         "keywords": keywords_list,
         "video_id": video_id,
+        "clips": sorted(set(clips or []))[:60],
     })
     save(entries)
