@@ -4,6 +4,7 @@ Video + inline tugmalar (YUKLASH / BEKOR QILISH).
 GitHub Actions statsiz -> job o'zi polling qiladi
 (getUpdates), 6 soatlik job limit ichida.
 """
+import html
 import json
 import os
 import time
@@ -24,7 +25,7 @@ def _post(token, method, **params):
 def send_message(cfg, text):
     try:
         _post(cfg["secrets"]["tg_bot_token"], "sendMessage",
-              chat_id=cfg["secrets"]["tg_chat_id"], text=text,
+              chat_id=cfg["secrets"]["tg_chat_id"], text=html.escape(str(text)),
               parse_mode="HTML")
     except Exception as e:
         print(f"[tg] xabar yuborib bo'lmadi: {e}")
@@ -35,13 +36,14 @@ def caption(cfg, trends, script, duration_s):
     top = sm.get("top_titles", [])[:3]
     kws = ", ".join(script.get("keywords", [])[:5])
     lines = [
-        f"🎬 <b>{script['title']}</b>",
+        f"🎬 <b>{html.escape(script['title'])}</b>",
         f"⏱ {duration_s:.0f}s | 7 sahna"
-        + (f" | {kws}" if kws else ""),
-        "📊 US trend (30 kun):",
+        + (f" | {html.escape(kws)}" if kws else ""),
     ]
+    if top:
+        lines.append("📊 US trend (30 kun):")
     for t in top:
-        lines.append(f"• {t['title'][:80]} — {t['views']:,} views")
+        lines.append(f"• {html.escape(t['title'][:80])} — {t['views']:,} views")
     lines += ["", "Tasdiqlaysizmi?"]
     return "\n".join(lines)
 
@@ -51,19 +53,34 @@ def send_video_and_wait(cfg, video_path, text, timeout_min):
     True = yuklash, False = bekor/timeout."""
     tok = cfg["secrets"]["tg_bot_token"]
     chat = cfg["secrets"]["tg_chat_id"]
+    # getUpdates webhook bilan bir vaqtda ishlay olmaydi (409 konflikt) —
+    # webhook o'rnatilgan bo'lsa olib tashlaymiz (bot faqat polling ishlatadi)
+    try:
+        _post(tok, "deleteWebhook", drop_pending_updates=False)
+    except Exception as e:
+        print(f"[tg] deleteWebhook: {e}")
     kb = {"inline_keyboard": [[
         {"text": "✅ YouTube'ga yuklash", "callback_data": "approve"},
         {"text": "❌ Bekor qilish", "callback_data": "reject"},
     ]]}
-    with open(video_path, "rb") as f:
-        r = session().post(
-            API.format(token=tok, method="sendVideo"),
-            data={"chat_id": chat, "caption": text,
-                  "parse_mode": "HTML"},
-            params={"reply_markup": json.dumps(kb)},
-            files={"video": (os.path.basename(video_path), f, "video/mp4")},
-            timeout=180,
-        )
+
+    def _send_video(cap, parse_html=True):
+        data = {"chat_id": chat, "caption": cap,
+                "reply_markup": json.dumps(kb)}
+        if parse_html:
+            data["parse_mode"] = "HTML"
+        with open(video_path, "rb") as f:
+            return session().post(
+                API.format(token=tok, method="sendVideo"),
+                data=data,
+                files={"video": (os.path.basename(video_path), f, "video/mp4")},
+                timeout=180,
+            )
+
+    r = _send_video(text)
+    # caption'da HTML buzilgan bo'lsa (noodatiy belgilar) — oddiy matn bilan qayta
+    if r.status_code != 200 and "can't parse entities" in r.text:
+        r = _send_video(html.unescape(text), parse_html=False)
     if r.status_code != 200:
         raise RuntimeError(f"Telegram sendVideo {r.status_code}: {r.text[:300]}")
     msg_id = r.json()["result"]["message_id"]
@@ -75,7 +92,9 @@ def send_video_and_wait(cfg, video_path, text, timeout_min):
     while time.time() < deadline:
         try:
             u = s.get(API.format(token=tok, method="getUpdates"),
-                      params={"offset": offset, "timeout": 30}, timeout=45)
+                      params={"offset": offset, "timeout": 25,
+                              "allowed_updates": json.dumps(["callback_query"])},
+                      timeout=40)
             for upd in u.json().get("result", []):
                 offset = upd["update_id"] + 1
                 cb = upd.get("callback_query")

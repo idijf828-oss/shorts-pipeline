@@ -40,16 +40,19 @@ def _pexels(cfg, query):
             print(f"[media] Pexels {r.status_code}: {r.text[:120]}")
             return None
         vids = r.json().get("videos", [])
-        pool = [v for v in vids if v.get("width", 0) >= 720] or vids
+        # width: null bo'lishi mumkin (HLS variantlar) -> (or 0) bilan himoya
+        pool = [v for v in vids if (v.get("width") or 0) >= 480] or vids
         if not pool:
             return None
         # deterministik tanlash -> natija barqaror
         random.seed(query)
         v = pool[random.randrange(len(pool))]
         files = sorted(v["video_files"],
-                       key=lambda f: -(f.get("width", 0) * f.get("height", 0)))
-        portrait = [f for f in files if f["height"] >= f["width"]]
-        return (portrait or files)[0]["link"]
+                       key=lambda f: -((f.get("width") or 0) * (f.get("height") or 0)))
+        portrait = [f for f in files
+                    if (f.get("height") or 0) >= (f.get("width") or 0)]
+        files = [f for f in files if f.get("link")]
+        return (portrait or files)[0]["link"] if files else None
     except Exception as e:
         print(f"[media] Pexels xatosi: {e}")
         return None

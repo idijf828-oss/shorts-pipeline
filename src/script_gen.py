@@ -10,7 +10,14 @@ import time
 from src.net import session
 
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-flash-lite"]
+# 2026-10 holati: gemini-2.5-*/gemini-2.0-flash O'CHIRILGAN (404 qaytaradi).
+# Faqat hozirgi TIRIK modellar (barchasi bepul tier'da mavjud):
+MODELS = [
+    "gemini-3.5-flash-lite",   # tez, arzon (asosiy tanlov)
+    "gemini-3.1-flash-lite",   # arzon zaxira
+    "gemini-3.8-flash",        # kuchliroq zaxira
+    "gemini-3.6-flash",        # oxirgi zaxira
+]
 
 SYSTEM = """You are a sharp comedic scriptwriter for a US YouTube Shorts channel
 (relatable everyday humor for ages 16-40). Write fresh, original jokes only:
@@ -99,10 +106,21 @@ Return ONLY this JSON, nothing else:
 def _parse(raw):
     txt = raw.strip()
     txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.S)
+    # JSON'dan oldin/keyin ortiqcha matn bo'lsa, { ... } blokini kesib olish
+    a, b = txt.find("{"), txt.rfind("}")
+    if a != -1 and b > a and (a > 0 or b < len(txt) - 1):
+        txt = txt[a:b + 1]
     data = json.loads(txt)
     scenes = data.get("scenes", [])
     if len(scenes) != 7:
         raise ValueError(f"7 sahna kerak, {len(scenes)} ta keldi")
+    for sc in scenes:
+        # Gemini ba'zan raqamlarni satr ("5") qaytaradi -> songa aylantiramiz
+        if sc.get("type") == "countdown":
+            try:
+                sc["number"] = int(sc["number"])
+            except (TypeError, ValueError):
+                pass
     nums = [sc.get("number") for sc in scenes if sc.get("type") == "countdown"]
     if sorted(nums) != [1, 2, 3, 4, 5]:
         raise ValueError("countdown raqamlari 5..1 bo'lishi kerak")
@@ -127,5 +145,8 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
             except Exception as e:
                 last_err = e
                 print(f"[script] {model} urinish {attempt + 1}: {e}")
+                # model topilmadi/o'chirilgan -> qayta urinmasdan keyingisiga
+                if "not found" in str(e).lower() or "not_found" in str(e).lower():
+                    break
                 time.sleep(2)
     raise RuntimeError(f"Skript yozib bo'lmadi: {last_err}")

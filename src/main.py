@@ -29,8 +29,20 @@ def run(cfg):
     t0 = datetime.datetime.now(datetime.UTC).isoformat()
 
     print("== 1/7: YouTube trend tahlili (US, 30 kun) ==")
-    tr = trends.fetch_trending(cfg)
-    print(f"   top: {tr['summary']['top_titles'][0]['title'][:70]}")
+    try:
+        tr = trends.fetch_trending(cfg)
+    except Exception as e:
+        # Trend — boyituvchi ma'lumot. API xatosi butun kunlik videoni
+        # o'ldirmasligi kerak: bo'sh trend bilan davom etamiz.
+        print(f"   [OGOX] trend olinmadi ({e}); pipeline davom etadi")
+        telegram.send_message(cfg, "⚠️ Trend olinmadi (YouTube API), "
+                                   "lekin video baribir yaratiladi: "
+                                   + str(e)[:200])
+        tr = {"summary": {"top_titles": [], "top_words": [], "hashtags": [],
+                          "formats_seen": [], "avg_views_top10": 0,
+                          "avg_title_len": 0}, "items": []}
+    if tr.get("summary", {}).get("top_titles"):
+        print(f"   top: {tr['summary']['top_titles'][0]['title'][:70]}")
 
     print("== 2/7: Gemini bilan asl skript ==")
     hist = history.load()

@@ -60,6 +60,22 @@ def upload(cfg, video_path, title, description, tags):
             print(f"[yt] yuklandi: https://youtu.be/{vid} "
                   f"(privacy: {body['status']['privacyStatus']})")
             return vid
+        except RefreshError as e:
+            # Refresh token eskirgan/noto'g'ri — qayta urinish foydasiz
+            raise RuntimeError(
+                "YT_REFRESH_TOKEN eskirgan yoki noto'g'ri. OAuth tokenlari "
+                "verifikatsiyadan o'tmagan loyihada ~7 kunda tugaydi. "
+                "Google OAuth Playground'dan yangi refresh_token oling va "
+                "GitHub Secrets > YT_REFRESH_TOKEN'ni yangilang. Xato: "
+                + str(e)[:200]
+            )
+        except HttpError as e:
+            last_err = e
+            print(f"[yt] urinish {attempt + 1} (HTTP {e.resp.status}): {e}")
+            # 401/403 — huquq muammosi, qayta urinish foydasiz
+            if e.resp.status in (401, 403):
+                break
+            time.sleep(8 * (attempt + 1))
         except Exception as e:
             last_err = e
             print(f"[yt] urinish {attempt + 1}: {e}")

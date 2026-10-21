@@ -83,15 +83,17 @@ def _render_scene(i, scene, dur, media_path, audio_path, out_seg,
     tempo = min(2.0, max(1.0, speech / max(0.5, dur - 0.05)))
     af = f"atempo={tempo:.3f},apad"
 
+    # MUHIM: -shortest apad bilan ishlatilmaydi (cheksiz kutish xavfi).
+    # Buning o'rniga har bir input va output aniq -t bilan cheklanadi.
     _run(base + [
-        "-i", audio_path,
+        "-t", f"{dur + 0.25:.2f}", "-i", audio_path,
         "-vf", vf,
         "-af", af,
         "-map", "0:v:0", "-map", "1:a:0",
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
         "-pix_fmt", "yuv420p", "-r", "30",
         "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2",
-        "-t", f"{dur:.2f}", "-shortest", out_seg,
+        "-t", f"{dur:.2f}", out_seg,
     ])
 
 

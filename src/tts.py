@@ -53,6 +53,9 @@ def prepare(cfg, scenes):
         if engine == "edge":
             try:
                 _edge(sc["narration"], voice, rate, p)
+                # edge-tts ba'zan "muvaffaqiyatli" bo'sh fayl yozib qo'yadi
+                if _ffprobe_duration(p) < 0.3:
+                    raise RuntimeError("bo'sh/bytes audio fayl")
                 ok = True
             except Exception as e:
                 print(f"[tts] edge-tts ishlamadi ({type(e).__name__}); "
@@ -68,6 +71,7 @@ def prepare(cfg, scenes):
                     print(f"[tts] gTTS urinish {attempt + 1}: {e}")
                     if attempt == 2:
                         raise RuntimeError("TTS umuman ishlamayapti")
+                    time.sleep(2)
         paths.append(p)
         durs.append(_ffprobe_duration(p))
 

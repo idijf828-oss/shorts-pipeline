@@ -86,37 +86,49 @@ def fetch_trending(cfg):
     queries = [f"funny {t} moments" for t in cfg["channel"]["topics"]][:3]
     queries.append(cfg["channel"]["niche"])
 
-    items, seen = [], set()
-    for q in queries:
-        try:
-            data = _get(SEARCH_URL, {
+    def _search_all(with_category):
+        """Barcha so'rovlarni yuboradi. videoCategoryId search.list'da
+        ko'pincha BO'SH natija qaytaradi (YouTube'ning ma'lum xususiyati),
+        shuning uchun bo'sh bo'lsa filtrsiz qayta urinamiz."""
+        got, seen = [], set()
+        for q in queries:
+            params = {
                 "part": "snippet",
                 "q": q,
                 "type": "video",
                 "videoDuration": "short",
-                "videoCategoryId": src["youtube_category"],
                 "regionCode": src["youtube_region"],
                 "order": "viewCount",
                 "publishedAfter": _iso_days_ago(src["days_back"]),
                 "maxResults": 25,
                 "fields": "items(id/videoId,snippet/title,snippet/channelTitle,snippet/publishedAt)",
-            }, key)
-        except Exception as e:
-            print(f"[trends] so'rov xatosi ({q!r}): {e}")
-            continue
-        for it in data.get("items", []):
-            vid = it["id"].get("videoId")
-            if vid and vid not in seen:
-                seen.add(vid)
-                items.append({
-                    "id": vid,
-                    "title": it["snippet"]["title"],
-                    "channel": it["snippet"].get("channelTitle", ""),
-                    "published": it["snippet"].get("publishedAt", ""),
-                    "views": 0,
-                    "duration": "",
-                })
-        time.sleep(0.4)
+            }
+            if with_category:
+                params["videoCategoryId"] = src["youtube_category"]
+            try:
+                data = _get(SEARCH_URL, params, key)
+            except Exception as e:
+                print(f"[trends] so'rov xatosi ({q!r}): {e}")
+                continue
+            for it in data.get("items", []):
+                vid = it["id"].get("videoId")
+                if vid and vid not in seen:
+                    seen.add(vid)
+                    got.append({
+                        "id": vid,
+                        "title": it["snippet"]["title"],
+                        "channel": it["snippet"].get("channelTitle", ""),
+                        "published": it["snippet"].get("publishedAt", ""),
+                        "views": 0,
+                        "duration": "",
+                    })
+            time.sleep(0.4)
+        return got
+
+    items = _search_all(True)
+    if not items:
+        print("[trends] category filtri bilan natija bo'sh - filtrsiz qayta urinish")
+        items = _search_all(False)
 
     items = items[: cfg["sources"]["max_trend_items"]]
     if not items:

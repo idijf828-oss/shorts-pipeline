@@ -48,6 +48,8 @@ behavior:
                                   # DIQQAT: cron faqat .github/workflows/daily.yml'da o'zgaradi
                                   #        (GitHub cheklovi). Qolgan hamma narsa shu faylda.
 gemini:
-  model: "gemini-3.5-flash-lite"
-       # bepul tier; muvaffaqiyatsiz bo'lsa avtomatik fallback
+  model: "gemini-3.5-flash-lite"   # TIRIK model (2026-07 dan). Zaxiralar
+                                   # avtomatik: 3.1-flash-lite, 3.8-flash,
+                                   # 3.6-flash. ESLATMA: gemini-2.5-*/2.0-flash
+                                   # 2026-10 da O'CHIRILGAN (404 beradi).
   temperature: 0.9
