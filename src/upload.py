@@ -39,6 +39,7 @@ def upload(cfg, video_path, title, description, tags):
             "tags": tags,
             "categoryId": cfg["sources"]["youtube_category"],
             "defaultLanguage": cfg["channel"]["language"],
+            "defaultAudioLanguage": cfg["channel"]["language"],
         },
         "status": {
             "privacyStatus": cfg["behavior"]["privacy_status"],

@@ -97,6 +97,43 @@ def _render_scene(i, scene, dur, media_path, audio_path, out_seg,
     ])
 
 
+def _mix_music(cfg, out_path, total):
+    """Fon musiqasi: ambient pad (A-minor) + 'havo' shovqini.
+    Narration gapirganda avtomatik pasayadi (sidechain ducking)."""
+    mv = float(cfg.get("sfx", {}).get("music_volume", 0.12))
+    if mv <= 0:
+        return
+    dur = max(1.0, total + 0.5)
+    cmd = ["ffmpeg", "-y", "-i", out_path]
+    for f in (110.0, 164.81, 220.0, 261.63):     # A2, E3, A3, C4 — Am pad
+        cmd += ["-f", "lavfi", "-t", f"{dur:.2f}",
+                "-i", f"sine=frequency={f}:sample_rate=44100"]
+    cmd += ["-f", "lavfi", "-t", f"{dur:.2f}",
+            "-i", "anoisesrc=color=brown:amplitude=0.5:sample_rate=44100"]
+    fc = (
+        "[1:a]volume=0.30,tremolo=f=0.18:d=0.55[n1];"
+        "[2:a]volume=0.26,tremolo=f=0.13:d=0.60[n2];"
+        "[3:a]volume=0.20,tremolo=f=0.22:d=0.50[n3];"
+        "[4:a]volume=0.16,tremolo=f=0.10:d=0.60[n4];"
+        "[5:a]volume=0.35,lowpass=f=420[n5];"
+        "[n1][n2][n3][n4][n5]amix=inputs=5:duration=longest:normalize=0,"
+        "lowpass=f=1000,aresample=48000,aformat=channel_layouts=stereo,"
+        f"volume={mv}[bgm];"
+        "[0:a]asplit=2[voice][sc];"
+        "[bgm][sc]sidechaincompress=threshold=0.025:ratio=12:"
+        "attack=15:release=450[duck];"
+        "[voice][duck]amix=inputs=2:duration=first:normalize=0,"
+        "alimiter=limit=0.95:level=0[aout]"
+    )
+    tmp = out_path + ".music.mp4"
+    cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[aout]",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+            "-ar", "48000", "-ac", "2", "-movflags", "+faststart", tmp]
+    _run(cmd)
+    os.replace(tmp, out_path)
+    print(f"[render] fon musiqasi qo'shildi (daraja {mv}, ducking bilan)")
+
+
 def render(cfg, scenes, timeline, media_files, audio_files, out_path):
     tmp = cfg["_paths"]["work"]
     os.makedirs(tmp, exist_ok=True)
@@ -121,6 +158,14 @@ def render(cfg, scenes, timeline, media_files, audio_files, out_path):
           "-c", "copy", "-movflags", "+faststart", out_path])
 
     total = _ffprobe_duration(out_path)
+    # Fon musiqasi (sfx yoqilgan bo'lsa) — concat'dan keyin bitta yakuniy pass
+    if cfg.get("sfx", {}).get("enabled", True):
+        try:
+            _mix_music(cfg, out_path, total)
+        except Exception as e:
+            print(f"[render] fon musiqasi qo'shilmadi ({e}) — davom etamiz")
+        total = _ffprobe_duration(out_path)
+
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
     print(f"[render] tayyor: {out_path} ({total:.1f}s)")
     if not (mn - 1.5 <= total <= mx + 1.5):

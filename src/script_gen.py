@@ -1,8 +1,10 @@
-"""2-qadam: Gemini API orqali 100% YANGI asl skript yozish.
+"""2-qadam: Gemini API orqali 100% YANGI geografiya-faktlar skripti.
 
 Mantiq: trend tahlili + tarix (takrorlanmasin) -> 7 sahna JSON.
-Takroriy urinishlar + JSON tekshiruvi.
+Retention: curiosity-gap hook, "oxirigacha ko'r" istagi, like CTA.
+Metadata: professional title, description, tags, hashtags ham shu yerda.
 """
+import datetime
 import json
 import re
 import time
@@ -19,10 +21,12 @@ MODELS = [
     "gemini-3.6-flash",        # oxirgi zaxira
 ]
 
-SYSTEM = """You are a sharp comedic scriptwriter for a US YouTube Shorts channel
-(relatable everyday humor for ages 16-40). Write fresh, original jokes only:
-never copy other creators' jokes, memes, or viral punchlines. Tone: natural,
-conversational American English, like telling a friend a funny story."""
+SYSTEM = """You are a professional documentary scriptwriter and fact researcher
+for a US YouTube Shorts channel about geography, countries and world facts
+(audience ages 13-40). Use ONLY well-known, verifiable facts (atlas /
+encyclopedia level) — never invent statistics, borders or records. Tone:
+authoritative, curious and cinematic, like a high-quality nature documentary
+narration, but in natural conversational American English."""
 
 
 def _call(key, model, prompt, cfg, timeout=90):
@@ -66,40 +70,58 @@ def _build_prompt(cfg, trends, history_kws, avoid_title=""):
     )
     hist = ", ".join(history_kws[-25:]) if history_kws else "(hech narsa — birinchi video)"
     avoid = f"\nAVOID this exact topic too (already generated today): {avoid_title}\n" if avoid_title else ""
-    return f"""Channel niche: {ch['niche']}.
-Topics: {', '.join(ch['topics'])}. Audience: USA, English, ages 16-40.
+    # Kun mavzusi: deterministik tanlanadi (har kuni boshqa mavzu, takrorlanmasin)
+    topics = ch["topics"]
+    yday = datetime.datetime.now(datetime.UTC).timetuple().yday
+    topic = topics[yday % len(topics)]
+    return f"""Channel niche: {ch['niche']} — geography & country facts.
+TODAY'S ASSIGNED TOPIC: "{topic}".
+Audience: USA, English, ages 13-40.
 
 WHAT IS TRENDING IN THIS NICHE (US, last {cfg['sources']['days_back']} days):
 {top_titles}
 Most-used words: {', '.join(sm.get('top_words', [])[:10])}
 Common hashtags: {', '.join('#' + h for h in sm.get('hashtags', [])[:8])}
 Popular formats seen: {', '.join(sm.get('formats_seen', [])) or 'none detected'}
-Average title length: {sm.get('avg_title_len', 0)} chars; top-10 avg views: {sm.get('avg_views_top10', 0):,}
 
 ALREADY-USED TOPICS (do NOT repeat these):
 {hist}
 {avoid}
-WRITE A NEW, ORIGINAL 7-SCENE SHORTS SCRIPT:
-Scene 1 = HOOK (first 2 seconds, a punchy question/statement that grabs attention).
-Scenes 2-6 = countdown #5, #4, #3, #2, #1 (one funny everyday situation each: work, school, tech fails, family or social life).
-Scene 7 = OUTRO (1-2 sentences asking viewers to comment their own situation).
+WRITE A NEW, FACT-CHECKED 7-SCENE SHORTS SCRIPT about "{topic}":
+Scene 1 = HOOK: a bold question or statement with a strong CURIOSITY GAP.
+  Tease that fact #1 is the most unbelievable ("stay to the end...").
+Scenes 2-6 = countdown facts #5, #4, #3, #2, #1 about the topic.
+  Each fact: surprising, specific and TRUE (round numbers sensibly).
+  Fact #1 must pay off the hook's tease — the best fact, saved for last.
+Scene 7 = OUTRO: ask viewers which fact surprised them most + a direct,
+  friendly like & subscribe ask (viewers who reach the end are the likers).
+
+Retention rules (VERY important — this is a watch-to-the-end channel):
+- The hook must create an open loop in the first 2 seconds.
+- Every fact ends with a punchy wow-phrase, never a flat ending.
+- Escalate interest: #5 interesting -> #1 jaw-dropping.
 
 Rules:
-- Total narration ~110-135 words (spoken duration 40-50 seconds).
-- Every situation must be your own invented joke, not a copied/known meme or another creator's bit.
-- narration: plain spoken English, 8-18 words per scene.
-- overlay: on-screen text for that scene, max 8 words, ALL CAPS where funny.
-- badge: "WAIT FOR IT" for the hook, "#5".."#1" for countdown scenes, "COMMENT!" for outro.
-- pexels_query: simple 2-4 word English search describing generic footage for the scene (objects, places, actions — no people's faces as the joke).
+- narration: plain spoken English, 8-18 words per scene, professional
+  documentary tone. Total ~110-135 words (40-50 seconds spoken).
+- overlay: on-screen text, max 8 words, ALL CAPS where punchy.
+  ONLY plain letters, numbers, # and ! — NO emojis (render font).
+- badge: "DID YOU KNOW" for the hook, "#5".."#1" for facts, "YOUR TURN" for outro.
+- pexels_query: 2-4 word English b-roll search (aerial/drone/nature/map style):
+  e.g. "aerial coastline", "desert aerial", "world map zoom", "mountain drone".
+  No people close-ups, no text, no logos.
 
 Return ONLY this JSON, nothing else:
-{{"title": "video title under 70 chars with an emoji",
+{{"title": "curiosity-driven video title under 70 chars with 1 emoji",
   "keywords": ["3-6 topic keywords"],
+  "tags": ["12-15 lowercase YouTube search tags"],
+  "hashtags": ["3 hashtags without # symbol, e.g. geography facts shorts"],
+  "description": "professional video description 400-600 chars: a hook line, what the viewer will learn, a like/subscribe call-to-action. Plain text, NO hashtags inside.",
   "scenes": [
-    {{"type": "hook", "badge": "WAIT FOR IT", "overlay": "...", "narration": "...", "pexels_query": "..."}},
+    {{"type": "hook", "badge": "DID YOU KNOW", "overlay": "...", "narration": "...", "pexels_query": "..."}},
     {{"type": "countdown", "number": 5, "badge": "#5", "overlay": "...", "narration": "...", "pexels_query": "..."}},
     ... scenes for 4,3,2,1 ...
-    {{"type": "outro", "badge": "COMMENT!", "overlay": "...", "narration": "...", "pexels_query": "..."}}
+    {{"type": "outro", "badge": "YOUR TURN", "overlay": "...", "narration": "...", "pexels_query": "..."}}
   ]}}"""
 
 
@@ -127,8 +149,15 @@ def _parse(raw):
     for sc in scenes:
         if not sc.get("narration") or not sc.get("pexels_query"):
             raise ValueError("bo'sh narration/pexels_query")
-    data["title"] = str(data.get("title", "Top 5 Funny Everyday Situations"))[:100]
+    data["title"] = str(data.get("title", "Top 5 Geography Facts You Won't Believe"))[:100]
     data["keywords"] = [str(k) for k in data.get("keywords", [])][:8]
+    # Professional metadata (upload uchun)
+    data["description"] = str(data.get("description", "")).strip()[:4500]
+    data["tags"] = [str(t).strip().lower() for t in data.get("tags", [])
+                    if str(t).strip()][:20]
+    data["hashtags"] = [re.sub(r"^#", "", str(h).strip()).lower()
+                        for h in data.get("hashtags", [])
+                        if str(h).strip()][:4]
     return data
 
 

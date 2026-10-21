@@ -4,41 +4,52 @@
 # ============================================
 
 channel:
-  niche: "Top 5 funny everyday situations"   # niš
-  topics:                                     # mavzular (trend qidiruvi uchun)
-    - work
-    - school
-    - tech fails
-    - family
-    - social life
+  niche: "Mind-blowing geography and country facts"   # nich
+  topics:                                     # mavzular (har kuni bittasi avtomatik tanlanadi)
+    - borders
+    - capitals
+    - islands
+    - mountains and volcanoes
+    - deserts and oceans
+    - unusual countries
+    - maps and time zones
   language: "en-US"                           # video tili
-  voice: "en-US-AriaNeural"                   # edge-tts ovozi (gTTS fallback: en/com)
-  # Ovoz variantlari: en-US-AriaNeural (ayol), en-US-JennyNeural (ayol),
-  #                   en-US-GuyNeural (erkak), en-US-ChristopherNeural (erkak)
-  voice_rate: "+8%"                           # ovoz tezligi
+  voice: "en-US-ChristopherNeural"            # chuqur, professional (documentary) ovoz
+  # Ovoz variantlari: en-US-ChristopherNeural (erkak, hujjatli),
+  #                   en-US-GuyNeural (erkak, jonli), en-US-AriaNeural (ayol),
+  #                   en-US-JennyNeural (ayol, iliq)
+  voice_rate: "+4%"                           # ovoz tezligi
 
 video:
   width: 1080
   height: 1920
   fps: 30
-  scenes: 7                                   # HOOK + #5..#1 + OUTRO
+  scenes: 7                                   # HOOK + #5..#1 fakt + OUTRO
   min_duration: 40                            # sekund
   max_duration: 50                            # sekund
-  tags: [funny, relatable, top5, everyday, humor, comedy, shorts]
+  tags: [geography, facts, countries, world facts, maps, borders,
+         did you know, education, shorts]
 
 sources:
   youtube_region: "US"
-  youtube_category: "23"                      # 23 = Comedy
+  youtube_category: "27"                      # 27 = Education
   days_back: 30
   max_trend_items: 40
+  trend_query_template: "{t} facts"           # trend qidiruv shabloni
   # Pexels'da mos klip topilmasa, shu umumiy so'rovlar sinab ko'riladi:
   generic_queries:
-    - "laughing friends"
-    - "coffee spill accident"
-    - "phone falling"
-    - "office funny moment"
-    - "grocery store fail"
-    - "pet being silly"
+    - "world map aerial"
+    - "aerial mountains"
+    - "ocean drone shot"
+    - "desert aerial"
+    - "city skyline aerial"
+    - "island aerial"
+    - "northern lights timelapse"
+
+sfx:
+  enabled: true                    # fon musiqasi + effektlar (false = sof ovoz)
+  music_volume: 0.12               # fon musiqasi darajasi (0 = juda past)
+  transitions: true                # sahna effektlari: whoosh/ding/impact/riser
 
 behavior:
   dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)
@@ -52,4 +63,4 @@ gemini:
                                    # avtomatik: 3.1-flash-lite, 3.8-flash,
                                    # 3.6-flash. ESLATMA: gemini-2.5-*/2.0-flash
                                    # 2026-10 da O'CHIRILGAN (404 beradi).
-  temperature: 0.9
+  temperature: 0.8                 # faktli kontent uchun pastroq aniqlik

@@ -35,9 +35,10 @@ def caption(cfg, trends, script, duration_s):
     sm = trends.get("summary", {})
     top = sm.get("top_titles", [])[:3]
     kws = ", ".join(script.get("keywords", [])[:5])
+    n_facts = len(script.get("scenes", [])) - 2
     lines = [
         f"🎬 <b>{html.escape(script['title'])}</b>",
-        f"⏱ {duration_s:.0f}s | 7 sahna"
+        f"⏱ {duration_s:.0f}s | {n_facts} fakt"
         + (f" | {html.escape(kws)}" if kws else ""),
     ]
     if top:

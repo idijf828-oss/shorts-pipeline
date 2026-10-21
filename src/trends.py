@@ -83,7 +83,8 @@ def fetch_trending(cfg):
     s = session()
     key = cfg["secrets"]["yt_api_key"]
     src = cfg["sources"]
-    queries = [f"funny {t} moments" for t in cfg["channel"]["topics"]][:3]
+    qt = str(src.get("trend_query_template", "{t} facts"))
+    queries = [qt.format(t=t) for t in cfg["channel"]["topics"]][:3]
     queries.append(cfg["channel"]["niche"])
 
     def _search_all(with_category):

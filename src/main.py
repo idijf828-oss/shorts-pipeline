@@ -1,5 +1,5 @@
 """Asosiy orkestrator:
-  trend tahlili -> skript -> TTS -> media -> montaj
+  trend tahlili -> skript -> TTS -> SFX -> media -> montaj (+fon musiqasi)
   -> Telegram tasdig'i -> YouTube yuklash -> tarix saqlash.
 """
 import argparse
@@ -8,27 +8,50 @@ import os
 import traceback
 
 from src.config import load
-from src import trends, history, script_gen, tts, media, render, telegram, upload
+from src import trends, history, script_gen, tts, sfx, media, render, telegram, upload
 
 
 def build_description(cfg, script):
-    return (
-        f"{script['title']}\n\n"
-        + "\n".join(f"{i + 1}. {sc['narration']}"
-                    for i, sc in enumerate(script["scenes"]))
-        + "\n\n"
-        + "Barcha vaziyatlar original va ixtiroiy. "
-          "Kliplar: Pexels/Pixabay (royalty-free). "
-          "Ovoz va skript AI yordamida yaratilgan, inson tomonidan "
-          "tasdiqlangan.\n"
-          f"#{' #'.join(tag for tag in cfg['video']['tags'][:8])}"
-    )
+    """Professional YouTube description (Gemini yozgani yoki strukturali)."""
+    desc = (script.get("description") or "").strip()
+    if not desc:
+        facts = "\n".join(f"{i + 1}. {sc['narration']}"
+                          for i, sc in enumerate(script["scenes"]))
+        desc = (
+            f"{script['title']}\n\n{facts}\n\n"
+            "Which fact surprised you the most? Tell us in the comments! 👇\n"
+            "Like & subscribe for daily geography facts. 🌍\n\n"
+            "All facts are researched and verified. Footage: Pexels/Pixabay "
+            "(royalty-free). Voice-over and script created with AI, "
+            "human-approved.\n"
+        )
+    hashtags = script.get("hashtags") or ["geography", "facts", "shorts"]
+    tagline = " ".join("#" + h.lstrip("#") for h in hashtags[:3])
+    if tagline and tagline not in desc:
+        desc = desc.rstrip() + "\n\n" + tagline
+    return desc[:4800]  # YouTube cheklovi: 5000 belgi
+
+
+def build_tags(cfg, script):
+    """YouTube teglar: Gemini + config, deduplikatsiya, 480 belgiga cheklash."""
+    merged = []
+    for t in (script.get("tags") or []) + list(cfg["video"]["tags"]):
+        t = str(t).strip().lower().lstrip("#")
+        if t and t not in merged:
+            merged.append(t)
+    out, total = [], 0
+    for t in merged:
+        if len(out) >= 15 or total + len(t) + 1 > 470:
+            break
+        out.append(t)
+        total += len(t) + 1
+    return out
 
 
 def run(cfg):
     t0 = datetime.datetime.now(datetime.UTC).isoformat()
 
-    print("== 1/7: YouTube trend tahlili (US, 30 kun) ==")
+    print("== 1/8: YouTube trend tahlili (US, 30 kun) ==")
     try:
         tr = trends.fetch_trending(cfg)
     except Exception as e:
@@ -44,7 +67,7 @@ def run(cfg):
     if tr.get("summary", {}).get("top_titles"):
         print(f"   top: {tr['summary']['top_titles'][0]['title'][:70]}")
 
-    print("== 2/7: Gemini bilan asl skript ==")
+    print("== 2/8: Gemini bilan asl skript (geografiya faktlari) ==")
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):
@@ -53,20 +76,24 @@ def run(cfg):
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
     print(f"   sarlavha: {script['title']}")
 
-    print("== 3/7: Ovoz (edge-tts -> gTTS fallback) ==")
+    print("== 3/8: Professional ovoz (edge-tts -> gTTS fallback) ==")
     timeline = tts.prepare(cfg, script["scenes"])
     audio_files = [p for p, _ in timeline]
 
-    print("== 4/7: Kliplar (Pexels -> Pixabay -> kart) ==")
+    print("== 4/8: Ovoz effektlari (riser/whoosh/ding/impact) ==")
+    timeline = sfx.add_scene_sfx(cfg, script["scenes"], timeline)
+    audio_files = [p for p, _ in timeline]
+
+    print("== 5/8: B-roll kliplar (Pexels -> Pixabay -> kart) ==")
     media_files = media.fetch_all(cfg, script["scenes"])
 
-    print("== 5/7: ffmpeg montaj (1080x1920) ==")
+    print("== 6/8: ffmpeg montaj (1080x1920 + fon musiqasi) ==")
     out = os.path.join(cfg["_paths"]["output"], "short.mp4")
     out, dur = render.render(cfg, script["scenes"],
                              [d for _, d in timeline],
                              media_files, audio_files, out)
 
-    print("== 6/7: Telegram tasdig'i ==")
+    print("== 7/8: Telegram tasdig'i ==")
     cap = telegram.caption(cfg, tr, script, dur)
     approved = telegram.send_video_and_wait(
         cfg, out, cap, cfg["behavior"]["telegram_approval_timeout_min"])
@@ -80,11 +107,11 @@ def run(cfg):
         print("dry_run=ON: yuklash o'chirilgan. Tayyor:", out)
         return
 
-    print("== 7/7: YouTube'ga yuklash ==")
+    print("== 8/8: YouTube'ga yuklash (professional metadata) ==")
     title = script["title"]
     vid = upload.upload(cfg, out, title,
                         build_description(cfg, script),
-                        cfg["video"]["tags"])
+                        build_tags(cfg, script))
     history.add(title, script["keywords"], vid)
     telegram.send_message(
         cfg, f"✅ Yuklandi: {title}\nhttps://youtu.be/{vid}")

@@ -1,12 +1,17 @@
-# Shorts Pipeline — "Top 5 funny everyday situations"
+# Shorts Pipeline — "Mind-blowing geography & country facts"
 
-To'liq avtomatik YouTube Shorts kanali. **Barchasi bepul.**
+To'liq avtomatik YouTube Shorts kanali (geografiya va davlatlar faktlari,
+ingliz tilida, professional ovoz bilan). **Barchasi bepul.**
 
 ## Ishlash tartibi
 GitHub Actions (har kuni UTC 09:00) → trend tahlili (YouTube API) →
-Gemini bilan asl skript → edge-tts/gTTS ovoz → Pexels/Pixabay kliplar
-(fallback: rasm kartasi) → ffmpeg montaj (1080x1920, 40-50s) →
-Telegram'da inson tasdig'i → YouTube'ga upload → history.json commit.
+Gemini bilan fakt tekshirilgan skript (retention: curiosity gap + like CTA)
+→ professional ovoz (en-US-ChristopherNeural, gTTS fallback) →
+sintez SFX (riser/whoosh/ding/impact) → Pexels/Pixabay B-roll kliplar
+(fallback: rasm kartasi) → ffmpeg montaj (1080x1920, 40-50s, ambient fon
+musiqasi + ducking) → Telegram'da inson tasdig'i → YouTube'ga upload
+(professional title/description/tags/hashtags, Education kategoriyasi)
+→ history.json commit.
 
 ## Sozlash
 1. Barcha kalitlarni GitHub Secrets'ga qo'shing (qarang wiki/qo'llanma):
