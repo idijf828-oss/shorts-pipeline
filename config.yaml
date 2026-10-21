@@ -47,7 +47,7 @@ behavior:
   schedule_cron: "0 9 * * *"      # GitHub Actions UTC bo'yicha. Tashkent = +5 (14:00)
                                   # DIQQAT: cron faqat .github/workflows/daily.yml'da o'zgaradi
                                   #        (GitHub cheklovi). Qolgan hamma narsa shu faylda.
-
 gemini:
-  model: "gemini-2.5-flash"       # bepul tier; muvaffaqiyatsiz bo'lsa avtomatik fallback
+  model: "gemini-3.5-flash-lite"
+       # bepul tier; muvaffaqiyatsiz bo'lsa avtomatik fallback
   temperature: 0.9
