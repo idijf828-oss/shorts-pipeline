@@ -24,18 +24,18 @@ video:
   width: 1080
   height: 1920
   fps: 30
-  scenes: 7                                   # HOOK + 5 FAKT + LOOP (outro YO'Q)
-  min_duration: 35                            # sekund (retention formati)
-  max_duration: 40                            # sekund
+  # V3: segmentlar sonini Gemini o'zi tanlaydi (4-7, master promptda)
+  min_duration: 18                            # sekund (Info Hub tez formati)
+  max_duration: 30                            # sekund (qattiy cheklov)
   tags: [geography, facts, countries, world facts, maps, borders,
          did you know, education, shorts]
 
 captions:
   enabled: true
-  y: 1150                # dinamik subtitr pozitsiyasi (Shorts UI yopmaydi)
-  safe_w: 860            # maksimal matn kengligi (x: 110..970 safe zone)
-  font_size: 96          # dinamik so'z shrifti
-  top_size: 64           # statik on_screen shrifti (tepa)
+  y: 960                 # EKRAN MARKAZI (Info Hub uslubi)
+  safe_w: 800            # maksimal matn kengligi (x: 140..940 safe zone)
+  font_size: 110         # katta qalin shrift (Montserrat ExtraBold)
+  max_words: 2           # bir vaqtda MAKS 2 so'z
 
 sources:
   youtube_region: "US"
@@ -52,9 +52,13 @@ sources:
     - "city skyline aerial"
 
 sfx:
-  enabled: true                    # fon musiqasi + effektlar (false = sof ovoz)
-  music_volume: 0.12               # fon musiqasi darajasi (0 = juda past)
-  transitions: true                # riser(hook) + impact(3s) + whoosh(cutlar)
+  enabled: true                    # SFX triggerlar + fon musiqasi
+  music_volume: 0.125              # ~ -18dB (musiqa ovoz ostida, ustida emas)
+
+audio:
+  turbo: 1.15                      # doimiy tezlik (pitch buzilmasdan)
+  silence_gap: 0.11                # gaplar orasidagi maksimal sukunat
+  tail_pad: 0.3                    # oxirgi so'zdan keyin (loop/kesilmaslik)
 
 behavior:
   dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)

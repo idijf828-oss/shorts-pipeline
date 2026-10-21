@@ -1,11 +1,8 @@
-"""SFX moduli: sintez qilingan tovush effektlari.
+"""SFX: sintez effektlar + timestamp triggerlar (pop/whoosh/ding/boom/alarm).
 
-Yangi qoidalar (retention formati):
-  - HOOK (0-3s): past riser
-  - 3-sekundda (hook tugashi): impact
-  - Har bir kesish (cut) oralig'ida: whoosh (0.1-0.2s)
-Fon musiqasi render.py'da qo'shiladi (ducking bilan).
-Hammasi oflayn sintez — mualliflik huquqi muammosi yo'q.
+Har segment boshida whoosh (kamera almashdi), ikonka paydo bo'lganda pop,
+LLM buyurganida boom/alarm/ding — aniq vaqtlarda audioning ichiga aralashadi.
+Fon musiqasi (-18dB, ducking) render'da qo'shiladi. Hammasi oflayn sintez.
 """
 import math
 import os
@@ -17,7 +14,6 @@ import wave
 SR = 44100
 
 
-# ---------- WAV yozish ----------
 def _write_wav(path, samples):
     with wave.open(path, "wb") as w:
         w.setnchannels(1)
@@ -46,7 +42,6 @@ def _lowpass_sweep(samples, f_of_t):
     return out
 
 
-# ---------- Effektlar ----------
 def _whoosh(path, dur=0.55):
     rng = random.Random(42)
     n = int(dur * SR)
@@ -56,39 +51,62 @@ def _whoosh(path, dur=0.55):
         return 300 + 5200 * math.sin(math.pi * min(1.0, t / dur)) ** 2
 
     filt = _lowpass_sweep(noise, f_of_t)
-    out = [0.85 * s * _env(i / SR, dur, attack=0.12, release=0.18)
-           for i, s in enumerate(filt)]
+    _write_wav(path, [0.85 * s * _env(i / SR, dur, 0.12, 0.18)
+                      for i, s in enumerate(filt)])
+
+
+def _pop(path, dur=0.18):
+    """Qisqa "pop" — baland tonli klik (ikonka uchun)."""
+    n = int(dur * SR)
+    out = []
+    for i in range(n):
+        t = i / SR
+        f = 950 * math.exp(-14 * t) + 320
+        e = math.exp(-22 * t)
+        out.append(0.8 * math.sin(2 * math.pi * f * t) * e)
     _write_wav(path, out)
 
 
-def _ding(path, dur=1.1, base=880.0, vol=0.8):
+def _ding(path, dur=1.0):
     n = int(dur * SR)
     out = []
     for i in range(n):
         t = i / SR
         e = math.exp(-3.2 * t)
-        s = (math.sin(2 * math.pi * base * t)
-             + 0.45 * math.sin(2 * math.pi * base * 1.5 * t)
-             + 0.22 * math.sin(2 * math.pi * base * 2.0 * t))
-        out.append(vol * 0.33 * s * e)
+        s = (math.sin(2 * math.pi * 880 * t)
+             + 0.45 * math.sin(2 * math.pi * 1320 * t))
+        out.append(0.75 * 0.33 * s * e)
     _write_wav(path, out)
 
 
-def _impact(path, dur=0.7):
+def _boom(path, dur=0.9):
+    """Chuqur "boom" — portlash/drama."""
     n = int(dur * SR)
     rng = random.Random(7)
     out, phase = [], 0.0
     for i in range(n):
         t = i / SR
-        f = 110 * math.exp(-6.0 * t) + 42
+        f = 90 * math.exp(-5.0 * t) + 34
         phase += 2 * math.pi * f / SR
-        thump = math.sin(phase) * math.exp(-4.5 * t)
-        burst = rng.uniform(-1, 1) * math.exp(-28 * t) * 0.5
-        out.append(0.9 * thump + burst)
+        thump = math.sin(phase) * math.exp(-3.8 * t)
+        burst = rng.uniform(-1, 1) * math.exp(-18 * t) * 0.55
+        out.append(1.0 * thump + burst)
     _write_wav(path, out)
 
 
-def _riser(path, dur=1.3):
+def _alarm(path, dur=1.1):
+    """Ikki tonli siren (geosiyosiy drama uchun)."""
+    n = int(dur * SR)
+    out = []
+    for i in range(n):
+        t = i / SR
+        f = 720 if int(t * 7) % 2 == 0 else 980
+        e = _env(t, dur, 0.02, 0.3)
+        out.append(0.45 * math.sin(2 * math.pi * f * t) * e)
+    _write_wav(path, out)
+
+
+def _riser(path, dur=1.2):
     n = int(dur * SR)
     rng = random.Random(11)
     noise = [rng.uniform(-1, 1) for _ in range(n)]
@@ -107,40 +125,77 @@ def _riser(path, dur=1.3):
     _write_wav(path, out)
 
 
-def _chime(path, dur=1.4):
-    n = int(dur * SR)
-    out = [0.0] * n
-    for base, off, vol in ((660.0, 0.0, 0.5), (880.0, 0.28, 0.55)):
-        m = int((dur - off) * SR)
-        for i in range(m):
-            t = i / SR
-            e = math.exp(-3.0 * t)
-            s = math.sin(2 * math.pi * base * t) + 0.4 * math.sin(2 * math.pi * base * 1.5 * t)
-            out[int(off * SR) + i] += vol * 0.3 * s * e
-    _write_wav(path, out)
-
-
 def ensure_sfx(work_dir):
-    """Barcha effektlarni (bir marta) yaratadi. {nom: yo'l} qaytaradi."""
     d = os.path.join(work_dir, "sfx")
     os.makedirs(d, exist_ok=True)
-    makers = {
-        "whoosh": (_whoosh, {}),
-        "ding": (_ding, {}),
-        "impact": (_impact, {}),
-        "riser": (_riser, {}),
-        "chime": (_chime, {}),
-    }
+    makers = {"whoosh": _whoosh, "pop": _pop, "ding": _ding,
+              "boom": _boom, "alarm": _alarm, "riser": _riser}
     fx = {}
-    for name, (fn, kw) in makers.items():
+    for name, fn in makers.items():
         p = os.path.join(d, name + ".wav")
         if not os.path.exists(p) or os.path.getsize(p) < 1000:
-            fn(p, **kw)
+            fn(p)
         fx[name] = p
     return fx
 
 
-# ---------- Sahna audiosiga effektlarni aralashtirish ----------
+# ---------- fon musiqasi (protsedur ambient pad, -18dB da) ----------
+_CHORDS = [                                    # Am - F - C - G (past registrlar)
+    (110.00, 164.81, 220.00, 261.63),
+    (87.31, 130.81, 174.61, 220.00),
+    (98.00, 146.83, 196.00, 246.94),
+    (98.00, 146.83, 196.00, 293.66),
+]
+
+
+def make_music(path, dur=42.0, chord_len=3.0):
+    """Sekin ambient pad + yumshoq puls (fon uchun; ovoz -15 LUFS ustida)."""
+    n = int(dur * SR)
+    buf = [0.0] * n
+    # pad: akkordlar ketma-ket, yumshoq attack/release
+    for i in range(n):
+        t = i / SR
+        c = _CHORDS[int(t / chord_len) % len(_CHORDS)]
+        ct = (t % chord_len) / chord_len
+        env = min(1.0, ct / 0.35) * min(1.0, (1 - ct) / 0.45 + 0.15)
+        s = 0.0
+        for k, f in enumerate(c):
+            # kichik detune -> jonli tovush
+            s += math.sin(2 * math.pi * (f + 0.7 * k) * t
+                          + 0.9 * k) / (k + 1.6)
+        buf[i] += 0.16 * env * s
+    # yumshoq puls (0.5s = 120 BPM yarim) — past "thump"
+    pn = int(0.5 * SR)
+    for start in range(0, n - pn, pn):
+        for j in range(pn):
+            t = j / SR
+            th = math.sin(2 * math.pi * (60 * math.exp(-9 * t) + 42) * t)
+            buf[start + j] += 0.13 * th * math.exp(-16 * t)
+    # yon effektlar: juda sekin filtered noise shimmer
+    rng = random.Random(5)
+    for i in range(n):
+        t = i / SR
+        shimmer = rng.uniform(-1, 1) * 0.012 * math.sin(math.pi * t / dur) ** 2
+        buf[i] += shimmer
+    # yumshoq fade in/out (loop hissi)
+    fade = int(1.2 * SR)
+    for i in range(fade):
+        g = i / fade
+        buf[i] *= g
+        buf[n - 1 - i] *= g
+    _write_wav(path, buf)
+    return path
+
+
+def ensure_music(work_dir):
+    d = os.path.join(work_dir, "sfx")
+    os.makedirs(d, exist_ok=True)
+    p = os.path.join(d, "music.wav")
+    if not os.path.exists(p) or os.path.getsize(p) < 10000:
+        make_music(p)
+    return p
+
+
 def _mix_scene(narration, picks, dest):
     """narration + [(sfx_path, delay_ms, volume), ...] -> dest (wav)."""
     try:
@@ -168,31 +223,16 @@ def _mix_scene(narration, picks, dest):
         return False
 
 
-def add_scene_sfx(cfg, scenes, items, plans):
-    """Kesish nuqtalariga effektlar: riser(hook) + impact(hook tugashi)
-    + whoosh(har cut). items: [{"audio","dur","words",...}]"""
-    sfx_cfg = cfg.get("sfx", {})
-    if not sfx_cfg.get("enabled", True) or not sfx_cfg.get("transitions", True):
-        return items
-    work = cfg["_paths"]["work"]
+def add_triggers(cfg, audio_path, triggers, work, idx):
+    """triggers: [(nom, t_sek, volume)] — aniq vaqtda effekt."""
+    if not triggers:
+        return audio_path
     fx = ensure_sfx(work)
-    out = []
-    for i, it in enumerate(items):
-        sc = scenes[i] if i < len(scenes) else {}
-        plan = plans[i] if i < len(plans) else {"cuts": []}
-        picks = []
-        if sc.get("type") == "hook":
-            picks.append((fx["riser"], 20, 0.40))
-        if i == 1:   # hook tugashi (~3s) — impact
-            picks.append((fx["impact"], 0, 0.50))
-        for ct in plan.get("cuts", []):
-            picks.append((fx["whoosh"], max(0, int((ct - 0.06) * 1000)), 0.26))
-        if not picks:
-            out.append(it)
-            continue
-        dest = os.path.join(work, f"scene_{i:02d}_sfx.wav")
-        if _mix_scene(it["audio"], picks, dest):
-            it = dict(it, audio=dest)
-        out.append(it)
-    print("[sfx] effektlar: riser(hook) + impact(3s) + whoosh(cutlar)")
-    return out
+    picks = [(fx[n], max(0.0, t) * 1000, v) for (n, t, v) in triggers
+             if n in fx and t is not None]
+    if not picks:
+        return audio_path
+    dest = os.path.join(work, f"seg_{idx:02d}_sfx.wav")
+    if _mix_scene(audio_path, picks, dest):
+        return dest
+    return audio_path

@@ -26,8 +26,15 @@ def _ffprobe_duration(path):
 
 
 def _edge_words(text, voice, rate, path):
-    """edge-tts: audio fayl + aniq so'z vaqtlari (100ns -> sekund)."""
-    com = edge_tts.Communicate(text, voice, rate=rate)
+    """edge-tts: audio fayl + aniq so'z vaqtlari (100ns -> sekund).
+
+    edge-tts 7.x default 'SentenceBoundary' beradi -> 'WordBoundary' majburlaymiz.
+    """
+    try:
+        com = edge_tts.Communicate(text, voice, rate=rate,
+                                   boundary="WordBoundary")
+    except TypeError:                       # eski edge-tts (<7): default Word
+        com = edge_tts.Communicate(text, voice, rate=rate)
     words = []
 
     async def _go():
