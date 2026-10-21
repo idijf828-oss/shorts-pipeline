@@ -72,7 +72,7 @@ def _build_prompt(cfg, trends, history_kws, avoid_title=""):
     avoid = f"\nAVOID this exact topic too (already generated today): {avoid_title}\n" if avoid_title else ""
     # Kun mavzusi: deterministik tanlanadi (har kuni boshqa mavzu, takrorlanmasin)
     topics = ch["topics"]
-    yday = datetime.datetime.now(datetime.UTC).timetuple().yday
+    yday = datetime.datetime.now(datetime.UTC).timetuple().tm_yday
     topic = topics[yday % len(topics)]
     return f"""Channel niche: {ch['niche']} — geography & country facts.
 TODAY'S ASSIGNED TOPIC: "{topic}".
