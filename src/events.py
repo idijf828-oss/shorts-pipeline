@@ -142,9 +142,12 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
         cap_marks = []
     end_mark = []
     if dur:
-        ep = max(0.4, dur - 0.35)
+        ep = max(0.4, min(dur - 0.5, dur - 0.35))
+        # pad (>=0.35s) dan TASHQARIDA: oxirgi so'z ostida kick,
+        # pad oynasi toza musiqa uchun qoladi (doc P2/P4e)
+        ep = max(0.4, dur - 0.55)
         end_mark = [ep]
-        punches.append(max(2, int(ep * 30)))   # cut oldidan zoom-kick
+        punches.append(max(2, int(ep * 30)))
     marks = sorted({0.0}
                    | {l["t"] for l in layers}
                    | {p / 30.0 for p in punches}

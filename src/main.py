@@ -147,10 +147,13 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
 
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
     base = sum(it["dur"] for it in items)
+    # min padlar (0.35s) + tail — tempo buni hisobga olishi shart
+    overhead = 0.35 * (len(items) - 1) + render.TAIL
     tempo = turbo if gtts else 1.0     # doc C2: atempo faqat gTTS zaxira
-    if base / tempo > mx - 1.0:                    # 39s dan uzun -> tezroq
-        tempo = min(1.30, base / (mx - 2.5))
-        print(f"   qo'shimcha tempo: {tempo:.3f}x")
+    if base + overhead > mx - 0.3:                # uzun -> tezroq
+        tempo = min(1.35, base / (mx - 0.3 - overhead))
+        print(f"   qo'shimcha tempo: {tempo:.3f}x "
+              f"(overhead {overhead:.2f}s hisobga olinib)")
     if tempo != 1.0:
         for i, it in enumerate(items):
             fast = os.path.join(work, f"turbo_{i:02d}.wav")

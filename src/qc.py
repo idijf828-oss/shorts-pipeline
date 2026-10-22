@@ -219,7 +219,7 @@ def run_checks(path, cfg=None, work=None):
     if tail_only:                        # pauza yo'q -> ovoz tugagach (fade)
         ve = float(ev.get("voice_end") or (dur - 0.5))
         win = (ve + 0.03, dur - 0.03)
-    w0 = win[0] + 0.02
+    w0 = win[0] + 0.08
     w1 = min(win[1] - 0.02, w0 + 0.55)
     mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
     if tail_only:                        # fade ichida -> eshitilishi yetarli
