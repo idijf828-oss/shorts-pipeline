@@ -140,7 +140,7 @@ OUTPUT — ONE JSON object, no markdown, no commentary:
   ]
 }}"""
 
-_WORD_LO, _WORD_HI = 158, 182
+_WORD_LO, _WORD_HI = 152, 184
 
 
 def _pick_candidates(history_kws, k=3):
@@ -212,6 +212,9 @@ def _parse(raw):
     a, b = txt.find("{"), txt.rfind("}")
     if a != -1 and b > a and (a > 0 or b < len(txt) - 1):
         txt = txt[a:b + 1]
+    # LLM'larning eng ko'p xatosi: oxirgi vergul (run 18: "line 27 col 9")
+    txt = re.sub(r",\s*([\]}])", r"\1", txt)
+    txt = re.sub(r"(?<=\d)\s+(?=\d)", "", txt)   # "5\n  million" emas
     data = json.loads(txt)
 
     segs = data.get("scenes") or data.get("segments") or []
@@ -328,20 +331,20 @@ def _parse(raw):
 
 
 def _parse_relaxed(raw):
-    """Oxirgi zaxira: so'z oynasi 150-190 (pads/tempo 45-55s ni tuzatadi)."""
+    """Oxirgi zaxira: so'z oynasi 146-198 (tempo <=1.10x 45-55s ga siqadi)."""
     global _WORD_LO, _WORD_HI
-    _WORD_LO, _WORD_HI = 150, 190
+    _WORD_LO, _WORD_HI = 146, 198
     try:
         return _parse(raw)
     finally:
-        _WORD_LO, _WORD_HI = 158, 182
+        _WORD_LO, _WORD_HI = 152, 184
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):
     prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
     print(f"   nomzod davlatlar: {cands} [{llm.provider(cfg)}]")
     last_err, last_raw = None, None
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             raw = llm.chat(cfg, SYSTEM, prompt, json_mode=True, timeout=150)
         except Exception as e:
