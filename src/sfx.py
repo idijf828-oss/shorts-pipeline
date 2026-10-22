@@ -125,11 +125,23 @@ def _riser(path, dur=1.2):
     _write_wav(path, out)
 
 
+def _tick(path, dur=0.08):
+    """Juda qisqa "tik" — chegara chizig'i eventi uchun (doc B3)."""
+    n = int(dur * SR)
+    out = []
+    for i in range(n):
+        t = i / SR
+        e = math.exp(-70 * t)
+        out.append(0.7 * (math.sin(2 * math.pi * 2400 * t)
+                          + 0.5 * math.sin(2 * math.pi * 4800 * t)) * e)
+    _write_wav(path, out)
+
+
 def ensure_sfx(work_dir):
     d = os.path.join(work_dir, "sfx")
     os.makedirs(d, exist_ok=True)
     makers = {"whoosh": _whoosh, "pop": _pop, "ding": _ding,
-              "boom": _boom, "alarm": _alarm, "riser": _riser}
+              "boom": _boom, "alarm": _alarm, "riser": _riser, "tick": _tick}
     fx = {}
     for name, fn in makers.items():
         p = os.path.join(d, name + ".wav")
@@ -188,6 +200,12 @@ def make_music(path, dur=42.0, chord_len=3.0):
 
 
 def ensure_music(work_dir):
+    """Haqiqiy CC0 musiqa (assets/music/bed.mp3); yo'q bo'lsa sintez."""
+    repo_music = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "assets", "music", "bed.mp3")
+    if os.path.exists(repo_music) and os.path.getsize(repo_music) > 100_000:
+        return repo_music
     d = os.path.join(work_dir, "sfx")
     os.makedirs(d, exist_ok=True)
     p = os.path.join(d, "music.wav")

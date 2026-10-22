@@ -1,21 +1,25 @@
-"""Markaziy 1-2 SO'ZLIK pop-in subtitrlar (Info Hub uslubi).
+"""V4 subtitr — rang = ma'no (doc B4).
 
-- Ekran MARKAZIDA (y~960), bir vaqtda maks 2 so'z
-- Qalin oq shrift (Montserrat ExtraBold) + qora kontur + soya
-- Har chunk POP-IN masshtab animatsiyasi bilan kiradi (\t transform)
-- Maksimal kenglik 800px -> x har doim [140..940] ichida
-- So'z vaqtlari: edge-tts WordBoundary (aniq) / gTTS taxminiy
+- 1-3 so'zlik chunklar, so'zma-so'z, katta qalin Montserrat + qora kontur.
+- Ranglar: oddiy so'z OQ; AKTIV so'z sariq (#FFD400) + 115% scale;
+  highlight so'z O'Z RANGIDA (mamlakat bayrog'i/aksent rangi),
+  aktiv bo'lsa + 115% + 0.1s pop.
+- Joyi rejimga qarab: map -> y=950, stock -> y=1150 (config).
+- Maks kenglik 860px (x: 110..970 safe zone).
+- ASS rangi: #RRGGBB -> &H00BBGGRR&.
 
-words = [(word, start_sec, end_sec), ...]
+words = [(word, start, end), ...]
+highlights = {"canada": "#FF2D2D", ...}  (kichik harf, tinish belgisiz)
 """
 import os
 import re
 
 W, H = 1080, 1920
-SAFE_W = 800
-MAX_WORDS_LINE = 2
+SAFE_W = 860
+MAX_WORDS_LINE = 3
 FONT = "Montserrat ExtraBold"
-FONT_SIZE = 110
+FONT_SIZE = 108
+YELLOW = "#FFD400"
 
 _FONT_FILES = [
     "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf",
@@ -55,8 +59,24 @@ def _t(s):
     return f"{h}:{m:02d}:{s % 60:05.2f}"
 
 
+def _norm(t):
+    return re.sub(r"[^a-z0-9']", "", str(t).lower())
+
+
 def _clean(t):
     return re.sub(r"[{}\\]", "", str(t))
+
+
+def _ass_color(hexcolor):
+    """#RRGGBB -> &H00BBGGRR&"""
+    h = (hexcolor or "").lstrip("#")
+    if len(h) != 6:
+        return None
+    try:
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    except ValueError:
+        return None
+    return f"&H00{b:02X}{g:02X}{r:02X}&"
 
 
 def chunk(words, n=MAX_WORDS_LINE):
@@ -71,14 +91,10 @@ def chunk(words, n=MAX_WORDS_LINE):
     return out
 
 
-def _ass_head(cfg):
+def _ass_head(cfg, y):
     cap = cfg.get("captions", {})
-    y = int(cap.get("y", 960))
     size = int(cap.get("font_size", FONT_SIZE))
-    global SAFE_W, MAX_WORDS_LINE
-    SAFE_W = int(cap.get("safe_w", SAFE_W))
-    MAX_WORDS_LINE = int(cap.get("max_words", MAX_WORDS_LINE))
-    head = f"""[Script Info]
+    return f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
 PlayResY: {H}
@@ -91,26 +107,70 @@ Style: Cap,{FONT},{size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,10
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
-"""
-    return head, y
+""", size
+
+
+def caption_y(cfg, mode):
+    cap = cfg.get("captions", {})
+    if str(mode) == "stock":
+        return int(cap.get("y_stock", 1150))
+    return int(cap.get("y_map", 950))
 
 
 def build_scene_ass(cfg, scene, words, dur, path):
-    """Segment subtitri: 1-2 so'zlik chunklar, pop-in bilan."""
-    head, y = _ass_head(cfg)
+    """Segment subtitri: rangli highlight + aktiv so'z 115% + pop-in."""
+    y = caption_y(cfg, scene.get("mode", "map"))
+    highlights = {}
+    for h in (scene.get("highlights") or []):
+        w = _norm(h.get("word", ""))
+        c = _ass_color(h.get("color", ""))
+        if w and c:
+            highlights[w] = c
+    # country_iso bo'yicha zaxira rang (bayroq dominant rangi)
+    if not highlights:
+        try:
+            from . import geo
+            work = os.path.dirname(path)
+            for iso in (scene.get("country_iso_codes") or [])[:1]:
+                col = geo.flag_color(iso, work)
+                if col:
+                    highlights[_norm(scene.get("map", {}).get("focus", ""))] = \
+                        _ass_color("#%02X%02X%02X" % col)
+        except Exception:
+            pass
+
+    head, size = _ass_head(cfg, y)
+    yellow = _ass_color(YELLOW)
     ev = []
     for ch in chunk(words):
-        line = " ".join(_clean(w[0]) for w in ch).upper()
-        if not line.strip():
-            continue
-        fsize = fit_font(line)
         s = max(0.0, ch[0][1])
-        e = min(dur, ch[-1][2] + 0.12)
+        e = min(dur, ch[-1][2] + 0.10)
         if e <= s:
             e = s + 0.12
+        active = _norm(ch[0][0])
+        base = fit_font(" ".join(str(x[0]) for x in ch), size)
+        parts, seen_active = [], False
+        for (wtxt, _ws, _we) in ch:
+            nw = _norm(wtxt)
+            color = highlights.get(nw)
+            is_active = (nw == active) and not seen_active
+            if is_active:
+                seen_active = True
+            txt = _clean(wtxt).upper()
+            if is_active:
+                # aktiv so'z: o'z rangi (yoki sariq) + 70->115 pop
+                c = color or yellow
+                parts.append("{\\c" + c
+                             + r"\fscx70\fscy70\t(0,110,\fscx115\fscy115)"
+                             + "}" + txt + "{\\r}")
+            elif color:
+                parts.append("{\\c" + color + "}" + txt + "{\\r}")
+            else:
+                parts.append(txt)
+        line = " ".join(parts)
         ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,"
-                  r"{\an5\pos(540," + str(y) + r")\fs" + str(fsize)
-                  + r"\fscx25\fscy25\t(0,110,\fscx100\fscy100)}"
+                  r"{\an5\pos(540," + str(y) + r")\fs" + str(base)
+                  + r"\fscx84\fscy84\t(0,110,\fscx100\fscy100)}"
                   + line)
     with open(path, "w", encoding="utf-8") as f:
         f.write(head + "\n".join(ev) + "\n")

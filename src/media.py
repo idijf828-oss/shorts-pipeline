@@ -13,6 +13,7 @@ Qoidalar:
 """
 import os
 import re
+import subprocess
 
 from PIL import Image, ImageDraw, ImageFont
 from src.net import session
@@ -96,10 +97,13 @@ def _pixabay_search(cfg, query):
     return out
 
 
-def _accept(item, must):
+def _accept(item, must, reject=()):
     text = (item["meta"] or "").lower()
     toks = set(re.split(r"[^a-z0-9#]+", text))
     if toks & BLACKLIST_TOKENS:
+        return False
+    # reject: noto'g'ri mavzu tokenlari (doc C1)
+    if reject and any(r in text for r in reject if r):
         return False
     if must:
         return any(m in text for m in must)
@@ -163,10 +167,85 @@ def make_card(text, subtext, dest):
 
 
 # ---------- Boshqaruvchi ----------
+def _mid_frame(video_path, out_jpg):
+    """Klip o'rtasidan 1 kadr (validatsiya uchun)."""
+    try:
+        d = float(subprocess.check_output(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", video_path]).strip() or "2")
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-ss", f"{max(0, d / 2 - 0.1):.2f}",
+             "-i", video_path, "-frames:v", "1", "-vf",
+             "scale=540:-2", "-q:v", "4", out_jpg],
+            check=True, capture_output=True, timeout=60)
+        return os.path.exists(out_jpg)
+    except Exception:
+        return False
+
+
+def _ocr_text(jpg):
+    """tesseract: kadrda matn/suv belgisi bormi? (doc C1)."""
+    try:
+        r = subprocess.run(["tesseract", jpg, "stdout", "--psm", "11",
+                            "-l", "eng", "tsv"],
+                           capture_output=True, text=True, timeout=30)
+        words = []
+        for line in r.stdout.splitlines()[1:]:
+            p = line.split("\t")
+            if len(p) >= 12 and p[11].strip():
+                conf = float(p[10])
+                w = p[11].strip()
+                if conf > 78 and len(w) >= 4 and w.isalnum():
+                    words.append(w)
+        return words
+    except Exception:
+        return []
+
+
+def _vision_check(cfg, jpg, scene_voice):
+    """Gemini vision: kadr sahnaga mosmi? True/False/None(bilmaymiz)."""
+    key = cfg["secrets"].get("gemini_api_key") or ""
+    if not key or key == "FAKE":
+        return None
+    try:
+        import base64
+        from .net import session as _s
+        with open(jpg, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        r = _s().post(
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-3.5-flash-lite:generateContent",
+            params={"key": key},
+            json={"contents": [{"parts": [
+                {"text": ("Does this stock footage frame clearly and safely "
+                          f"illustrate this narration: \"{scene_voice}\"? "
+                          "Answer strictly yes or no.")},
+                {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
+            ]}]},
+            timeout=30)
+        if r.status_code != 200:
+            return None
+        txt = (r.json().get("candidates") or [{}])[0]
+        txt = ((txt.get("content") or {}).get("parts") or [{}])[0].get("text", "")
+        t = txt.strip().lower()
+        if t.startswith("yes"):
+            return True
+        if t.startswith("no"):
+            return False
+        return None
+    except Exception:
+        return None
+
+
 def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
-    """Sahna uchun HAR XIL kliplar ro'yxati (kesishlar uchun 3 tagacha)."""
+    """Sahna uchun HAR XIL kliplar ro'yxati (kesishlar uchun 3 tagacha).
+
+    Validatsiya zanjiri (doc C1): slug/meta must_contain + reject ->
+    tesseract OCR (matn/watermark yo'q) -> Gemini vision (sahna mos).
+    """
     queries = scene.get("visual_query") or []
     must = scene.get("must_contain") or []
+    reject = scene.get("reject") or []
     found = []
     for q in queries[:4]:
         for finder in (_pexels_search, _pixabay_search):
@@ -180,15 +259,29 @@ def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
                     continue
                 if any(f["id"] == it["id"] for f in found):
                     continue
-                if not _accept(it, must):
-                    print(f"[media] rad etildi (must/blacklist): {q}")
+                if not _accept(it, must, reject):
+                    print(f"[media] rad etildi (must/reject): {it['id']} [{q}]")
                     continue
                 dest = f"{prefix}_{len(found)}.bin"
-                if _download(it["link"], dest):
-                    found.append({"id": it["id"], "path": dest})
-                    print(f"[media] topildi ({finder.__name__}) {q} -> {it['id']}")
-                    if len(found) >= n_want:
-                        break
+                if not _download(it["link"], dest):
+                    continue
+                # kadr validatsiyasi
+                jpg = dest + "_f.jpg"
+                if _mid_frame(dest, jpg):
+                    ocr = _ocr_text(jpg)
+                    if len(ocr) >= 2:
+                        print(f"[media] rad etildi (OCR matn): {ocr[:4]}")
+                        os.remove(dest)
+                        continue
+                    v = _vision_check(cfg, jpg, scene.get("voice", ""))
+                    if v is False:
+                        print(f"[media] rad etildi (vision): {it['id']}")
+                        os.remove(dest)
+                        continue
+                found.append({"id": it["id"], "path": dest})
+                print(f"[media] topildi ({finder.__name__}) {q} -> {it['id']}")
+                if len(found) >= n_want:
+                    break
             if len(found) >= n_want:
                 break
         if len(found) >= n_want:

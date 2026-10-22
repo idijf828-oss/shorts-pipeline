@@ -1,11 +1,12 @@
-"""2-qadam: MASTER LLM — Info Hub uslubi (18-25s, xarita-asosli).
+"""2-qadam: MASTER LLM — "map-explainer" uslubi (doc B1 sxemasi).
 
-Har qanday geografiya/geosiyosat mavzusi uchun LLM shu prompt bilan
-to'liq reja chiqaradi: ovoz matni + xarita kameralari (lat/lon/zoom) +
-bayroq bilan ajratiladigan davlatlar (ISO2) + kalit so'zda paydo
-bo'luvchi ikonkalar + SFX triggerlari + (faqat kerak bo'lsa) b-roll.
+Har qanday geografiya/geosiyosat mavzusi uchun to'liq reja:
+ovoz matni + on_screen + rejim (map/stock) + xarita kameralari +
+bayroq-fill davlatlar + rangli highlight so'zlar + events (pin/line/
+arrow/highlight/flag_fill/zoom) + SFX + (stock uchun) qat'iy
+visual_query/must_contain/reject.
 
-Total: 55-75 so'z (18-25 sekund), infinite loop, outro YO'Q.
+Total: 105-120 so'z (35-40s), hook = savol, infinite loop, outro YO'Q.
 """
 import datetime
 import json
@@ -25,85 +26,95 @@ MODELS = [
 
 # ================= MASTER SYSTEM PROMPT =================
 SYSTEM = """You are the head writer and director of a viral geography/geopolitics
-YouTube Shorts studio (benchmark: channels like "Info Hub" — 9M+ view shorts
-such as "Why isn't USA attacking Canada"). You design fast, visual, high-
-retention 18-25 second videos built on ANIMATED SATELLITE MAPS, not stock
-footage. Every second must carry new visual information. You think in
-SHOTS (map camera moves), not paragraphs."""
+YouTube Shorts studio. Benchmark: the "map-explainer" format (e.g. "Why isn't
+the USA annexing Canada?" — 19s, millions of views). The entire video plays on
+an ANIMATED WORLD MAP with country-flag fills, glowing highlights, pins and
+arrows that pop in sync with the narration. You think in SHOTS and EVENTS,
+never paragraphs. Palette: dark navy map, white text, cyan/red/yellow
+accents."""
 
 # ================= MASTER USER PROMPT =================
 PROMPT_TMPL = """Today's topic: "{topic}" (niche: {niche}).
-Audience: USA, English, ages 13-40. Platform: YouTube Shorts (vertical).
+Audience: USA, English, ages 13-40. Platform: YouTube Shorts (vertical 1080x1920).
 
 {trend_block}
 Recently used topics (STRICTLY avoid, also avoid reusing the same countries
 as the primary subject): {hist}
 {avoid}
-DIRECT A 18-25 SECOND SHORT about "{topic}".
+DIRECT A 35-40 SECOND SHORT about "{topic}".
 
 VOICEOVER RULES (hard limits):
-- Total 55-75 words. Hook = first sentence (~8-10 words), a concrete,
-  provocative image or question. FORBIDDEN: "Did you know", "Top 5",
-  "Welcome", any intro, any "like and subscribe", any outro.
+- Total 105-120 words. First sentence = a provocative QUESTION in ~10 words;
+  motion must happen on screen within 0.5s of the start.
+- FORBIDDEN: "Did you know", "Top 5", "Welcome", any intro, any "like and
+  subscribe", any outro/CTA.
 - Sentences max 12 words, punchy, zero filler. Present tense, active voice.
-- The LAST sentence is deliberately unfinished and loops back to the hook
-  (seamless infinite loop when the video replays).
+- The LAST sentence is a complete thought ending in a question that the HOOK
+  answers (seamless infinite loop on replay). Never end mid-sentence.
+- Facts must be real and verifiable (borders, treaties, geography).
 
-SHOT DESIGN RULES (this is a MAP video):
-- 4-7 segments. EACH segment = one map camera shot + 1-2 spoken sentences.
-- Segment 1 (hook): the most dramatic location, zoom_level high (10-14).
-- Every segment MUST have map_camera with real, verifiable coordinates
-  (lat, lon) of the actual place being discussed, and a zoom_level:
-  3-5 = continent/country, 6-8 = region, 9-11 = city, 12-14 = street/building.
-- country_iso_codes: ISO2 codes of countries to HIGHLIGHT WITH THEIR FLAG
-  fill in that shot (max 2 per segment, only the ones being discussed).
-- overlay_icons: 0-2 per segment. Each appears exactly when its keyword is
-  spoken. Emoji must be a SINGLE emoji (OpenMoji sticker). pos = [x, y]
-  fractions of the 1080x1920 frame (keep inside [0.2..0.8] x [0.15..0.75]
-  so it never covers the center captions). Use arrows (arrow_right etc.)
-  to point at places, jets/weapons/money faces for geopolitics.
-- sfx_trigger: 0-2 per segment from: pop, whoosh, ding, boom, alarm.
-  (pop = icon/flag appears, whoosh = camera change, boom/alarm = drama).
-- fallback_broll_query: ONLY if this segment truly needs a HUMAN reaction
-  close-up (face, crowd, protest). Otherwise empty list. If used: 2-3 word
-  ultra-specific query ("crowd protesting street", "shocked man face").
+SCENE RULES:
+- 5-8 scenes. AT LEAST 70% of scenes use "mode": "map".
+- "mode": "stock" (max 30%) ONLY when a human reaction adds punch (crowds,
+  border crossing, traffic). NO real politicians or public figures — generic
+  people only.
+- EVERY scene (including stock) still carries map data as fallback.
 
-TITLE (pick the strongest): concrete image + curiosity gap, under 70 chars,
-max 1 emoji. Examples of the style: "The Bar That Sits in Two Countries",
-"Why USA Doesn't Invade Canada", "The Border Drawn by a Drunk King".
-
-DESCRIPTION template: line 1 = hook sentence; 2 short fact sentences;
-"Which {topic} should I cover next? Comment below 👇"; "New geography
-short every day." Plain text, no hashtags inside.
-
-Return ONLY valid JSON, nothing else:
+STRICT OUTPUT — one JSON object, no markdown, no commentary:
 {{
-  "title": "...",
-  "hook": "<first sentence, same as segment 1 voice>",
-  "script": "<full voiceover text, one string>",
-  "keywords": ["3-6"],
-  "tags": ["12-15 lowercase"],
-  "hashtags": ["shorts", "geography", "<topic>"],
-  "description": "...",
-  "pinned_comment": "Which {topic} should I cover next? 👇",
-  "segments": [
-    {{"id": 1,
-      "voice": "...",
-      "map_camera": {{"lat": 51.44, "lon": 4.93, "zoom_level": 13,
-                       "motion": "zoom_in", "label": "Baarle-Hertog"}},
-      "country_iso_codes": ["NL", "BE"],
-      "overlay_icons": [{{"at_word": "bar", "emoji": "🍺",
-                           "pos": [0.5, 0.30]}}],
-      "sfx_trigger": ["whoosh"],
-      "fallback_broll_query": []
-    }},
-    ... 4-7 segments total ...
-    {{"id": N, "voice": "<unfinished loop-back line>", "map_camera": {{...}},
-      "country_iso_codes": [], "overlay_icons": [], "sfx_trigger": [],
-      "fallback_broll_query": []}}
+  "title": "<<=70 chars, curiosity gap>",
+  "description": "<2-3 sentences>",
+  "pinned_comment": "<question that drives comments>",
+  "scenes": [
+    {{
+      "id": 1,
+      "voice": "<spoken line, max 12 words>",
+      "on_screen": "<ALL-CAPS 2-4 word headline>",
+      "mode": "map",
+      "map": {{"focus": "<place name>", "lat": <real lat>, "lon": <real lon>,
+               "zoom_level": <3=continent .. 12=city street>,
+               "motion": "zoom_in" | "zoom_out"}},
+      "country_iso_codes": ["<ISO2 of countries to FILL WITH THEIR FLAG>", "..."],
+      "highlights": [
+        {{"word": "<exact word from voice>", "color": "#00E5FF|#FF2D2D|#FFD400"}}
+      ],
+      "events": [
+        {{"at_word": "<exact word from voice>", "type": "pin",
+          "target": "<ISO2 or place>", "lat": <opt>, "lon": <opt>}},
+        {{"at_word": "...", "type": "line", "target": "BE-NL"}},
+        {{"at_word": "...", "type": "arrow", "dir": "left|right|up|down"}},
+        {{"at_word": "...", "type": "highlight", "target": "<ISO2>"}},
+        {{"at_word": "...", "type": "flag_fill", "target": "<ISO2>"}},
+        {{"at_word": "...", "type": "zoom"}}
+      ],
+      "sfx_trigger": ["<pop|whoosh|ding|boom|alarm|riser>"],
+      "visual_query": ["<ONLY for stock mode: 3 phrases>"],
+      "must_contain": ["<only stock>"], "reject": ["<only stock>"]
+    }}
   ]
-}}"""
+}
 
+EVENTS RULES:
+- 2-4 events per scene, each tied to an exact spoken word (at_word) — the
+  visual appears the instant that word is said.
+- highlights: 1-3 per scene; color = the country's flag dominant color or
+  palette accent (cyan #00E5FF allies/groups, red #FF2D2D the "opponent",
+  yellow #FFD400 attention).
+- "line" target = two ISO2 joined by "-" (the shared border to draw).
+- Coordinates must be real and verifiable.
+
+STOCK SCENE QUERY RULES (visual_query — critical, past failures came from
+ignoring these):
+- Exactly 3 hierarchical phrases: specific -> broader -> generic.
+- Each phrase is 2-3 ENGLISH words describing WHAT TO SHOW ON SCREEN:
+  place/type + scene + optional action. Example scene "Order a beer in one
+  country and pay in another" -> ["pub interior drinks",
+  "bartender pouring beer", "european bar counter"].
+- NEVER a lone generic object ("floor", "stool", "land", "wall") — such
+  queries return wrong footage (a basketball court for "wooden floor").
+- NEVER build queries from filler words ("or they land in...").
+- "reject": wrong topics that could appear for these queries.
+"""
 
 def _call(key, model, prompt, cfg, timeout=90):
     s = session()
@@ -169,6 +180,9 @@ def _as_list(v):
     return list(v or [])
 
 
+_EV_TYPES = ("pin", "line", "arrow", "highlight", "flag_fill", "zoom", "icon")
+
+
 def _parse(raw):
     txt = raw.strip()
     txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.S)
@@ -177,50 +191,91 @@ def _parse(raw):
         txt = txt[a:b + 1]
     data = json.loads(txt)
 
-    segs = data.get("segments") or data.get("scenes") or []
-    if not (4 <= len(segs) <= 7):
-        raise ValueError(f"4-7 segment kerak, {len(segs)} ta keldi")
+    segs = data.get("scenes") or data.get("segments") or []
+    if not (5 <= len(segs) <= 8):
+        raise ValueError(f"5-8 sahna kerak, {len(segs)} ta keldi")
+    n_stock = 0
     for i, sc in enumerate(segs):
         if not sc.get("voice"):
-            raise ValueError(f"{i + 1}-segmentda voice yo'q")
-        cam = sc.get("map_camera") or {}
+            raise ValueError(f"{i + 1}-sahnada voice yo'q")
+        # map (yangi sxema) yoki map_camera (eski) — ikkalasini qo'llab-quvvatla
+        m = sc.get("map") or sc.get("map_camera") or {}
         try:
-            cam["lat"] = float(cam.get("lat", 0) or 0)
-            cam["lon"] = float(cam.get("lon", 0) or 0)
-            cam["zoom_level"] = int(float(cam.get("zoom_level", 6) or 6))
-            cam["zoom_level"] = max(2, min(16, cam["zoom_level"]))
+            m["lat"] = float(m.get("lat", 0) or 0)
+            m["lon"] = float(m.get("lon", 0) or 0)
+            m["zoom_level"] = max(3, min(12, int(float(m.get("zoom_level", 5) or 5))))
         except (TypeError, ValueError):
-            cam = {"lat": 0, "lon": 0, "zoom_level": 6}
-        cam.setdefault("motion", "zoom_in")
-        cam.setdefault("label", "")
-        sc["map_camera"] = cam
+            m = {"lat": 0, "lon": 0, "zoom_level": 5}
+        m.setdefault("motion", "zoom_in")
+        m.setdefault("focus", "")
+        sc["map"] = m
+        sc.pop("map_camera", None)
+        mode = str(sc.get("mode", "map")).lower()
+        if mode == "stock" and sc.get("visual_query"):
+            n_stock += 1
+        else:
+            mode = "map"
+        sc["mode"] = mode
         sc["country_iso_codes"] = [str(c).upper()[:2] for c in
                                    _as_list(sc.get("country_iso_codes"))][:2]
+        # highlights
+        hls = []
+        for h in _as_list(sc.get("highlights"))[:3]:
+            if isinstance(h, dict) and h.get("word"):
+                col = str(h.get("color", "#FFD400"))
+                if not re.match(r"^#[0-9a-fA-F]{6}$", col):
+                    col = "#FFD400"
+                hls.append({"word": str(h["word"]), "color": col})
+        sc["highlights"] = hls
+        # events
+        evs = []
+        for e in _as_list(sc.get("events"))[:4]:
+            if not isinstance(e, dict):
+                continue
+            k = str(e.get("type", "")).lower()
+            if k not in _EV_TYPES:
+                continue
+            ev = {"type": k, "at_word": str(e.get("at_word", "")).lower()}
+            if e.get("target") is not None:
+                ev["target"] = str(e["target"])
+            for f in ("dir", "lat", "lon", "pos", "emoji"):
+                if e.get(f) is not None:
+                    ev[f] = e[f]
+            evs.append(ev)
+        sc["events"] = evs
+        # overlay_icons (orqa moslik)
         icons = []
         for ic in _as_list(sc.get("overlay_icons"))[:2]:
-            if not isinstance(ic, dict):
-                continue
-            emoji = str(ic.get("emoji", "")).strip()
-            pos = ic.get("pos") or [0.5, 0.3]
-            try:
-                pos = [max(0.15, min(0.85, float(pos[0]))),
-                       max(0.12, min(0.75, float(pos[1])))]
-            except (TypeError, ValueError):
-                pos = [0.5, 0.3]
-            icons.append({"at_word": str(ic.get("at_word", "")).lower().strip(),
-                          "emoji": emoji, "pos": pos})
+            if isinstance(ic, dict) and ic.get("emoji"):
+                icons.append({"at_word": str(ic.get("at_word", "")).lower(),
+                              "emoji": str(ic["emoji"]),
+                              "pos": ic.get("pos") or [0.5, 0.3]})
         sc["overlay_icons"] = icons
         sc["sfx_trigger"] = [str(s) for s in _as_list(sc.get("sfx_trigger"))
-                             if str(s) in ("pop", "whoosh", "ding",
-                                           "boom", "alarm", "riser")][:2]
-        sc["fallback_broll_query"] = [str(q) for q in
-                                      _as_list(sc.get("fallback_broll_query"))][:3]
+                             if str(s) in ("pop", "whoosh", "ding", "boom",
+                                           "alarm", "riser", "tick")][:2]
+        vq = [str(q).strip() for q in _as_list(sc.get("visual_query"))
+              if str(q).strip() and 1 < len(str(q).split()) <= 4][:3]
+        sc["visual_query"] = vq
+        sc["must_contain"] = [str(x).lower() for x in
+                              _as_list(sc.get("must_contain"))][:5]
+        sc["reject"] = [str(x).lower() for x in _as_list(sc.get("reject"))][:5]
+        sc["on_screen"] = str(sc.get("on_screen", ""))[:40].upper()
         sc.setdefault("id", i + 1)
+    # >=70% map (doc): stock ko'p bo'lsa ortiqchalarini map'ga aylantiramiz
+    max_stock = max(1, int(len(segs) * 0.3))
+    if n_stock > max_stock:
+        for sc in segs:
+            if n_stock <= max_stock:
+                break
+            if sc["mode"] == "stock":
+                sc["mode"] = "map"
+                n_stock -= 1
 
     data["title"] = str(data.get("title", "Geography Short"))[:100]
     data["hook"] = str(data.get("hook", segs[0]["voice"]))[:200]
     data["script"] = str(data.get("script",
-                                  " ".join(s["voice"] for s in segs)))[:1200]
+                                  " ".join(s["voice"] for s in segs)))[:1500]
     data["keywords"] = [str(k) for k in data.get("keywords", [])][:8]
     data["description"] = str(data.get("description", "")).strip()[:4500]
     data["tags"] = [str(t).strip().lower() for t in data.get("tags", [])
@@ -230,8 +285,8 @@ def _parse(raw):
                         if str(h).strip()][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
     words = len(data["script"].split())
-    if not (40 <= words <= 95):
-        raise ValueError(f"script {words} so'z — 55-75 oralig'ida bo'lishi kerak")
+    if not (100 <= words <= 128):
+        raise ValueError(f"script {words} so'z — 105-120 oralig'ida bo'lishi kerak")
     return data
 
 

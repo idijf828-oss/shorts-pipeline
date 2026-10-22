@@ -112,7 +112,7 @@ def synth(cfg, scenes):
         d = _ffprobe_duration(p)
         if not words:
             words = fallback_words(text, d)
-        out.append({"audio": p, "dur": d, "words": words})
+        out.append({"audio": p, "dur": d, "words": words, "engine": engine})
     total = sum(o["dur"] for o in out)
     print(f"[tts] ovoz: {total:.1f}s ({engine}, so'z vaqtlari: "
           f"{'aniq' if engine == 'edge' else 'taxminiy'})")

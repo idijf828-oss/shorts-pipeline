@@ -1,241 +1,392 @@
-"""Xarita va bayroq muharriti (Info Hub uslubi).
+"""V4 geo: Natural Earth II raster (public domain) — Esri YO'Q, atributsiya YO'Q.
 
-- Fon: Esri World Imagery sun'iy yo'ldosh plitalari (tile) — kalitsiz.
-- Chegara: assets/world.geo.json (Natural Earth) — barcha davlatlar konturi.
-- AJRATISH: mamlakat poligoni BAYROQ texturasi bilan to'ldiriladi
-  (flagcdn.com, ISO2) + oq kontur + nom yorlig'i.
-- Kamera: katta canvas (1440x2560) ustida ffmpeg zoompan — silliq
-  zoom-in/zoom-out harakati (1080x1920 ga render).
-- Esri ishlamasa -> src/maps.py vektor xaritasi fallback.
-
-Tile matematikasi: Web Mercator (slippy map).
+- Fon: NE2_50M_SR_W (assets/ne2_50m.jpg, 10800x5400, equirect, 30px/deg).
+  Keng kadrlar (z<=6, upscale <=2x): raster fon — reference'dagi
+  "quyuq-ko'k okean + relyef" ko'rinishi.
+  Yaqin kadrlar (z>=7): toza VEKTOR uslub — navy #0B1F33 + graticule +
+  ochroq davlat fillarlari (map-explainer estetikasi).
+- Bayroqlar: assets/flags/<iso2>.svg (lipis/flag-icons, MIT) ->
+  rsvg-convert -> PNG. Tarmoq KERAK EMAS.
+- Bayroq-fill: poligon mask + bayroq bbox'ga cho'z + 3px oq kontur —
+  ALOHIDA RGBA qatlam sifatida (so'z vaqtida reveal qilinadi).
+- Palitra: navy #0B1F33, cyan #00E5FF, red #FF2D2D, yellow #FFD400.
 """
-import io
+import json
 import math
 import os
+import subprocess
+from functools import lru_cache
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter
 
-from src.net import session
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASSETS = os.path.join(ROOT, "assets")
+NE2 = os.path.join(ASSETS, "ne2_50m.jpg")
+GEOJSON = os.path.join(ASSETS, "world.geo.json")
+FLAG_DIR = os.path.join(ASSETS, "flags")
 
-ESRI = ("https://server.arcgisonline.com/ArcGIS/rest/services/"
-        "World_Imagery/MapServer/tile/{z}/{y}/{x}")
-FLAG_CDN = "https://flagcdn.com/w320/{iso2}.png"
-ATTRIB = "Imagery (c) Esri, Maxar, Earthstar Geographics"
+W, H = 1440, 2560
+RPX_W, RPX_H = 10800, 5400            # NE2 raster (equirect, 30px/deg)
+PX_DEG = RPX_W / 360.0
 
-GEOJSON = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                       "assets", "world.geo.json")
+NAVY = (11, 31, 51)                    # #0B1F33
+NAVY_LIGHT = (22, 50, 75)              # vektor rejimdagi quruq fill
+CYAN = (0, 229, 255)                   # #00E5FF
+RED = (255, 45, 45)                    # #FF2D2D
+YELLOW = (255, 212, 0)                 # #FFD400
 
-# Asosiy davlatlar: ISO2 -> ISO3 (world.geo.json id'lari ISO3)
 ISO2_TO_ISO3 = {
     "af": "AFG", "al": "ALB", "dz": "DZA", "ar": "ARG", "am": "ARM",
-    "au": "AUS", "at": "AUT", "az": "AZE", "bh": "BHR", "bd": "BGD",
-    "by": "BLR", "be": "BEL", "bo": "BOL", "ba": "BIH", "bw": "BWA",
-    "br": "BRA", "bg": "BGR", "kh": "KHM", "cm": "CMR", "ca": "CAN",
-    "td": "TCD", "cl": "CHL", "cn": "CHN", "co": "COL", "cr": "CRI",
-    "hr": "HRV", "cu": "CUB", "cy": "CYP", "cz": "CZE", "dk": "DNK",
-    "do": "DOM", "ec": "ECU", "eg": "EGY", "sv": "SLV", "ee": "EST",
-    "et": "ETH", "fi": "FIN", "fr": "FRA", "ge": "GEO", "de": "DEU",
-    "gh": "GHA", "gr": "GRC", "gt": "GTM", "hn": "HND", "hu": "HUN",
-    "is": "ISL", "in": "IND", "id": "IDN", "ir": "IRN", "iq": "IRQ",
-    "ie": "IRL", "il": "ISR", "it": "ITA", "jm": "JAM", "jp": "JPN",
-    "jo": "JOR", "kz": "KAZ", "ke": "KEN", "kw": "KWT", "kg": "KGZ",
-    "la": "LAO", "lv": "LVA", "lb": "LBN", "ly": "LBY", "lt": "LTU",
-    "lu": "LUX", "my": "MYS", "mt": "MLT", "mx": "MEX", "md": "MDA",
-    "mn": "MNG", "me": "MNE", "ma": "MAR", "mm": "MMR", "na": "NAM",
-    "np": "NPL", "nl": "NLD", "nz": "NZL", "ni": "NIC", "ng": "NGA",
-    "mk": "MKD", "no": "NOR", "om": "OMN", "pk": "PAK", "pa": "PAN",
-    "py": "PRY", "pe": "PER", "ph": "PHL", "pl": "POL", "pt": "PRT",
-    "qa": "QAT", "ro": "ROU", "ru": "RUS", "sa": "SAU", "sn": "SEN",
-    "rs": "SRB", "sg": "SGP", "sk": "SVK", "si": "SVN", "so": "SOM",
-    "za": "ZAF", "kr": "KOR", "es": "ESP", "lk": "LKA", "sd": "SDN",
-    "se": "SWE", "ch": "CHE", "sy": "SYR", "tw": "TWN", "tj": "TJK",
-    "tz": "TZA", "th": "THA", "tn": "TUN", "tr": "TUR", "tm": "TKM",
+    "au": "AUS", "at": "AUT", "az": "AZE", "bs": "BHS", "bh": "BHR",
+    "bd": "BGD", "by": "BLR", "be": "BEL", "bo": "BOL", "ba": "BIH",
+    "bw": "BWA", "br": "BRA", "bg": "BGR", "bf": "BFA", "kh": "KHM",
+    "cm": "CMR", "ca": "CAN", "td": "TCD", "cl": "CHL", "cn": "CHN",
+    "co": "COL", "cr": "CRI", "hr": "HRV", "cu": "CUB", "cy": "CYP",
+    "cz": "CZE", "dk": "DNK", "do": "DOM", "ec": "ECU", "eg": "EGY",
+    "sv": "SLV", "ee": "EST", "et": "ETH", "fi": "FIN", "fr": "FRA",
+    "ge": "GEO", "de": "DEU", "gh": "GHA", "gr": "GRC", "gt": "GTM",
+    "hn": "HND", "hu": "HUN", "is": "ISL", "in": "IND", "id": "IDN",
+    "ir": "IRN", "iq": "IRQ", "ie": "IRL", "il": "ISR", "it": "ITA",
+    "jm": "JAM", "jp": "JPN", "jo": "JOR", "kz": "KAZ", "ke": "KEN",
+    "kw": "KWT", "kg": "KGZ", "la": "LAO", "lv": "LVA", "lb": "LBN",
+    "ly": "LBY", "lt": "LTU", "lu": "LUX", "my": "MYS", "mt": "MLT",
+    "mx": "MEX", "md": "MDA", "mn": "MNG", "me": "MNE", "ma": "MAR",
+    "mz": "MOZ", "mm": "MMR", "na": "NAM", "np": "NPL", "nl": "NLD",
+    "nz": "NZL", "ni": "NIC", "ng": "NGA", "kp": "PRK", "mk": "MKD",
+    "no": "NOR", "om": "OMN", "pk": "PAK", "pa": "PAN", "py": "PRY",
+    "pe": "PER", "ph": "PHL", "pl": "POL", "pt": "PRT", "qa": "QAT",
+    "ro": "ROU", "ru": "RUS", "sa": "SAU", "sn": "SEN", "rs": "SRB",
+    "sg": "SGP", "sk": "SVK", "si": "SVN", "so": "SOM", "za": "ZAF",
+    "kr": "KOR", "es": "ESP", "lk": "LKA", "sd": "SDN", "se": "SWE",
+    "ch": "CHE", "sy": "SYR", "tw": "TWN", "tj": "TJK", "tz": "TZA",
+    "th": "THA", "tn": "TUN", "tr": "TUR", "tm": "TKM", "ug": "UGA",
     "ua": "UKR", "ae": "ARE", "gb": "GBR", "us": "USA", "uy": "URY",
     "uz": "UZB", "ve": "VEN", "vn": "VNM", "ye": "YEM", "zm": "ZMB",
-    "zw": "ZWE", "ps": "PSE", "xk": "XKX", "cw": "CUW", "gy": "GUY",
-    "sr": "SUR", "bz": "BLZ", "gq": "GNQ", "ga": "GAB", "cg": "COG",
-    "cd": "COD", "ao": "AGO", "mz": "MOZ", "mg": "MDG", "mw": "MWI",
-    "rw": "RWA", "bi": "BDI", "ml": "MLI", "ne": "NER", "td2": "TCD",
-    "bf": "BFA", "bj": "BEN", "tg": "TGO", "ci": "CIV", "gh2": "GHA",
-    "lr": "LBR", "sl": "SLE", "gn": "GIN", "gm": "GMB", "mr": "MRT",
-    "er": "ERI", "dj": "DJI", "ss": "SSD", "cf": "CAF", "cm2": "CMR",
+    "zw": "ZWE", "ps": "PSE", "xk": "XKX", "cw": "CUW", "sr": "SUR",
+    "gy": "GUY", "bz": "BLZ", "bj": "BEN", "tg": "TGO", "er": "ERI",
+    "dj": "DJI", "ga": "GAB", "cg": "COG", "cd": "COD", "ao": "AGO",
+    "zm2": "ZMB", "mr": "MRT", "ml": "MLI", "ne": "NER", "td2": "TCD",
+    "cf": "CAF", "ss": "SSD", "gq": "GNQ", "gn": "GIN", "sl": "SLE",
+    "lr": "LBR", "ci": "CIV", "gh2": "GHA", "bs2": "BHS", "fj": "FJI",
+    "pg": "PNG", "nc": "NCL", "mu": "MUS", "sc": "SYC", "mv": "MDV",
+    "bt": "BTN", "bn": "BRN", "tl": "TLS", "pg2": "PNG",
 }
 
-_COUNTRIES = None
 
-
+@lru_cache(maxsize=1)
 def _countries():
-    global _COUNTRIES
-    if _COUNTRIES is None:
-        import json
-        with open(GEOJSON, encoding="utf-8") as f:
-            gj = json.load(f)
-        _COUNTRIES = {}
-        for ft in gj["features"]:
-            iso3 = ft.get("id") or ""
-            name = (ft.get("properties") or {}).get("name", "")
-            _COUNTRIES[iso3] = (name, ft["geometry"])
-    return _COUNTRIES
+    """[(iso3, name_lower, rings, centroid)] — world.geo.json'dan."""
+    with open(GEOJSON, encoding="utf-8") as f:
+        data = json.load(f)
+    out = []
+    for ft in data.get("features", []):
+        iso3 = (ft.get("id") or "").upper()
+        name = (ft.get("properties", {}).get("name") or "").lower()
+        geom = ft.get("geometry") or {}
+        rings = []
+        if geom.get("type") == "Polygon":
+            rings = [geom["coordinates"][0]]
+        elif geom.get("type") == "MultiPolygon":
+            rings = [p[0] for p in geom["coordinates"]]
+        if not rings:
+            continue
+        xs = [c[0] for r in rings for c in r]
+        ys = [c[1] for r in rings for c in r]
+        cen = (sum(xs) / len(xs), sum(ys) / len(ys))
+        out.append((iso3, name, rings, cen))
+    return out
 
 
-def _rings(geom):
-    if geom["type"] == "Polygon":
-        return [geom["coordinates"]]
-    if geom["type"] == "MultiPolygon":
-        return geom["coordinates"]
-    return []
+def resolve(target):
+    """'NL' / 'netherlands' / 'BE-NL' -> [iso3, ...] (ko'p bo'lishi mumkin)."""
+    out, seen = [], set()
+    for part in str(target or "").replace("+", "-").split("-"):
+        p = part.strip().lower()
+        if not p:
+            continue
+        iso3 = None
+        if len(p) == 2 and p in ISO2_TO_ISO3:
+            iso3 = ISO2_TO_ISO3[p]
+        elif len(p) == 3:
+            iso3 = p.upper()
+        else:
+            for (i3, nm, _, _) in _countries():
+                if nm and (p == nm or p in nm or nm in p):
+                    iso3 = i3
+                    break
+        if iso3 and iso3 in {c[0] for c in _countries()} and iso3 not in seen:
+            out.append(iso3)
+            seen.add(iso3)
+    return out
 
 
-# ---------- Mercator piksel matematikasi ----------
-def _gpx(lat, lon, z):
-    """Global piksel (x, y) — zoom z (tile * 256)."""
-    n = 256 * (2 ** z)
-    x = (lon + 180.0) / 360.0 * n
-    la = math.radians(max(-85.05, min(85.05, lat)))
-    y = (1.0 - math.log(math.tan(la) + 1.0 / math.cos(la)) / math.pi) / 2.0 * n
-    return x, y
+def _flag_png(iso3, work_dir, w=760):
+    """ISO3 -> bayroq PNG (assets/flags/<iso2>.svg, rsvg-convert)."""
+    iso2 = next((k for k, v in ISO2_TO_ISO3.items() if v == iso3), None)
+    if not iso2:
+        return None
+    svg = os.path.join(FLAG_DIR, iso2 + ".svg")
+    if not os.path.exists(svg):
+        return None
+    d = os.path.join(work_dir, "flags")
+    os.makedirs(d, exist_ok=True)
+    png = os.path.join(d, iso2 + ".png")
+    if not os.path.exists(png):
+        r = subprocess.run(["rsvg-convert", "-w", str(w), "-o", png, svg],
+                           capture_output=True, timeout=30)
+        if r.returncode != 0 or not os.path.exists(png):
+            return None
+    return png
 
 
-def _fetch_tile(z, x, y, cache_dir):
-    """Bitta Esri plitasini (cache bilan) yuklaydi."""
-    os.makedirs(cache_dir, exist_ok=True)
-    dest = os.path.join(cache_dir, f"{z}_{x}_{y}.jpg")
-    if os.path.exists(dest) and os.path.getsize(dest) > 500:
-        return dest
-    r = session().get(ESRI.format(z=z, y=y, x=x), timeout=25)
-    if r.status_code != 200 or len(r.content) < 500:
-        raise RuntimeError(f"tile {z}/{x}/{y} HTTP {r.status_code}")
-    with open(dest, "wb") as f:
-        f.write(r.content)
-    return dest
+@lru_cache(maxsize=1)
+def _raster():
+    return Image.open(NE2).convert("RGB")
 
 
-def _download_flag(iso2, cache_dir):
-    os.makedirs(cache_dir, exist_ok=True)
-    dest = os.path.join(cache_dir, f"{iso2.lower()}.png")
-    if os.path.exists(dest) and os.path.getsize(dest) > 300:
-        return dest
-    r = session().get(FLAG_CDN.format(iso2=iso2.lower()), timeout=20)
-    if r.status_code != 200:
-        raise RuntimeError(f"flag {iso2} HTTP {r.status_code}")
-    with open(dest, "wb") as f:
-        f.write(r.content)
-    return dest
+def _window(z):
+    """zoom_level -> (w_deg, h_deg) kadr oynasi (equirect)."""
+    wd = 160.0 * 0.62 ** max(0, z - 2)
+    wd = min(wd, 360.0)
+    return wd, min(wd * H / W, 175.0)
 
 
-def _font(size):
-    for p in ("/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf",
-              "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
-        if os.path.exists(p):
-            try:
-                return ImageFont.truetype(p, size)
-            except OSError:
-                pass
-    return ImageFont.load_default()
+def _raster_crop(lon, lat, wd, hd):
+    """NE2'dan equirect crop (x wrap, y clamp) -> W x H."""
+    cy = (90.0 - lat) / 180.0 * RPX_H
+    wpx, hpx = wd * PX_DEG, hd * PX_DEG
+    y0, y1 = int(max(0, cy - hpx / 2)), int(min(RPX_H, cy + hpx / 2))
+    cx = ((lon + 180.0) % 360.0) / 360.0 * RPX_W
+    xa = int(cx - wpx / 2) % RPX_W
+    xb = int(cx + wpx / 2) % RPX_W
+    if xb >= xa:
+        img = _raster().crop((xa, y0, xb, y1))
+    else:  # 180° chizig'idan o'tadi — ikki qismni tikamiz
+        left = _raster().crop((xa, y0, RPX_W, y1))
+        right = _raster().crop((0, y0, xb, y1))
+        img = Image.new("RGB", (left.width + right.width, y1 - y0), NAVY)
+        img.paste(left, (0, 0))
+        img.paste(right, (left.width, 0))
+    return img.resize((W, H), Image.LANCZOS)
 
 
-def compose_map(cam, iso_codes, work_dir, W=1440, H=2560):
-    """Sun'iy yo'ldosh fon + chegara + bayroq-to'ldirilgan davlatlar.
+def _in_window(rings, win):
+    """Poligon kadr oynasi bilan kesishadimi (qo'pol bbox testi)."""
+    lo0, hi1, wd, hd = win
+    lo1, hi0 = 90.0, -90.0
+    for r in rings:
+        for (x, y) in r:
+            if lo0 <= x <= lo0 + wd and lo1 >= y >= hi0 - hd:
+                return True
+    return False
 
-    cam: {"lat","lon","zoom_level","motion","label"}
-    Qaytaradi: (png_yo'l, zoom_start, zoom_end) — render'da zoompan uchun.
+
+def _proj(win):
+    lo0, hi1, wd, hd = win          # hi1 = shimoliy lat
+    def to_px(lon, lat):
+        x = (lon - lo0) / wd * W
+        y = (hi1 - lat) / hd * H
+        return x, y
+    return to_px
+
+
+def compose_map(cam, iso_codes, work_dir):
+    """cam: {lat, lon, zoom_level, motion} -> base PNG + bayroq qatlamlari.
+
+    Qaytaradi: {"base": png, "fills": {iso2: png}, "zs": .., "ze": ..,
+                "to_px": fn, "centroids": {iso2: (x, y)}, "mode": "raster"/"vector"}
     """
-    z = max(3, min(16, int(cam["zoom_level"])))
-    lat, lon = cam["lat"], cam["lon"]
-    cache = os.path.join(work_dir, "tiles")
+    z = max(3, min(12, int(cam.get("zoom_level", 5))))
+    lat = max(-84.0, min(84.0, float(cam.get("lat", 0))))
+    lon = float(cam.get("lon", 0))
+    wd, hd = _window(z)
+    win = (lon - wd / 2, lat + hd / 2, wd, hd)
+    to_px = _proj(win)
+    os.makedirs(work_dir, exist_ok=True)
 
-    cx, cy = _gpx(lat, lon, z)
-    ox, oy = cx - W / 2, cy - H / 2          # canvas boshlanishi (global px)
-    x0, y0 = int(ox // 256), int(oy // 256)
-    x1, y1 = int((ox + W) // 256), int((oy + H) // 256)
-
-    img = Image.new("RGB", (W, H), (8, 14, 24))
-    n_tiles = 0
-    for ty in range(y0, y1 + 1):
-        for tx in range(x0, x1 + 1):
-            try:
-                p = _fetch_tile(z, tx, ty, cache)
-                tile = Image.open(p).convert("RGB")
-                img.paste(tile, (int(tx * 256 - ox), int(ty * 256 - oy)))
-                n_tiles += 1
-            except Exception as e:
-                print(f"[geo] tile o'tkazildi {z}/{tx}/{ty}: {e}")
-    if n_tiles < (x1 - x0 + 1) * (y1 - y0 + 1) * 0.5:
-        raise RuntimeError("Esri plitalarining yarmi kelmadi — vektorga o'tamiz")
-
-    # ---- chegara + bayroq qatlami ----
-    ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(ov)
-
-    def to_px(lo, la):
-        gx, gy = _gpx(la, lo, z)
-        return gx - ox, gy - oy
-
-    # barcha davlatlar konturi (nozik oq)
-    for iso3, (name, geom) in _countries().items():
-        for poly in _rings(geom):
-            pts = [to_px(x, y) for x, y in poly[0]]
-            if len(pts) < 3:
-                continue
-            # canvas bilan kesishishini tekshirish (qo'pol)
-            xs = [p[0] for p in pts]
-            ys = [p[1] for p in pts]
-            if max(xs) < -50 or min(xs) > W + 50 or max(ys) < -50 or min(ys) > H + 50:
-                continue
-            d.line(pts + [pts[0]], fill=(255, 255, 255, 110), width=2)
-
-    # ajratilgan davlatlar: bayroq to'ldirish
-    for iso2 in (iso_codes or []):
-        iso3 = ISO2_TO_ISO3.get(iso2.lower())
-        if not iso3 or iso3 not in _countries():
-            print(f"[geo] {iso2} uchun poligon topilmadi")
-            continue
-        name, geom = _countries()[iso3]
-        try:
-            flag = Image.open(_download_flag(iso2, cache)).convert("RGBA")
-        except Exception as e:
-            print(f"[geo] bayroq kelmadi {iso2}: {e}")
-            continue
-        for poly in _rings(geom):
-            pts = [to_px(x, y) for x, y in poly[0]]
-            if len(pts) < 3:
-                continue
-            xs = [p[0] for p in pts]
-            ys = [p[1] for p in pts]
-            bx0, by0, bx1, by1 = min(xs), min(ys), max(xs), max(ys)
-            if bx1 < 0 or bx0 > W or by1 < 0 or by0 > H:
-                continue
-            # bayroqni bbox'ga moslab, poligon maskasi bilan qo'yish
-            bw = max(8, int(bx1 - bx0))
-            bh = max(8, int(by1 - by0))
-            fl = flag.resize((min(bw, 2048), min(bh, 2048)))
-            mask = Image.new("L", (W, H), 0)
-            md = ImageDraw.Draw(mask)
-            md.polygon(pts, fill=140)          # 55% shaffoflik
-            flayer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-            flayer.paste(fl, (int(bx0), int(by0)))
-            ov = Image.alpha_composite(ov, Image.composite(
-                flayer, Image.new("RGBA", (W, H), (0, 0, 0, 0)), mask))
-            d = ImageDraw.Draw(ov)
-            d.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=6)
-            # davlat nomi
-            f = _font(54)
-            d.text(((bx0 + bx1) / 2, max(20, by0 - 44)), name.upper(),
-                   font=f, fill="white", anchor="mm",
-                   stroke_width=5, stroke_fill="black")
-
-    img = Image.alpha_composite(img.convert("RGBA"), ov).convert("RGB")
-
-    # kamera yorlig'i + atributsiya endi render'da drawtext bilan
-    # (qat'iy pozitsiya — chuqur zoom'da ham kadr ichida qoladi)
-    out = os.path.join(work_dir, f"map_{abs(hash((lat, lon, z))) % 10**8}.png")
-    img.save(out, quality=92)
-    motion = cam.get("motion", "zoom_in")
-    if motion == "zoom_out":
-        zs, ze = 1.42, 1.02
+    use_raster = (wd * PX_DEG) >= W / 2.0        # upscale <= 2x
+    if use_raster:
+        base = _raster_crop(lon, lat, wd, hd)
     else:
-        zs, ze = 1.02, 1.42
-    print(f"[geo] xarita tayyor: {cam.get('label') or (lat, lon)} z={z} "
-          f"({n_tiles} tile, {len(iso_codes or [])} bayroq)")
-    return out, zs, ze
+        base = Image.new("RGB", (W, H), NAVY)
+        d = ImageDraw.Draw(base, "RGBA")
+        # graticule (5°/1°)
+        step = 5.0 if wd > 20 else 1.0
+        lo0, hi1 = win[0], win[1]
+        lonx = math.floor(lo0 / step) * step
+        while lonx <= lo0 + wd:
+            x = to_px(lonx, 0)[0]
+            d.line([(x, 0), (x, H)], fill=(255, 255, 255, 14), width=1)
+            lonx += step
+        laty = math.floor((hi1 - hd) / step) * step
+        while laty <= hi1:
+            y = to_px(0, laty)[1]
+            d.line([(0, y), (W, y)], fill=(255, 255, 255, 14), width=1)
+            laty += step
+        # quruq fill (ochroq navy)
+        for (iso3, _nm, rings, _c) in _countries():
+            if not _in_window(rings, win):
+                continue
+            for r in rings:
+                pts = [to_px(x, y) for (x, y) in r]
+                if len(pts) > 2:
+                    d.polygon(pts, fill=NAVY_LIGHT + (255,))
+
+    # chegaralar (oq, ustidan)
+    d2 = ImageDraw.Draw(base, "RGBA")
+    bw = 2 if use_raster else 3
+    for (iso3, _nm, rings, _c) in _countries():
+        if not _in_window(rings, win):
+            continue
+        for r in rings:
+            pts = [to_px(x, y) for (x, y) in r]
+            if len(pts) > 1:
+                d2.line(pts, fill=(255, 255, 255, 230), width=bw)
+
+    out_base = os.path.join(work_dir, f"map_{abs(hash((lat, lon, z))) % 10**8}.png")
+    base.save(out_base)
+
+    # bayroq-fill qatlamlari (har biri ALOHIDA RGBA — so'z vaqtida reveal)
+    fills, centroids = {}, {}
+    for iso2 in (iso_codes or [])[:2]:
+        iso3s = resolve(iso2)
+        if not iso3s:
+            print(f"[geo] '{iso2}' topilmadi")
+            continue
+        iso3 = iso3s[0]
+        fp = _flag_png(iso3, work_dir)
+        flag = Image.open(fp).convert("RGBA") if fp else None
+        layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        dl = ImageDraw.Draw(layer)
+        for (c_iso3, _nm, rings, cen) in _countries():
+            if c_iso3 != iso3 or not _in_window(rings, win):
+                continue
+            for r in rings:
+                pts = [to_px(x, y) for (x, y) in r]
+                if len(pts) <= 2:
+                    continue
+                xs = [p[0] for p in pts]
+                ys = [p[1] for p in pts]
+                # kadrdan butunlay tashqaridagi ringlar (dengiz orti, va h.k.)
+                if (max(xs) < -40 or min(xs) > W + 40
+                        or max(ys) < -40 or min(ys) > H + 40):
+                    continue
+                x0, y0 = min(xs), min(ys)
+                bw, bh = max(xs) - x0, max(ys) - y0
+                if bw < 3 or bh < 3:
+                    continue
+                if flag:
+                    # faqat KO'RINADIGAN qism (canvas+margin); bbox to'liq
+                    # mamlakat bo'lishi mumkin (coarse geojson) -> OIM oldini olish
+                    vx0, vy0 = max(x0, -200.0), max(y0, -200.0)
+                    vx1 = min(x0 + bw, W + 200.0)
+                    vy1 = min(y0 + bh, H + 200.0)
+                    if vx1 - vx0 >= 2 and vy1 - vy0 >= 2:
+                        s = min(1.0, 4096.0 / max(bw, bh))
+                        fw, fh = max(2, int(bw * s)), max(2, int(bh * s))
+                        f = flag.resize((fw, fh))
+                        ox, oy = int((vx0 - x0) * s), int((vy0 - y0) * s)
+                        ow = max(2, min(fw - ox, int((vx1 - vx0) * s) + 2))
+                        oh = max(2, min(fh - oy, int((vy1 - vy0) * s) + 2))
+                        fvis = f.crop((ox, oy, ox + ow, oy + oh))
+                        mask = Image.new("L", layer.size, 0)
+                        ImageDraw.Draw(mask).polygon(pts, fill=255)
+                        alpha = fvis.split()[3].point(lambda a: int(a * 0.58))
+                        fvis.putalpha(alpha)
+                        layer.paste(
+                            fvis, (int(vx0), int(vy0)),
+                            mask.crop((int(vx0), int(vy0),
+                                       int(vx0) + ow, int(vy0) + oh)))
+                dl.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=3)
+            centroids[iso2] = to_px(cen[0], cen[1])
+        if centroids.get(iso2):
+            lp = os.path.join(work_dir, f"fill_{iso2}_{abs(hash((lat, lon, z))) % 10**8}.png")
+            layer.save(lp)
+            fills[iso2] = lp
+
+    motion = cam.get("motion", "zoom_in")
+    zs, ze = (1.42, 1.02) if motion == "zoom_out" else (1.02, 1.42)
+    print(f"[geo] xarita z={z} ({'raster' if use_raster else 'vektor'}), "
+          f"{len(fills)} bayroq-qatlam, {os.path.basename(out_base)}")
+    return {"base": out_base, "fills": fills, "zs": zs, "ze": ze,
+            "to_px": to_px, "centroids": centroids,
+            "mode": "raster" if use_raster else "vector"}
+
+
+def country_layer(iso_target, style, work_dir, ctx, tag=""):
+    """highlight (cyan glow) / line (qalin sariq chegara) qatlami."""
+    iso3s = resolve(iso_target)
+    if not iso3s:
+        return None
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    to_px = ctx["to_px"]
+    for (iso3, _nm, rings, _c) in _countries():
+        if iso3 not in iso3s:
+            continue
+        for r in rings:
+            pts = [to_px(x, y) for (x, y) in r]
+            if len(pts) <= 2:
+                continue
+            if style == "highlight":
+                d.polygon(pts, fill=CYAN + (70,))
+                d.line(pts + [pts[0]], fill=CYAN + (255,), width=5)
+            else:  # line
+                d.line(pts + [pts[0]], fill=YELLOW + (255,), width=9)
+    if style == "highlight":
+        layer = layer.filter(ImageFilter.GaussianBlur(6))
+        layer2 = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        d2 = ImageDraw.Draw(layer2)
+        for (iso3, _nm, rings, _c) in _countries():
+            if iso3 not in iso3s:
+                continue
+            for r in rings:
+                pts = [to_px(x, y) for (x, y) in r]
+                if len(pts) > 2:
+                    d2.polygon(pts, fill=CYAN + (60,))
+                    d2.line(pts + [pts[0]], fill=CYAN + (255,), width=4)
+        layer = Image.alpha_composite(layer, layer2)
+    out = os.path.join(work_dir, f"lyr_{style}_{tag}_{abs(hash(iso_target)) % 10**8}.png")
+    layer.save(out)
+    return out
+
+
+def pin_png(work_dir, color=YELLOW):
+    """Oddiy pin (doira + uchburchak) — joy belgilash uchun."""
+    out = os.path.join(work_dir, "pin.png")
+    if os.path.exists(out):
+        return out
+    S = 512
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.ellipse([(96, 16), (416, 336)], fill=color + (255,), outline=(0, 0, 0, 255), width=12)
+    d.polygon([(196, 300), (316, 300), (256, 480)], fill=color + (255,),
+              outline=(0, 0, 0, 255))
+    d.ellipse([(196, 116), (316, 236)], fill=(255, 255, 255, 230))
+    img.save(out)
+    return out
+
+
+def flag_color(iso2, work_dir=None):
+    """Bayroqning dominant rangi (subtitr highlight uchun)."""
+    iso3s = resolve(iso2)
+    if not iso3s:
+        return None
+    fp = _flag_png(iso3s[0], work_dir or os.path.join(ROOT, "work"))
+    if not fp:
+        return None
+    im = Image.open(fp).convert("RGBA").resize((32, 32))
+    best, n = None, 0
+    counts = {}
+    for (r, g, b, a) in im.getdata():
+        if a < 128 or max(r, g, b) < 60 or (r > 235 and g > 235 and b > 235):
+            continue
+        mx, mn = max(r, g, b), min(r, g, b)
+        if mx - mn < 25 and mx < 150:
+            continue
+        k = (r // 24 * 24, g // 24 * 24, b // 24 * 24)
+        counts[k] = counts.get(k, 0) + 1
+    for c, k in counts.items():
+        if k > n:
+            best, n = c, k
+    return best

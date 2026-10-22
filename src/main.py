@@ -1,10 +1,11 @@
-"""V3 orkestrator — "Info Hub" 9M-views formati (18-30s tez pacing):
+"""V4 orkestrator — "map-explainer" (doc ARENA_MASTER):
 
-  trend -> Gemini v3 skript (segmentlar + xarita kameralari + bayroqlar +
-  ikonkalar + SFC triggerlar) -> har segmentga TTS -> sukunat siqish +
-  1.15x turbo + davomiylik nazorati -> xarita/broll vizual + ikonkalar ->
-  montaj (zoompan kamera + pop-in subtitr + SFX + musiqa -18dB) ->
-  Telegram tasdig'i -> YouTube yuklash.
+  trend -> Gemini v4 skript (scenes: mode/map/highlights/events/queries)
+  -> TTS (edge +15% / gTTS) -> audio post (gap<=0.12s, 1.15x, tail 0.5)
+  -> vizual: xarita (Natural Earth, bayroq-fill qatlamlar, events) yoki
+     validatsiyalangan stock (slug must/reject + OCR + vision)
+  -> montaj (zoompan + punch, rangli subtitr, SFX, musiqa sidechain)
+  -> Telegram tasdig'i -> YouTube.
 """
 import argparse
 import os
@@ -12,20 +13,19 @@ import subprocess
 import traceback
 
 from src.config import load
-from src import (trends, history, script_gen, tts, audio, sfx, geo, icons,
-                 media, maps, render, telegram, upload)
+from src import (trends, history, script_gen, tts, audio, sfx, geo, events,
+                 icons, media, render, telegram, upload)
 
-# SFX trigger balandliklari (musiqa -18dB, ovoz -15 LUFS ustida)
-SFX_VOL = {"pop": 0.42, "whoosh": 0.30, "ding": 0.40,
-           "boom": 0.55, "alarm": 0.35, "riser": 0.38}
+SFX_VOL = {"pop": 0.42, "whoosh": 0.30, "ding": 0.40, "boom": 0.55,
+           "alarm": 0.35, "riser": 0.38, "tick": 0.45}
 
 
 def build_description(cfg, script):
     desc = (script.get("description") or "").strip()
     if not desc:
-        segs = script.get("segments") or script.get("scenes") or []
+        segs = script.get("scenes") or script.get("segments") or []
         hook = segs[0]["voice"] if segs else ""
-        facts = " ".join(s["voice"] for s in segs[1:6])
+        facts = " ".join(s["voice"] for s in segs[1:7])
         pc = script.get("pinned_comment") or "Which place should I cover next? 👇"
         desc = f"{hook}\n{facts}\n\n{pc}\nNew geography fact every day.\n"
     hashtags = script.get("hashtags") or ["shorts", "geography", "facts"]
@@ -48,16 +48,6 @@ def build_tags(cfg, script):
         out.append(t)
         total += len(t) + 1
     return out
-
-
-def _word_time(words, target, default=0.40):
-    """at_word -> segment ichidagi aniq vaqt (topilmasa default)."""
-    t = str(target or "").lower().strip(".,!?\"'")
-    if t:
-        for (w, s, e) in words:
-            if t in str(w).lower().strip(".,!?\"'"):
-                return max(0.15, s - 0.03)
-    return default
 
 
 def _probe_dur(path):
@@ -83,15 +73,17 @@ def run(cfg):
                           "formats_seen": [], "avg_views_top10": 0,
                           "avg_title_len": 0}, "items": []}
 
-    print("== 2/7: Gemini v3 skript (hook + xarita segmentlari + loop) ==")
+    print("== 2/7: Gemini v4 skript (map-explainer sxemasi) ==")
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):
         print("   mavzu tarix bilan o'xshash -> qayta generatsiya")
         script = script_gen.write_script(
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
-    segs = script.get("segments") or script.get("scenes")
-    print(f"   sarlavha: {script['title']} ({len(segs)} segment)")
+    segs = script.get("scenes") or script.get("segments")
+    print(f"   sarlavha: {script['title']} "
+          f"({len(segs)} sahna, {len(script['script'].split())} so'z, "
+          f"{sum(1 for s in segs if s['mode'] == 'stock')} stock)")
 
     out, dur, used_ids = produce(cfg, script)
 
@@ -122,17 +114,17 @@ def run(cfg):
 
 
 def produce(cfg, script):
-    """Skript -> tayyor video (TTS, audio post, vizual, montaj).
-    (out, davomiylik, ishlatilgan klip id'lari) qaytaradi."""
+    """Skript -> tayyor video. (out, davomiylik, klip id'lari)."""
     work = cfg["_paths"]["work"]
     os.makedirs(work, exist_ok=True)
-    segs = script.get("segments") or script.get("scenes")
+    segs = script.get("scenes") or script.get("segments")
 
-    print("== 3/7: Har segmentga TTS (aniq so'z vaqtlari) ==")
+    print("== 3/7: TTS (edge / gTTS zaxira) ==")
     items = tts.synth(cfg, segs)
+    gtts = any(it.get("engine") == "gtts" for it in items)
 
-    print("== 4/7: Audio post (sukunat siqish + turbo + SFX) ==")
-    gap = float(cfg.get("audio", {}).get("silence_gap", 0.11))
+    print("== 4/7: Audio post (gap<=0.12s + 1.15x + tail) ==")
+    gap = float(cfg.get("audio", {}).get("silence_gap", 0.12))
     turbo = float(cfg.get("audio", {}).get("turbo", 1.15))
     for i, it in enumerate(items):
         sd = os.path.join(work, f"as_{i:02d}")
@@ -140,12 +132,11 @@ def produce(cfg, script):
         it["audio"], it["words"], it["dur"] = audio.strip_dead_air(
             it["words"], it["audio"], sd, gap=gap)
 
-    # --- davomiylik nazorati: 18-30s qattiy, maqsad 18-25s ---
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
     base = sum(it["dur"] for it in items)
-    tempo = turbo
-    if base / tempo > mx - 5.0:                       # 25s dan uzun -> tezroq
-        tempo = min(1.30, base / (mx - 6.5))
+    tempo = turbo if gtts else 1.0     # doc C2: atempo faqat gTTS zaxira
+    if base / tempo > mx - 1.0:                    # 39s dan uzun -> tezroq
+        tempo = min(1.30, base / (mx - 2.5))
         print(f"   qo'shimcha tempo: {tempo:.3f}x")
     if tempo != 1.0:
         for i, it in enumerate(items):
@@ -154,77 +145,81 @@ def produce(cfg, script):
             it["words"] = audio.scale_words(it["words"], 1.0 / tempo)
             it["dur"] /= tempo
 
-    pads = [0.14] * len(items)
-    total = sum(it["dur"] for it in items) + sum(pads)
-    if total + 0.3 < mn:                              # juda qisqa -> pauzalar
-        extra = (mn + 0.5 - total) / len(items)
-        pads = [min(0.70, p + extra) for p in pads]
+    pads = [0.18] * len(items)
+    total = sum(it["dur"] for it in items) + sum(pads) + render.TAIL
+    if total < mn + 1.0:                            # juda qisqa -> pauzalar
+        extra = (mn + 1.2 - total) / len(items)
+        pads = [min(1.00, p + extra) for p in pads]
         print(f"   pauzalar kengaytirildi (+{extra:.2f}s/seg)")
-    elif total > mx - 1.0:                            # hali uzun -> pauza siqish
-        pads = [max(0.06, p * 0.4) for p in pads]
+    elif total > mx - 0.5:
+        pads = [max(0.08, p * 0.45) for p in pads]
     for i, it in enumerate(items):
         it["dur"] += pads[i]
         it["scene"] = segs[i]
-    print(f"   jami timeline: {sum(it['dur'] for it in items) + 0.3:.1f}s")
+    print(f"   jami timeline: {sum(it['dur'] for it in items) + render.TAIL:.1f}s"
+          f" (tempo {tempo:.2f}x)")
 
-    # --- SFX triggerlar: kamera whoosh + LLM trigger + ikonka pop ---
-    for i, it in enumerate(items):
-        trig = []
-        if i > 0:
-            trig.append(("whoosh", 0.02, SFX_VOL["whoosh"]))
-        for name in (segs[i].get("sfx_trigger") or [])[:2]:
-            trig.append((name, 0.05, SFX_VOL.get(name, 0.4)))
-        for ic in (segs[i].get("overlay_icons") or [])[:2]:
-            t = _word_time(it["words"], ic.get("at_word"))
-            trig.append(("pop", max(0.25, t), SFX_VOL["pop"]))
-        if trig:
-            it["audio"] = sfx.add_triggers(cfg, it["audio"], trig, work, i)
-
-    print("== 5/7: Vizual: xarita kameralari + bayroqlar + ikonkalar ==")
+    print("== 5/7: Vizual: xarita + bayroq-fill + events / stock ==")
     used_ids = set(history.clip_ids())
+    shift = 0.15 if gtts else 0.0                   # doc B3: gTTS -> -0.15s
     for i, it in enumerate(items):
         sc = segs[i]
-        vis = None
-        bq = sc.get("fallback_broll_query") or []
-        if bq:  # faqat insoniy reaksiya kerak bo'lsa stock b-roll
+        layers, punches, vis = [], [], None
+        if sc["mode"] == "stock" and sc.get("visual_query"):
             try:
                 clips = media.fetch_scene_media(
-                    cfg, {"visual_query": bq, "must_contain": [],
-                          "fallback": "", "on_screen": ""},
-                    used_ids, os.path.join(work, f"b_{i:02d}"), n_want=1)
+                    cfg, sc, used_ids, os.path.join(work, f"b_{i:02d}"),
+                    n_want=1)
                 if clips and not str(clips[0]["id"]).startswith(("map:", "card:")):
                     vis = {"type": "clip", "path": clips[0]["path"]}
                     used_ids.add(clips[0]["id"])
-                    print(f"   seg{i + 1}: b-roll ({clips[0]['id']})")
+                    print(f"   sahna {i + 1}: STOCK ({clips[0]['id']})")
             except Exception as e:
-                print(f"   seg{i + 1}: b-roll xatosi ({e}) -> xarita")
+                print(f"   sahna {i + 1}: stock xatosi ({e}) -> xarita")
         if vis is None:
             try:
-                png, zs, ze = geo.compose_map(
-                    sc["map_camera"], sc.get("country_iso_codes"), work)
-                vis = {"type": "map", "path": png, "zs": zs, "ze": ze,
-                       "label": sc["map_camera"].get("label", "")}
+                ctx = geo.compose_map(sc["map"], sc.get("country_iso_codes"),
+                                      work)
             except Exception as e:
+                from src import maps
                 img = os.path.join(work, f"m_{i:02d}.png")
-                maps.map_image(sc["map_camera"].get("label") or "world", img)
-                vis = {"type": "map", "path": img, "zs": 1.05, "ze": 1.30,
-                       "label": sc["map_camera"].get("label", "")}
-                print(f"   seg{i + 1}: Esri yiqildi ({e}) -> vektor xarita")
+                maps.map_image(sc["map"].get("focus") or "world", img)
+                ctx = {"base": img, "fills": {}, "zs": 1.05, "ze": 1.30,
+                       "to_px": lambda lo, la: (720, 1280), "centroids": {}}
+                print(f"   sahna {i + 1}: geo yiqildi ({e}) -> vektor zaxira")
+            layers, punches = events.build(cfg, sc, ctx, it["words"],
+                                           work, i)
+            if shift:
+                for ly in layers:
+                    ly["t"] = max(0.05, ly["t"] - shift)
+                punches = [max(2, p - int(shift * 30)) for p in punches]
+            vis = {"type": "map", "base": ctx["base"],
+                   "zs": ctx["zs"], "ze": ctx["ze"]}
         it["visual"] = vis
-        ics = []
-        for ic in (sc.get("overlay_icons") or [])[:2]:
-            try:
-                p = icons.get_icon(ic, work)
-            except Exception as e:
-                print(f"   ikonka xatosi: {e}")
-                p = None
-            if p:
-                ics.append({"path": p,
-                            "t": _word_time(it["words"], ic.get("at_word")),
-                            "pos": ic.get("pos", [0.5, 0.3])})
-        it["icons"] = ics
+        it["layers"] = layers
+        it["punches"] = punches if vis["type"] == "map" else []
 
-    print("== 6/7: Montaj (zoompan + subtitr + SFX + musiqa) ==")
+        # --- SFX: segment whoosh + LLM trigger + event SFX ---
+        trig = []
+        if i > 0:
+            trig.append(("whoosh", 0.02, SFX_VOL["whoosh"]))
+        for name in (sc.get("sfx_trigger") or [])[:2]:
+            trig.append((name, 0.05, SFX_VOL.get(name, 0.4)))
+        for ly in layers:
+            trig.append((ly["sfx"], max(0.25, ly["t"]),
+                         SFX_VOL.get(ly["sfx"], 0.35)))
+        for p in it["punches"]:
+            trig.append(("whoosh", p / 30.0, SFX_VOL["whoosh"]))
+        if trig:
+            it["audio"] = sfx.add_triggers(cfg, it["audio"], trig, work, i)
+
+    print("== 6/7: Montaj (zoompan + punch + rangli subtitr + musiqa) ==")
+    try:                       # NE2 raster cache (~175MB) — endi kerak emas
+        geo._raster.cache_clear()
+    except Exception:
+        pass
+    import gc
+    gc.collect()
     out = render.render(cfg, script, items, work)
     dur = _probe_dur(out)
     print(f"   final: {out} ({dur:.1f}s)")
