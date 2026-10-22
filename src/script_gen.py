@@ -6,7 +6,7 @@ bayroq-fill davlatlar + rangli highlight so'zlar + events (pin/line/
 arrow/highlight/flag_fill/zoom) + SFX + (stock uchun) qat'iy
 visual_query/must_contain/reject.
 
-Total: 105-120 so'z (35-40s), hook = savol, infinite loop, outro YO'Q.
+Total: 118-130 so'z (35-40s @ +15% rate), hook = savol, infinite loop, outro YO'Q.
 """
 import datetime
 import json
@@ -44,7 +44,8 @@ as the primary subject): {hist}
 DIRECT A 35-40 SECOND SHORT about "{topic}".
 
 VOICEOVER RULES (hard limits):
-- Total 105-120 words. First sentence = a provocative QUESTION in ~10 words;
+- Total 118-130 words (voice at +15% speed must fill 35-40 s).
+  First sentence = a provocative QUESTION in ~10 words;
   motion must happen on screen within 0.5s of the start.
 - FORBIDDEN: "Did you know", "Top 5", "Welcome", any intro, any "like and
   subscribe", any outro/CTA.
@@ -88,11 +89,22 @@ STRICT OUTPUT — one JSON object, no markdown, no commentary:
         {{"at_word": "...", "type": "zoom"}}
       ],
       "sfx_trigger": ["<pop|whoosh|ding|boom|alarm|riser>"],
+      "fact_source": "<short source name for the scene's claim, e.g. Britannica / CIA World Factbook / UN>",
+      "fallback": "map_zoom:<place>",
+      "duration_s": 4,
       "visual_query": ["<ONLY for stock mode: 3 phrases>"],
       "must_contain": ["<only stock>"], "reject": ["<only stock>"]
     }}
   ]
 }}
+
+FACTS RULES:
+- Every scene carries "fact_source" — a real, citable source for its claim.
+  If you cannot name a credible source for a fact, REPLACE the fact with a
+  verifiable one (vague claims get "fake" comments and kill retention).
+- Use specific place names ("Hotel Arbez, La Cure", "Baarle-Hertog"),
+  never "a bar somewhere".
+- No claims about living politicians; no likeness of real people.
 
 EVENTS RULES:
 - 2-4 events per scene, each tied to an exact spoken word (at_word) — the
@@ -285,8 +297,8 @@ def _parse(raw):
                         if str(h).strip()][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
     words = len(data["script"].split())
-    if not (100 <= words <= 128):
-        raise ValueError(f"script {words} so'z — 105-120 oralig'ida bo'lishi kerak")
+    if not (112 <= words <= 138):
+        raise ValueError(f"script {words} so'z — 118-130 oralig'ida bo'lishi kerak")
     return data
 
 

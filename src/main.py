@@ -14,10 +14,7 @@ import traceback
 
 from src.config import load
 from src import (trends, history, script_gen, tts, audio, sfx, geo, events,
-                 icons, media, render, telegram, upload)
-
-SFX_VOL = {"pop": 0.42, "whoosh": 0.30, "ding": 0.40, "boom": 0.55,
-           "alarm": 0.35, "riser": 0.38, "tick": 0.45}
+                 icons, media, render, telegram, upload, qc, style)
 
 
 def build_description(cfg, script):
@@ -85,10 +82,18 @@ def run(cfg):
           f"({len(segs)} sahna, {len(script['script'].split())} so'z, "
           f"{sum(1 for s in segs if s['mode'] == 'stock')} stock)")
 
-    out, dur, used_ids = produce(cfg, script)
+    out, dur, used_ids, qc_tbl, qc_ok = produce_with_qc(cfg, script)
+    if not qc_ok:
+        fails = "\n".join(f"❌ {n}: {v}" for n, o, v in qc_tbl if not o)
+        telegram.send_message(cfg, "⛔ QC 3 urinishda o'tmadi — video "
+                                   "yuklanmadi.\n" + fails[:800])
+        raise RuntimeError("QC darvozasi o'tmadi (3 urinish)")
 
     print("== 7/7: Telegram tasdig'i va yuklash ==")
     cap = telegram.caption(cfg, tr, script, dur)
+    qc_txt = "\n".join(f"{'✅' if o else '❌'} {n}: {v}"
+                        for n, o, v in qc_tbl)[:700]
+    cap = cap + "\n\nQC:\n" + qc_txt
     approved = telegram.send_video_and_wait(
         cfg, out, cap, cfg["behavior"]["telegram_approval_timeout_min"])
     if not approved:
@@ -113,15 +118,23 @@ def run(cfg):
     print("TAYYOR:", f"https://youtu.be/{vid}")
 
 
-def produce(cfg, script):
-    """Skript -> tayyor video. (out, davomiylik, klip id'lari)."""
+def produce(cfg, script, no_stock=False, tts_cache=None):
+    """Skript -> tayyor video. (out, davomiylik, klip id'lari).
+    no_stock: barcha stock sahnalar xaritaga (QC retry).
+    tts_cache: TTS/audio natijalari keyingi urinishda qayta ishlatiladi."""
     work = cfg["_paths"]["work"]
     os.makedirs(work, exist_ok=True)
     segs = script.get("scenes") or script.get("segments")
 
-    print("== 3/7: TTS (edge / gTTS zaxira) ==")
-    items = tts.synth(cfg, segs)
-    gtts = any(it.get("engine") == "gtts" for it in items)
+    if tts_cache and tts_cache.get("items"):
+        import copy
+        items = copy.deepcopy(tts_cache["items"])
+        gtts = tts_cache["gtts"]
+        print("   TTS cache'dan (urinish)")
+    else:
+        print("== 3/7: TTS (edge / gTTS zaxira) ==")
+        items = tts.synth(cfg, segs)
+        gtts = any(it.get("engine") == "gtts" for it in items)
 
     print("== 4/7: Audio post (gap<=0.12s + 1.15x + tail) ==")
     gap = float(cfg.get("audio", {}).get("silence_gap", 0.12))
@@ -145,19 +158,25 @@ def produce(cfg, script):
             it["words"] = audio.scale_words(it["words"], 1.0 / tempo)
             it["dur"] /= tempo
 
-    pads = [0.18] * len(items)
+    # pad = sahna OROASIDAGI tanaffus; oxirgi sahnaga pad YO'Q —
+    # tail (0.5s)gina (doc P4: tail = dur - voice_end in 0.2..0.7)
+    pads = [0.18] * (len(items) - 1) + [0.0]
     total = sum(it["dur"] for it in items) + sum(pads) + render.TAIL
     if total < mn + 1.0:                            # juda qisqa -> pauzalar
-        extra = (mn + 1.2 - total) / len(items)
-        pads = [min(1.00, p + extra) for p in pads]
+        extra = (mn + 1.2 - total) / max(1, len(items) - 1)
+        pads = [min(1.00, p + extra) for p in pads[:-1]] + [0.0]
         print(f"   pauzalar kengaytirildi (+{extra:.2f}s/seg)")
     elif total > mx - 0.5:
-        pads = [max(0.08, p * 0.45) for p in pads]
+        pads = [max(0.08, p * 0.45) for p in pads[:-1]] + [0.0]
     for i, it in enumerate(items):
         it["dur"] += pads[i]
         it["scene"] = segs[i]
     print(f"   jami timeline: {sum(it['dur'] for it in items) + render.TAIL:.1f}s"
           f" (tempo {tempo:.2f}x)")
+    if tts_cache is not None and not tts_cache.get("items"):
+        import copy
+        tts_cache["items"] = copy.deepcopy(items)
+        tts_cache["gtts"] = gtts
 
     print("== 5/7: Vizual: xarita + bayroq-fill + events / stock ==")
     used_ids = set(history.clip_ids())
@@ -165,15 +184,22 @@ def produce(cfg, script):
     for i, it in enumerate(items):
         sc = segs[i]
         layers, punches, vis = [], [], None
-        if sc["mode"] == "stock" and sc.get("visual_query"):
+        # doc P3: bitta klip <=2.5s -> sahna uzunligiga qarab 2-3 klip
+        n_want = min(3, max(1, int(-(-it["dur"] // style.CLIP_MAX_S))))
+        if (not no_stock) and sc["mode"] == "stock" and sc.get("visual_query"):
             try:
                 clips = media.fetch_scene_media(
                     cfg, sc, used_ids, os.path.join(work, f"b_{i:02d}"),
-                    n_want=1)
-                if clips and not str(clips[0]["id"]).startswith(("map:", "card:")):
-                    vis = {"type": "clip", "path": clips[0]["path"]}
-                    used_ids.add(clips[0]["id"])
-                    print(f"   sahna {i + 1}: STOCK ({clips[0]['id']})")
+                    n_want=n_want)
+                clips = [c for c in clips
+                         if not str(c["id"]).startswith(("map:", "card:"))]
+                if clips:
+                    vis = {"type": "clip",
+                           "paths": [c["path"] for c in clips]}
+                    for c in clips:
+                        used_ids.add(c["id"])
+                    print(f"   sahna {i + 1}: STOCK ({len(clips)} klip: "
+                          + ", ".join(str(c["id"]) for c in clips) + ")")
             except Exception as e:
                 print(f"   sahna {i + 1}: stock xatosi ({e}) -> xarita")
         if vis is None:
@@ -188,7 +214,7 @@ def produce(cfg, script):
                        "to_px": lambda lo, la: (720, 1280), "centroids": {}}
                 print(f"   sahna {i + 1}: geo yiqildi ({e}) -> vektor zaxira")
             layers, punches = events.build(cfg, sc, ctx, it["words"],
-                                           work, i)
+                                           work, i, dur=it["dur"])
             if shift:
                 for ly in layers:
                     ly["t"] = max(0.05, ly["t"] - shift)
@@ -199,17 +225,26 @@ def produce(cfg, script):
         it["layers"] = layers
         it["punches"] = punches if vis["type"] == "map" else []
 
-        # --- SFX: segment whoosh + LLM trigger + event SFX ---
+        # --- SFX (doc P2 xaritasi): darajalar style.SFX_DB dan ---
         trig = []
-        if i > 0:
-            trig.append(("whoosh", 0.02, SFX_VOL["whoosh"]))
+        if i == 0:                       # hook: riser + 3.0s da impact
+            trig.append(("riser", 0.0, None))
+            trig.append(("impact", min(3.0, max(0.8, it["dur"] - 0.6)), None))
+        if i > 0:                        # cut/sahna o'tishi: whoosh 0.25s
+            trig.append(("whoosh", 0.02, None))
+        if vis and vis["type"] == "clip":        # stock slot kesishlari
+            n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
+            for k in range(1, n_slots):
+                trig.append(("whoosh", k * style.CLIP_MAX_S, None))
         for name in (sc.get("sfx_trigger") or [])[:2]:
-            trig.append((name, 0.05, SFX_VOL.get(name, 0.4)))
-        for ly in layers:
-            trig.append((ly["sfx"], max(0.25, ly["t"]),
-                         SFX_VOL.get(ly["sfx"], 0.35)))
+            trig.append((name, 0.05, None))
+        for ly in layers:                        # har eventda tovush
+            trig.append((ly["sfx"], max(0.25, ly["t"]), None))
         for p in it["punches"]:
-            trig.append(("whoosh", p / 30.0, SFX_VOL["whoosh"]))
+            trig.append(("whoosh", p / 30.0, None))
+        if i == len(items) - 1:                  # oxirgi "twist": impact
+            twist = layers[-1]["t"] if layers else it["dur"] * 0.4
+            trig.append(("impact", max(0.3, min(twist, it["dur"] - 0.4)), None))
         if trig:
             it["audio"] = sfx.add_triggers(cfg, it["audio"], trig, work, i)
 
@@ -224,6 +259,40 @@ def produce(cfg, script):
     dur = _probe_dur(out)
     print(f"   final: {out} ({dur:.1f}s)")
     return out, dur, sorted(used_ids)
+
+
+def produce_with_qc(cfg, script):
+    """Doc P4: render -> qc.py gate -> FAIL bo'lsa max 3 urinish.
+    1) musiqa darajasi xato -> faqat remiks (tezkor)
+    2) boshqa -> stock o'chirilib qayta render (klip almashtirish)
+    -> (out, dur, used_ids, qc_table, ok)"""
+    work = cfg["_paths"]["work"]
+    cache = {}
+    out, dur, used_ids = produce(cfg, script, tts_cache=cache)
+    ok, tbl = qc.run_checks(out, cfg, work)
+    for attempt in (2, 3):
+        if ok:
+            break
+        fails = [n for n, o, _ in tbl if not o]
+        music_only = fails and all("musiqa" in f for f in fails)
+        print(f"   QC urinish {attempt}: {fails}")
+        if music_only and attempt == 2:          # faqat remiks
+            cur = float(cfg.get("sfx", {}).get("music_volume", 0.125))
+            val = next(v for n, o, v in tbl if not o and "musiqa" in n)
+            try:
+                mv = float(str(val).split("dB")[0].strip())
+            except ValueError:
+                mv = -40.0
+            factor = 10 ** ((-28.0 - mv) / 20.0)      # -28 dBTP target
+            cfg["sfx"]["music_volume"] = max(0.03, min(0.35, cur * factor))
+            print(f"   musiqa remiks: vol {cur:.3f} -> "
+                  f"{cfg['sfx']['music_volume']:.3f}")
+            out = render.remix(cfg, work, out)
+        else:                                    # to'liq qayta (stock'siz)
+            out, dur, used_ids = produce(cfg, script, no_stock=True,
+                                         tts_cache=cache)
+        ok, tbl = qc.run_checks(out, cfg, work)
+    return out, dur, used_ids, tbl, ok
 
 
 def main():

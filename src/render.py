@@ -17,12 +17,13 @@ fade-out) -> loudnorm -15:TP=-1.5 mix'dan KEYIN (doc C4).
 Oxirgi segment +0.5s tail — oxirgi gap hech qachon kesilmaydi.
 Atributsiya kadrda YO'Q (public domain fon).
 """
+import math
 import os
 import subprocess
 
 from PIL import Image
 
-from . import captions
+from . import captions, style
 
 W, H = 1080, 1920
 FPS = 30
@@ -63,6 +64,18 @@ def _compose_state(base_png, layer_paths, work, tag):
     return out
 
 
+def _fit_onscreen(text):
+    """Doc P1: tepa yorliq >=72px, kalit-ibora (oxirgi so'zlar saqlanadi)."""
+    t = " ".join(str(text or "").split())[:60]
+    words = t.split()
+    for n in (len(words), 4, 3, 2, 1):
+        cand = " ".join(words[-n:]) if n < len(words) else t
+        for size in (style.ONSCREEN_SIZE, 74, 72):
+            if captions.text_width(cand, size) <= 940:
+                return cand, size
+    return words[-1], 72
+
+
 def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
     """A-bosqich: holat-subsegmentlar -> segvideo (video-only)."""
     N = max(2, int(round(max(0.4, dur) * FPS)))
@@ -85,14 +98,20 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
             ":d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":s={W}x{H}:fps={FPS},setsar=1"
         )
-        if on_screen:
+        if on_screen and f0 / FPS < style.ONSCREEN_MAX_DUR:
+            osd_txt, osd_sz = _fit_onscreen(on_screen)
             tf = os.path.join(work, f"os_{i:02d}_{k}.txt")
             with open(tf, "w", encoding="utf-8") as f:
-                f.write(on_screen[:40])
+                f.write(osd_txt)
+            # t har subsegmentda LOKAL -> global vaqt = t + F0SEC
             vf += (f",drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
                    f":textfile={tf}:fontcolor=white:borderw=6:bordercolor=black"
-                   f":fontsize=62:x=(w-text_w)/2:y=104")
+                   f":fontsize={osd_sz}"
+                   f":alpha='min(1,(t+F0SEC)/0.12)*clip((OSDUR-t-F0SEC)/0.18,0,1)'"
+                   f":x=(w-text_w)/2:y=104:enable='lte(t+F0SEC,OSDUR)'")
         vf += ",format=yuv420p"
+        vf = vf.replace("OSDUR", f"{style.ONSCREEN_MAX_DUR:.2f}") \
+               .replace("F0SEC", f"{f0 / FPS:.3f}")
         part = os.path.join(work, f"part_{i:02d}_{k}.mp4")
         _run(["ffmpeg", "-y", "-loop", "1", "-framerate", str(FPS),
               "-t", f"{sd + 0.05:.3f}", "-i", png,
@@ -113,24 +132,44 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
     return segv
 
 
-def _render_broll(path, dur, out):
-    def probe_dur(p):
-        try:
-            r = subprocess.run(
-                ["ffprobe", "-v", "error", "-show_entries",
-                 "format=duration", "-of", "csv=p=0", p],
-                capture_output=True, text=True, timeout=30)
-            return float(r.stdout.strip())
-        except Exception:
-            return 0.0
-
-    cd = probe_dur(path)
-    pre = ["-stream_loop", "-1", "-t", f"{dur:.2f}"] if cd < dur + 0.2 else []
-    vf = (f"scale={W}:{H}:force_original_aspect_ratio=increase,"
-          f"crop={W}:{H},fps={FPS},setsar=1,format=yuv420p")
-    _run(["ffmpeg", "-y", *pre, "-i", path, "-vf", vf,
-          "-t", f"{dur:.2f}", "-r", str(FPS),
-          "-c:v", "libx264", "-preset", "veryfast", "-crf", CRF, "-an", out])
+def _render_broll(paths, dur, out):
+    """Stock sahna: klip har <=2.5s da almashadi (doc P3: bitta klip
+    <=2.5s), har biriga bir xil navy-teal grade (doc P1).
+    -> (out, slot_cut_times)"""
+    if isinstance(paths, str):
+        paths = [paths]
+    slot = style.CLIP_MAX_S
+    n_slots = max(1, int(math.ceil(dur / slot - 1e-6)))
+    parts, cuts = [], []
+    for k in range(n_slots):
+        t0 = k * slot
+        sd = min(slot, dur - t0)
+        if sd <= 0.05:
+            break
+        src = paths[k % len(paths)]
+        # har slot boshqa in-point (bir klip takrorlansa ham har xil ko'rinadi)
+        off = (k * 1.3) % max(0.5, _probe(src) - 1.0) if len(paths) == 1 else 0.0
+        vf = (f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+              f"crop={W}:{H},{style.GRADE_STOCK},fps={FPS},setsar=1,"
+              f"format=yuv420p")
+        part = out.replace(".mp4", f"_{k}.mp4")
+        _run(["ffmpeg", "-y", "-ss", f"{off:.2f}", "-t", f"{sd + 0.03:.3f}",
+              "-i", src, "-vf", vf, "-frames:v", str(int(sd * FPS) + 2),
+              "-r", str(FPS), "-c:v", "libx264", "-preset", "veryfast",
+              "-crf", CRF, "-an", part])
+        parts.append(part)
+        if k > 0:
+            cuts.append(round(t0, 3))
+    if len(parts) == 1:
+        os.replace(parts[0], out)
+    else:
+        lst = out + ".txt"
+        with open(lst, "w") as f:
+            for p in parts:
+                f.write(f"file '{p}'\n")
+        _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
+              "-c", "copy", out])
+    return out, cuts
 
 
 def _screen_fc(screens, dur):
@@ -157,33 +196,69 @@ def _screen_fc(screens, dur):
 
 
 def render(cfg, script, items, work):
-    """items: [{scene, visual{type,base,path,zs,ze}, layers, punches,
-               audio, words, dur}]"""
+    """items: [{scene, visual{type,base,path,paths,zs,ze}, layers, punches,
+               audio, words, dur}] -> final.mp4 (+ work/events.json, doc P4)"""
     os.makedirs(work, exist_ok=True)
     n = len(items)
     seg_paths = []
+    ev_log = []                     # doc P4: events.json
+    segments = []
+    seg_start = 0.0
     for i, it in enumerate(items):
         vis = it["visual"]
         dur = it["dur"]
+        scene = it["scene"]
+        mode = "stock" if vis["type"] == "clip" else "map"
         layers = it.get("layers", [])
         punches = [p for p in it.get("punches", []) if 1 < p < int(dur * FPS)]
         fulls = [l for l in layers if l.get("full")]
         screens = [l for l in layers if not l.get("full")]
 
+        ev_log.append({"t": round(seg_start, 3), "type": "cut",
+                       "seg": i, "mode": mode})
+        if scene.get("on_screen"):
+            ev_log.append({"t": round(seg_start, 3), "type": "on_screen",
+                           "seg": i, "size": style.ONSCREEN_SIZE,
+                           "dur": style.ONSCREEN_MAX_DUR})
         if vis["type"] == "map":
             base = _render_map_states(vis, fulls, punches, dur,
-                                      it["scene"].get("on_screen", ""), work, i)
+                                      scene.get("on_screen", ""), work, i)
         else:
             base = os.path.join(work, f"vis_{i:02d}.mp4")
-            _render_broll(vis["path"], dur, base)
+            paths = vis.get("paths") or [vis["path"]]
+            base, slot_cuts = _render_broll(paths, dur, base)
+            for c in slot_cuts:
+                ev_log.append({"t": round(seg_start + c, 3),
+                               "type": "cut", "seg": i, "mode": mode})
 
-        ass = captions.build_scene_ass(
-            cfg, it["scene"], it["words"], dur,
+        ass, chunk_ts = captions.build_scene_ass(
+            cfg, scene, it["words"], dur,
             os.path.join(work, f"subs_{i:02d}.ass"))
+
+        for l in layers:
+            ev_log.append({"t": round(seg_start + l["t"], 3),
+                           "type": str(l.get("kind", "event")),
+                           "seg": i,
+                           "word_t": round(seg_start + l.get("word_t",
+                                                             l["t"]), 3)})
+        for p in punches:
+            ev_log.append({"t": round(seg_start + p / FPS, 3),
+                           "type": "zoom_punch", "seg": i})
+        for ct in chunk_ts:
+            ev_log.append({"t": round(seg_start + ct, 3),
+                           "type": "caption", "seg": i})
+
+        last_word_end = max((w[2] for w in (it.get("words") or [(-1, 0, 0)])),
+                            default=0.0)
+        segments.append({"i": i, "mode": mode, "t0": round(seg_start, 3),
+                         "t1": round(seg_start + dur, 3),
+                         "voice_end": round(seg_start + last_word_end, 3)})
+        seg_start += dur
 
         sin, fc, last = _screen_fc(screens, dur)
         a_idx = len(screens) + 1
-        fc.append(f"{last}ass='{ass}'[vout]")
+        fc.append(f"{last}ass='{ass}'[assv]")
+        fc.append(f"[assv]{style.GRADE_ALL},format=yuv420p[vout]")
         tail = TAIL if i == n - 1 else 0.0
         fc.append(f"[{a_idx}:a]aresample=48000,aformat=channel_layouts=stereo,"
                   f"apad=pad_dur={tail + 0.05:.2f}[af]")
@@ -208,16 +283,27 @@ def render(cfg, script, items, work):
     _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
           "-c", "copy", joined])
 
+    # doc P4: events.json (hodisa vaqti + so'z vaqti)
+    ev_log.sort(key=lambda e: e["t"])
+    import json as _j
+    with open(os.path.join(work, "events.json"), "w", encoding="utf-8") as f:
+        _j.dump({"fps": FPS, "engine": (items[0].get("engine", "edge")
+                                        if items else "edge"),
+                 "voice_end": segments[-1]["voice_end"] if segments else 0.0,
+                 "segments": segments, "events": ev_log}, f, indent=1)
+
     out = os.path.join(work, "final.mp4")
     _mix_music(cfg, joined, out)
     _verify(out, cfg)
     return out
 
 
-def _mix_music(cfg, joined, out):
-    """Doc C4: musiqa -18dB + sidechain ducking + amix normalize=0 +
-    1s fade-out; loudnorm -15 mix'dan KEYIN."""
-    mus_vol = float(cfg.get("sfx", {}).get("music_volume", 0.125))
+def _mix_music(cfg, joined, out, mus_vol=None):
+    """Doc C4/P2: voice zanjiri (highpass+compressor+presence+limiter)
+    -> musiqa -18dB + sidechain ducking + amix normalize=0 + 1s fade-out
+    -> loudnorm -15 mix'dan KEYIN."""
+    if mus_vol is None:
+        mus_vol = float(cfg.get("sfx", {}).get("music_volume", 0.125))
     music = cfg.get("sfx", {}).get("music")
     if not (music and os.path.exists(str(music))):
         try:
@@ -234,7 +320,11 @@ def _mix_music(cfg, joined, out):
                 f"afade=t=out:st={max(0.0, d - 1.0):.2f}:d=1.0,"
                 f"asetpts=PTS-STARTPTS,aresample=48000,"
                 f"aformat=channel_layouts=stereo[m];"
-                f"[0:a]asplit=2[v1][v2];"
+                # doc P2 voice zanjiri: HPF -> kompressor -> presence -> limiter
+                f"[0:a]highpass=f=80,"
+                f"acompressor=threshold=0.125:ratio=3:attack=5:release=80,"
+                f"equalizer=f=3500:t=q:w=1:g=2,alimiter=limit=0.95,"
+                f"asplit=2[v1][v2];"
                 f"[m][v2]sidechaincompress=threshold=0.03:ratio=8:"
                 f"attack=20:release=300[md];"
                 f"[v1][md]amix=inputs=2:duration=first:normalize=0[mix];"
@@ -256,6 +346,16 @@ def _mix_music(cfg, joined, out):
           "-af", "loudnorm=I=-15:TP=-1.5:LRA=7",
           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
           "-movflags", "+faststart", out])
+
+
+def remix(cfg, work_dir, out, mus_vol=None):
+    """QC retry uchun: faqat audio remiks (joined.mp4 saqlanadi)."""
+    joined = os.path.join(work_dir, "joined.mp4")
+    if not os.path.exists(joined):
+        raise RuntimeError("remix: joined.mp4 yo'q")
+    _mix_music(cfg, joined, out, mus_vol=mus_vol)
+    _verify(out, cfg)
+    return out
 
 
 def _probe(p):

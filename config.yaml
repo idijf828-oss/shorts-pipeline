@@ -18,7 +18,7 @@ channel:
   # Ovoz variantlari: en-US-ChristopherNeural (erkak, hujjatli),
   #                   en-US-GuyNeural (erkak, jonli), en-US-AriaNeural (ayol),
   #                   en-US-JennyNeural (ayol, iliq)
-  voice_rate: "+8%"                           # 35-40s/105-120 so'z balansi
+  voice_rate: "+15%"                          # doc P2/C2 (tempo adaptive 35-40s saqlaydi)
 
 video:
   width: 1080
@@ -35,7 +35,7 @@ captions:
   y_map: 950             # xarita sahnalarida (doc B4)
   y_stock: 1150          # stock/odam kadrlarida pastroq
   safe_w: 860            # maksimal matn kengligi (x: 110..970 safe zone)
-  font_size: 108         # katta qalin shrift (Montserrat ExtraBold)
+  font_size: 96          # doc P1: doimiy 96px (2 qator, 96->80 kam)
   max_words: 3           # bir vaqtda maks 3 so'z (doc: 1-3)
 
 sources:
@@ -54,7 +54,7 @@ sources:
 
 sfx:
   enabled: true                    # SFX triggerlar + fon musiqasi
-  music_volume: 0.125              # ~ -18dB (musiqa ovoz ostida, ustida emas)
+  music_volume: 0.085              # ~ -18dB (musiqa ovoz ostida, ustida emas)
 
 audio:
   turbo: 1.15                      # doimiy tezlik (pitch buzilmasdan)

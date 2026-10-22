@@ -14,12 +14,15 @@ highlights = {"canada": "#FF2D2D", ...}  (kichik harf, tinish belgisiz)
 import os
 import re
 
+from . import style
+
 W, H = 1080, 1920
-SAFE_W = 860
+SAFE_W = style.SAFE_W
 MAX_WORDS_LINE = 3
-FONT = "Montserrat ExtraBold"
-FONT_SIZE = 108
-YELLOW = "#FFD400"
+FONT = style.FONT_FAMILY
+FONT_SIZE = style.CAPTION_SIZE      # doc P1: 96px doimiy
+FIT_MIN = style.CAPTION_FIT_MIN    # 80 (kam holatda)
+YELLOW = style.YELLOW
 
 _FONT_FILES = [
     "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf",
@@ -48,10 +51,31 @@ def text_width(text, size):
 
 
 def fit_font(text, base=FONT_SIZE, max_w=SAFE_W):
+    """Doc P1: 96 doimiy; keng bo'lsa 2 qator; 96->80 faqat kam holatda."""
     size = base
-    while size > 44 and text_width(text, size) > max_w:
+    while size > FIT_MIN and text_width(text, size) > max_w:
         size -= 4
     return size
+
+
+def _split2(ch, size):
+    """chunk <=3 so'zni 2 qatorga bo'lish (doc P1: shriftni kichraytirma).
+    -> (split_index | None, font_size)"""
+    words = [str(x[0]).upper() for x in ch]
+    plain = " ".join(words)
+    if _line_w(words, size, active=True) <= SAFE_W:
+        return None, size
+    if len(ch) < 2:
+        return None, fit_font(plain, size)
+    best_k, bw = None, None
+    for k in range(1, len(ch)):
+        w = max(_line_w(words[:k], size, active=True),
+                _line_w(words[k:], size))
+        if bw is None or w < bw:
+            best_k, bw = k, w
+    if bw is not None and bw <= SAFE_W:
+        return best_k, size
+    return None, fit_font(plain, size)
 
 
 def _t(s):
@@ -80,15 +104,47 @@ def _ass_color(hexcolor):
 
 
 def chunk(words, n=MAX_WORDS_LINE):
+    """Kenglik-hisob chunking (doc P1): <=3 so'z VA 96px da sig'adi
+    (bir qator yoki 2 qator). Shrift kichraytirilmaydi."""
     out, cur = [], []
     for w in words:
-        cur.append(w)
-        if len(cur) == n or str(w[0]).endswith((".", "?", "!", ",", "...")):
+        trial = cur + [w]
+        if len(trial) > n or not _fits(trial):
+            if cur:
+                out.append(cur)
+            cur = [w]
+        else:
+            cur = trial
+        if str(w[0]).endswith((".", "?", "!", ",")):
             out.append(cur)
             cur = []
     if cur:
         out.append(cur)
     return out
+
+
+def _line_w(txt_words, size, active=False):
+    """Qator kengligi; active=True -> birinchi so'z 115% (doc B4 pop)."""
+    if not txt_words:
+        return 0.0
+    w = text_width(txt_words[0], size) * (1.15 if active else 1.0)
+    if len(txt_words) > 1:
+        w += text_width(" ".join(txt_words[1:]), size) \
+            + text_width(" ", size) * (len(txt_words) - 1)
+    return w
+
+
+def _fits(ch, size=FONT_SIZE):
+    """chunk 96px da sig'adimi (1 yoki 2 qator)? (render KATTA harfda!)"""
+    words = [str(x[0]).upper() for x in ch]
+    if _line_w(words, size, active=True) <= SAFE_W:
+        return True
+    if len(ch) >= 2:
+        for k in range(1, len(ch)):
+            if max(_line_w(words[:k], size, active=True),
+                   _line_w(words[k:], size)) <= SAFE_W:
+                return True
+    return False
 
 
 def _ass_head(cfg, y):
@@ -141,14 +197,15 @@ def build_scene_ass(cfg, scene, words, dur, path):
 
     head, size = _ass_head(cfg, y)
     yellow = _ass_color(YELLOW)
-    ev = []
+    ev, chunk_ts = [], []
     for ch in chunk(words):
         s = max(0.0, ch[0][1])
         e = min(dur, ch[-1][2] + 0.10)
         if e <= s:
             e = s + 0.12
+        chunk_ts.append(round(s, 3))
         active = _norm(ch[0][0])
-        base = fit_font(" ".join(str(x[0]) for x in ch), size)
+        split, base = _split2(ch, size)
         parts, seen_active = [], False
         for (wtxt, _ws, _we) in ch:
             nw = _norm(wtxt)
@@ -158,20 +215,22 @@ def build_scene_ass(cfg, scene, words, dur, path):
                 seen_active = True
             txt = _clean(wtxt).upper()
             if is_active:
-                # aktiv so'z: o'z rangi (yoki sariq) + 70->115 pop
-                c = color or yellow
-                parts.append("{\\c" + c
+                # aktiv so'z: o'z rangi (yoki sariq) + 70->115 pop (doc B4)
+                parts.append("{\\c" + (color or yellow)
                              + r"\fscx70\fscy70\t(0,110,\fscx115\fscy115)"
                              + "}" + txt + "{\\r}")
             elif color:
                 parts.append("{\\c" + color + "}" + txt + "{\\r}")
             else:
                 parts.append(txt)
-        line = " ".join(parts)
+        if split:
+            line = " ".join(parts[:split]) + "\\N" + " ".join(parts[split:])
+        else:
+            line = " ".join(parts)
         ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,"
                   r"{\an5\pos(540," + str(y) + r")\fs" + str(base)
                   + r"\fscx84\fscy84\t(0,110,\fscx100\fscy100)}"
                   + line)
     with open(path, "w", encoding="utf-8") as f:
         f.write(head + "\n".join(ev) + "\n")
-    return path
+    return path, chunk_ts

@@ -15,11 +15,12 @@ ding (highlight). SFX ovozdan -12dB past.
 """
 import os
 
+from . import captions as _cap
 from . import geo, icons
 
-SFX_FOR = {"pin": "pop", "flag_fill": "pop", "arrow": "whoosh",
-           "zoom": "whoosh", "line": "tick", "highlight": "ding",
-           "icon": "pop"}
+SFX_FOR = {"pin": "drop", "flag_fill": "flagpop", "arrow": "swish",
+           "zoom": "whoosh", "line": "zip", "highlight": "ding",
+           "icon": "pop"}          # doc P2 SFX xaritasi
 
 W_CENTER = 720  # geo canvas kengligi markazi (1440)
 
@@ -45,7 +46,7 @@ def _first_highlight_time(scene, words, default=0.2):
     return default
 
 
-def build(cfg, scene, ctx, words, work, seg_i):
+def build(cfg, scene, ctx, words, work, seg_i, dur=None):
     """scene events + country_iso fills -> ([layer], [punch_frame]).
 
     layer = {"path": png, "t": sek, "full": bool, "pos": (x, y) | None,
@@ -63,7 +64,8 @@ def build(cfg, scene, ctx, words, work, seg_i):
             continue
         t = _first_highlight_time(scene, words)
         layers.append({"path": png, "t": t, "full": True, "pos": None,
-                       "sfx": "pop", "kind": "flag_fill", "iso": iso2})
+                       "sfx": "flagpop", "kind": "flag_fill", "iso": iso2,
+                       "word_t": t})
 
     for ev in evs:
         k = str(ev.get("type", "")).strip()
@@ -75,13 +77,14 @@ def build(cfg, scene, ctx, words, work, seg_i):
                      (ctx.get("fills") or {}).get(iso2.upper())
             if png:
                 layers.append({"path": png, "t": t, "full": True,
-                               "pos": None, "sfx": "pop", "kind": k,
-                               "iso": iso2})
+                               "pos": None, "sfx": SFX_FOR.get(k, "flagpop"),
+                               "kind": k, "iso": iso2, "word_t": t})
         elif k in ("highlight", "line"):
             png = geo.country_layer(target, k, work, ctx, tag=f"s{seg_i}")
             if png:
                 layers.append({"path": png, "t": t, "full": True,
-                               "pos": None, "sfx": SFX_FOR[k], "kind": k})
+                               "pos": None, "sfx": SFX_FOR[k], "kind": k,
+                               "word_t": t})
         elif k == "pin":
             pos = None
             if ev.get("lat") is not None and ev.get("lon") is not None:
@@ -99,20 +102,20 @@ def build(cfg, scene, ctx, words, work, seg_i):
                 pos = (W_CENTER, 0.35 * 2560)
             png = geo.pin_png(work)
             layers.append({"path": png, "t": t, "full": False, "pos": pos,
-                           "sfx": "pop", "kind": "pin"})
+                           "sfx": "drop", "kind": "pin", "word_t": t})
         elif k == "arrow":
             png = icons.get_icon(
                 {"emoji": f"arrow_{str(ev.get('dir', 'right')).lower()}"}, work)
             if png:
                 layers.append({"path": png, "t": t, "full": False,
                                "pos": ev.get("pos") or (0.5, 0.42),
-                               "sfx": "whoosh", "kind": "arrow"})
+                               "sfx": "swish", "kind": "arrow", "word_t": t})
         elif k == "icon":
             png = icons.get_icon({"emoji": ev.get("emoji", "")}, work)
             if png:
                 layers.append({"path": png, "t": t, "full": False,
                                "pos": ev.get("pos") or (0.5, 0.3),
-                               "sfx": "pop", "kind": "icon"})
+                               "sfx": "pop", "kind": "icon", "word_t": t})
         elif k == "zoom":
             punches.append(max(2, int(t * 30)))
 
@@ -120,10 +123,42 @@ def build(cfg, scene, ctx, words, work, seg_i):
     for ic in (scene.get("overlay_icons") or [])[:2]:
         png = icons.get_icon(ic, work)
         if png:
-            layers.append({"path": png,
-                           "t": _word_time(words, ic.get("at_word")),
-                           "full": False, "pos": ic.get("pos") or (0.5, 0.3),
-                           "sfx": "pop", "kind": "icon"})
+            wt = _word_time(words, ic.get("at_word"))
+            layers.append({"path": png, "t": wt, "full": False,
+                           "pos": ic.get("pos") or (0.5, 0.3),
+                           "sfx": "pop", "kind": "icon", "word_t": wt})
 
     layers.sort(key=lambda l: l["t"])
+
+    # doc P3: har <=1.2s da vizual hodisa — katta bo'shliqlarga
+    # mikro zoom-punch qo'shamiz (real vizual o'zgarish, yumshoq gauss).
+    # Belgilar: cut(0) + qatlamlar + punchlar + SUBTITR almashinuvi
+    # (chunk onsetlari ham katta vizal o'zgarish) + sahna oxiri.
+    cap_marks = []
+    try:
+        if words:
+            cap_marks = [max(0.0, c[0][1]) for c in _cap.chunk(words)]
+    except Exception:
+        cap_marks = []
+    end_mark = []
+    if dur:
+        ep = max(0.4, dur - 0.35)
+        end_mark = [ep]
+        punches.append(max(2, int(ep * 30)))   # cut oldidan zoom-kick
+    marks = sorted({0.0}
+                   | {l["t"] for l in layers}
+                   | {p / 30.0 for p in punches}
+                   | set(cap_marks)
+                   | set(end_mark))
+    changed = True
+    guard = 0
+    while changed and guard < 8:
+        changed, guard = False, guard + 1
+        for a, b in zip(marks, marks[1:]):
+            if b - a > 1.15:
+                mid = round(a + (b - a) / 2.0, 2)
+                marks = sorted(marks + [mid])
+                punches.append(max(2, int(mid * 30)))
+                changed = True
+                break
     return layers, punches
