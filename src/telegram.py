@@ -33,8 +33,8 @@ def send_message(cfg, text):
 
 def caption(cfg, trends, script, duration_s):
     sm = trends.get("summary", {})
-    top = sm.get("top_titles", [])[:3]
-    kws = ", ".join(script.get("keywords", [])[:5])
+    top = sm.get("top_titles", [])[:2]
+    kws = ", ".join(script.get("keywords", [])[:3])
     n_facts = max(1, len(script.get("segments") or script.get("scenes") or []) - 2)
     lines = [
         f"🎬 <b>{html.escape(script['title'])}</b>",
@@ -44,7 +44,7 @@ def caption(cfg, trends, script, duration_s):
     if top:
         lines.append("📊 US trend (30 kun):")
     for t in top:
-        lines.append(f"• {html.escape(t['title'][:80])} — {t['views']:,} views")
+        lines.append(f"• {html.escape(t['title'][:48])} — {t['views']:,} views")
     pc = script.get("pinned_comment") or ""
     if pc:
         lines += ["", f"📌 Pinned comment: {html.escape(pc)}"]

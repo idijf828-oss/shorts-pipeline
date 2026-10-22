@@ -92,9 +92,17 @@ def run(cfg):
 
     print("== 7/7: Telegram tasdig'i va yuklash ==")
     cap = telegram.caption(cfg, tr, script, dur)
-    qc_txt = "\n".join(f"{'✅' if o else '❌'} {n}: {v}"
-                        for n, o, v in qc_tbl)[:700]
-    cap = cap + "\n\nQC:\n" + qc_txt
+    # Telegram chegarasi: caption <= 1024 belgi (run 19: 400 xatosi)
+    qc_lines = [f"{'✅' if o else '❌'} {n}: {v}" for n, o, v in qc_tbl]
+    budget = 1000 - len(cap)
+    qc_txt, used_len = "", 0
+    for ln in qc_lines:
+        add = (1 if qc_txt else 0) + len(ln)
+        if used_len + add > budget:
+            break
+        qc_txt = (qc_txt + "\n" + ln) if qc_txt else ln
+        used_len += add
+    cap = (cap + "\n\nQC:\n" + qc_txt) if qc_txt else cap
     approved = telegram.send_video_and_wait(
         cfg, out, cap, cfg["behavior"]["telegram_approval_timeout_min"])
     if not approved:

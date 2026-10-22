@@ -131,7 +131,7 @@ OUTPUT — ONE JSON object, no markdown, no commentary:
       "sfx_trigger": ["riser"],
       "fact_source": "<credible source for the tease>",
       "visual_query": ["<3 phrases>"],
-      "must_contain": ["<2-5 words>"],
+      "must_contain": ["<2-5 GENERIC visual words that literally appear in stock clip tags: mountain, snow, deer, street, train, aerial — NEVER country names or abstract words (culture, economy, history)>"],
       "reject": ["<wrong topics>"]
     }},
     {{ ... scenes 2-6: FACT 5 down to FACT 1, "voice" 25-31 words,

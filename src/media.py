@@ -240,6 +240,37 @@ def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
     must = scene.get("must_contain") or []
     reject = scene.get("reject") or []
     found = []
+
+    def _try_item(it, q, tier):
+        """Yuklash + 3-kadr OCR + vision. True = found'ga qo'shildi."""
+        dest = f"{prefix}_{len(found)}.bin"
+        if not _download(it["link"], dest):
+            return False
+        # kadr validatsiyasi: 3 nuqta (25/50/75%) — oraliq kadrlarda
+        # chiqadigan titrlar ham ushlanadi (run 14)
+        ocr_hit = None
+        jpg = None
+        for fi, frac in enumerate((0.25, 0.5, 0.75)):
+            jpg = f"{dest}_f{fi}.jpg"
+            if _frame_at(dest, frac, jpg):
+                ocr = _ocr_text(jpg)
+                if len(ocr) >= 2:
+                    ocr_hit = ocr
+                    break
+        if ocr_hit:
+            print(f"[media] rad etildi (OCR matn): {ocr_hit[:4]}")
+            os.remove(dest)
+            return False
+        if jpg:
+            v = _vision_check(cfg, jpg, scene.get("voice", ""))
+            if v is False:
+                print(f"[media] rad etildi (vision): {it['id']}")
+                os.remove(dest)
+                return False
+        found.append({"id": it["id"], "path": dest})
+        print(f"[media] topildi ({tier}) {q} -> {it['id']}")
+        return True
+
     for q in queries[:4]:
         for finder in (_pexels_search, _pixabay_search):
             try:
@@ -247,40 +278,32 @@ def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
             except Exception as e:
                 print(f"[media] {finder.__name__} xatosi: {e}")
                 continue
+            # Ikki darajali tanlov (run 19: must juda qattiq edi —
+            # davlat nomlari stock tag'larida uchramaydi):
+            #   strict = must so'zi meta'da bor
+            #   loose  = reject toza, must bo'sh (vision+OCR baribir tekshiradi)
+            strict, loose = [], []
             for it in items:
                 if it["id"] in used:
                     continue
                 if any(f["id"] == it["id"] for f in found):
                     continue
-                if not _accept(it, must, reject):
-                    print(f"[media] rad etildi (must/reject): {it['id']} [{q}]")
+                if not _accept(it, [], reject):
+                    print(f"[media] rad etildi (reject): {it['id']} [{q}]")
                     continue
-                dest = f"{prefix}_{len(found)}.bin"
-                if not _download(it["link"], dest):
-                    continue
-                # kadr validatsiyasi: 3 nuqta (25/50/75%) — oraliq
-                # kadrlarda chiqadigan titrlar ham ushlanadi (run 14)
-                ocr_hit = None
-                for fi, frac in enumerate((0.25, 0.5, 0.75)):
-                    jpg = f"{dest}_f{fi}.jpg"
-                    if _frame_at(dest, frac, jpg):
-                        ocr = _ocr_text(jpg)
-                        if len(ocr) >= 2:
-                            ocr_hit = ocr
-                            break
-                if ocr_hit:
-                    print(f"[media] rad etildi (OCR matn): {ocr_hit[:4]}")
-                    os.remove(dest)
-                    continue
-                    v = _vision_check(cfg, jpg, scene.get("voice", ""))
-                    if v is False:
-                        print(f"[media] rad etildi (vision): {it['id']}")
-                        os.remove(dest)
-                        continue
-                found.append({"id": it["id"], "path": dest})
-                print(f"[media] topildi ({finder.__name__}) {q} -> {it['id']}")
+                (strict if _accept(it, must, []) else loose).append(it)
+            if strict:
+                pool, tier = strict, "must"
+            elif loose:
+                pool, tier = loose, "yumshoq-must"
+                print(f"[media] [{q}] must topilmadi -> yumshoq rejim "
+                      f"({len(loose)} nomzod, vision+OCR tekshiradi)")
+            else:
+                continue
+            for it in pool:
                 if len(found) >= n_want:
                     break
+                _try_item(it, q, tier)
             if len(found) >= n_want:
                 break
         if len(found) >= n_want:
