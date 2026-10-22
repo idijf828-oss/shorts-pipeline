@@ -208,26 +208,29 @@ def run_checks(path, cfg=None, work=None):
         checks.append(("stock kadrlarda OCR matni yo'q", True, "stock yo'q"))
 
     # --- musiqa pauzada eshitiladi (doc P2/P4e) ---
-    # ovoz pauzalari (sahna oralig'i) — musiqa to'liq eshitiladi;
-    # bizda ichki pauza yo'q -> eng uzun sahna-araligi oynasi o'lchanadi
-    win = None
+    # BARCHA sahna-oralig'i oynalarini o'lchaymiz -> median (bitta
+    # oynadagi jim pasaj yolg'on natija bermaydi)
+    wins = []
     for sg in (ev.get("segments") or [])[:-1]:
         gap = float(sg["t1"]) - float(sg.get("voice_end", sg["t1"]))
-        if gap >= 0.30 and (win is None or gap > win[1] - win[0]):
-            win = (float(sg["voice_end"]), float(sg["t1"]))
-    tail_only = win is None
-    if tail_only:                        # pauza yo'q -> ovoz tugagach (fade)
-        ve = float(ev.get("voice_end") or (dur - 0.5))
-        win = (ve + 0.03, dur - 0.03)
-    w0 = win[0] + 0.08
-    w1 = min(win[1] - 0.02, w0 + 0.55)
-    mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
-    if tail_only:                        # fade ichida -> eshitilishi yetarli
-        checks.append(("musiqa tail'da eshitiladi (>=-36 dB)", mv >= -36.0,
-                       f"{mv:.1f} dB @ {w0:.1f}s"))
-    else:
-        checks.append(("musiqa pauzada M -33..-24 dB",
+        if gap >= 0.30:
+            wins.append((float(sg["voice_end"]), float(sg["t1"])))
+    if wins:
+        mvs = []
+        for (a, b) in wins:
+            w0, w1 = a + 0.08, min(b - 0.02, a + 0.63)
+            if w1 - w0 >= 0.15:
+                mvs.append(_mean_vol(path, w0, w1))
+        mvs.sort()
+        mv = mvs[len(mvs) // 2] if mvs else -99.0
+        checks.append(("musiqa pauzada M -33..-24 dB (median)",
                        -33.5 <= mv <= -24.0,
+                       f"{mv:.1f} dB ({len(mvs)} oyna)"))
+    else:                                # pauza yo'q -> tail (fade ichida)
+        ve = float(ev.get("voice_end") or (dur - 0.5))
+        w0, w1 = ve + 0.03, dur - 0.03
+        mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
+        checks.append(("musiqa tail'da eshitiladi (>=-36 dB)", mv >= -36.0,
                        f"{mv:.1f} dB @ {w0:.1f}s"))
 
     bad = 0

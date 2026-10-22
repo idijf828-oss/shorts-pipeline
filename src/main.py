@@ -279,7 +279,7 @@ def produce_with_qc(cfg, script):
         fails = [n for n, o, _ in tbl if not o]
         music_only = fails and all("musiqa" in f for f in fails)
         print(f"   QC urinish {attempt}: {fails}")
-        if music_only and attempt == 2:          # faqat remiks
+        if music_only:                           # faqat musiqa -> remiks
             cur = float(cfg.get("sfx", {}).get("music_volume", 0.125))
             val = next(v for n, o, v in tbl if not o and "musiqa" in n)
             try:
@@ -287,8 +287,10 @@ def produce_with_qc(cfg, script):
             except ValueError:
                 mv = -40.0
             factor = 10 ** ((-27.0 - mv) / 20.0)      # -27 dB target
-            cfg["sfx"]["music_volume"] = max(0.03, min(0.35, cur * factor))
-            print(f"   musiqa remiks: vol {cur:.3f} -> "
+            if attempt == 3:                      # ikkinchi remiks: yumshat
+                factor = 1.0 + (factor - 1.0) * 0.7
+            cfg["sfx"]["music_volume"] = max(0.03, min(0.40, cur * factor))
+            print(f"   musiqa remiks (urinish {attempt}): vol {cur:.3f} -> "
                   f"{cfg['sfx']['music_volume']:.3f}")
             out = render.remix(cfg, work, out)
         else:                                    # to'liq qayta (stock'siz)
