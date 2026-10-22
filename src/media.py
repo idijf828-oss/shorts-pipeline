@@ -32,7 +32,7 @@ BLACKLIST_TOKENS = {
 # ---------- Qidiruv ----------
 def _pexels_search(cfg, query):
     key = cfg["secrets"]["pexels_api_key"]
-    if not key:
+    if not key or key == "FAKE":
         return []
     try:
         r = session().get(
@@ -67,7 +67,7 @@ def _pexels_search(cfg, query):
 
 def _pixabay_search(cfg, query):
     key = cfg["secrets"]["pixabay_api_key"]
-    if not key:
+    if not key or key == "FAKE":
         return []
     try:
         r = session().get(PIXABAY, params={
@@ -208,38 +208,26 @@ def _ocr_text(jpg):
 
 
 def _vision_check(cfg, jpg, scene_voice):
-    """Gemini vision: kadr sahnaga mosmi? True/False/None(bilmaymiz)."""
-    key = cfg["secrets"].get("gemini_api_key") or ""
-    if not key or key == "FAKE":
-        return None
+    """LLM vision (Claude -> Gemini zanjiri): kadr sahnaga mosmi?
+    True/False/None (bilmaymiz)."""
     try:
-        import base64
-        from .net import session as _s
-        with open(jpg, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        r = _s().post(
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            "gemini-3.5-flash-lite:generateContent",
-            params={"key": key},
-            json={"contents": [{"parts": [
-                {"text": ("Does this stock footage frame clearly and safely "
-                          f"illustrate this narration: \"{scene_voice}\"? "
-                          "Answer strictly yes or no.")},
-                {"inline_data": {"mime_type": "image/jpeg", "data": b64}},
-            ]}]},
-            timeout=30)
-        if r.status_code != 200:
-            return None
-        txt = (r.json().get("candidates") or [{}])[0]
-        txt = ((txt.get("content") or {}).get("parts") or [{}])[0].get("text", "")
-        t = txt.strip().lower()
-        if t.startswith("yes"):
-            return True
-        if t.startswith("no"):
-            return False
+        from src import llm
+        txt = llm.chat(
+            cfg,
+            "You are a strict stock-footage QA checker. "
+            "Answer strictly 'yes' or 'no' — nothing else.",
+            "Does this footage frame clearly and safely illustrate this "
+            f"narration: \"{scene_voice}\"? Answer strictly yes or no.",
+            images=[jpg], temperature=0.0, timeout=30)
+    except Exception as e:
+        print(f"[media] vision xatosi: {e}")
         return None
-    except Exception:
-        return None
+    t = (txt or "").strip().lower()
+    if t.startswith("yes"):
+        return True
+    if t.startswith("no"):
+        return False
+    return None
 
 
 def fetch_scene_media(cfg, scene, used, prefix, n_want=3):

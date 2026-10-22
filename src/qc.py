@@ -4,7 +4,7 @@ Har FAIL -> main.produce_with_qc retry (musiqa remiks / stock'siz render),
 3 urinishdan keyin Telegram'ga yuborilmaydi (main.py shunga qaraydi).
 
 Tekshiruvlar (doc D0/D + P4 qo'shimchalar):
-  1. 1080x1920, >=30fps, 35-40.2s
+  1. 1080x1920, >=30fps, 45-55.2s (v6 listicle)
   2. LUFS -16..-14, true peak <= -1 dBTP (ebur128)
   3. tail 0.2-0.7s (VOICE oxiri — events.json'dan; musiqa fonida
      silencedetect musiqa pauzasini "ovoz" deb biladi)
@@ -135,7 +135,9 @@ def run_checks(path, cfg=None, work=None):
     checks = [
         ("1080x1920", (w, h) == (1080, 1920), f"{w}x{h}"),
         (">=30 fps", fps >= 29.9, f"{fps:.2f}"),
-        ("35-40 s", 35 <= dur <= 40.2, f"{dur:.2f}s"),
+        (f"{cfg['video']['min_duration']}-{cfg['video']['max_duration']} s",
+         cfg["video"]["min_duration"] <= dur <= cfg["video"]["max_duration"] + 0.2,
+         f"{dur:.2f}s"),
         ("LUFS -16..-14", -16.2 <= lufs <= -13.8, f"{lufs:.1f}"),
         ("true peak <= -1", tp <= -1.0, f"{tp:.1f}"),
         ("tail 0.2-0.7s (ovoz oxiri)", 0.2 <= tail <= 0.7, f"{tail:.2f}s"),

@@ -12,6 +12,9 @@ def load(path=None):
 
     sec = {
         "yt_api_key": os.environ.get("YT_API_KEY", ""),
+        # Ixtiyoriy: borida Claude Opus 5.5 (skript + vision), yo'qida
+        # avtomatik Gemini zanjiri ishlaydi (src/llm.py)
+        "anthropic_api_key": os.environ.get("ANTHROPIC_API_KEY", ""),
         "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
         "pexels_api_key": os.environ.get("PEXELS_API_KEY", ""),
         "pixabay_api_key": os.environ.get("PIXABAY_API_KEY", ""),

@@ -25,9 +25,9 @@ video:
   height: 1920
   fps: 30
   # V4 (doc): 5-8 sahna, 95-110 so'z
-  min_duration: 35                            # sekund (map-explainer)
-  max_duration: 40                            # sekund (qattiy cheklov)
-  tags: [geography, facts, countries, world facts, maps, borders,
+  min_duration: 45                            # sekund (v6: 5-fakt listicle)
+  max_duration: 55                            # sekund (qattiy cheklov)
+  tags: [geography, facts, countries, 5 facts, top 5, world facts,
          did you know, education, shorts]
 
 captions:
@@ -54,7 +54,7 @@ sources:
 
 sfx:
   enabled: true                    # SFX triggerlar + fon musiqasi
-  music_volume: 0.125             # ~ -18dB (musiqa ovoz ostida, ustida emas)
+  music_volume: 0.10             # ~ -18dB (musiqa ovoz ostida, ustida emas)
 
 audio:
   turbo: 1.15                      # doimiy tezlik (pitch buzilmasdan)
@@ -65,9 +65,13 @@ behavior:
   dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)
   privacy_status: "private"       # API audit o'tgunicha faqat "private" ishlaydi
   telegram_approval_timeout_min: 120   # Tasdiq kutiladigan vaqt (Actions job 6 soatgacha yuradi)
-  schedule_cron: "0 9 * * *"      # GitHub Actions UTC bo'yicha. Tashkent = +5 (14:00)
+  schedule_cron: "0 3,11,19 * * *"  # 3 run/kun (UTC). Tashkent: 08/16/24
                                   # DIQQAT: cron faqat .github/workflows/daily.yml'da o'zgaradi
                                   #        (GitHub cheklovi). Qolgan hamma narsa shu faylda.
+anthropic:
+  model: "claude-opus-5-5"            # ANTHROPIC_API_KEY borida ishlaydi
+  temperature: 0.7                    # kalit yo'q bo'lsa avtomatik Gemini
+
 gemini:
   model: "gemini-3.5-flash-lite"   # TIRIK model (2026-07 dan). Zaxiralar
                                    # avtomatik: 3.1-flash-lite, 3.8-flash,

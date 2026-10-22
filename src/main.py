@@ -1,4 +1,4 @@
-"""V4 orkestrator — "map-explainer" (doc ARENA_MASTER):
+"""V6 orkestrator — "5 FACTS ABOUT {country}" listicle:
 
   trend -> Gemini v4 skript (scenes: mode/map/highlights/events/queries)
   -> TTS (edge +15% / gTTS) -> audio post (gap<=0.12s, 1.15x, tail 0.5)
@@ -70,7 +70,7 @@ def run(cfg):
                           "formats_seen": [], "avg_views_top10": 0,
                           "avg_title_len": 0}, "items": []}
 
-    print("== 2/7: Gemini v4 skript (map-explainer sxemasi) ==")
+    print("== 2/7: LLM skript: 5-fakt listicle (Claude Opus 5.5 -> Gemini zaxira) ==")
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):
@@ -78,7 +78,8 @@ def run(cfg):
         script = script_gen.write_script(
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
     segs = script.get("scenes") or script.get("segments")
-    print(f"   sarlavha: {script['title']} "
+    print(f"   davlat: {script.get('country', '?')} | sarlavha: "
+          f"{script['title']} "
           f"({len(segs)} sahna, {len(script['script'].split())} so'z, "
           f"{sum(1 for s in segs if s['mode'] == 'stock')} stock)")
 

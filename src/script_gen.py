@@ -1,191 +1,178 @@
-"""2-qadam: MASTER LLM — "map-explainer" uslubi (doc B1 sxemasi).
+"""2-qadam: MASTER LLM — "5 FACTS ABOUT {country}" listicle (v6).
 
-Har qanday geografiya/geosiyosat mavzusi uchun to'liq reja:
-ovoz matni + on_screen + rejim (map/stock) + xarita kameralari +
-bayroq-fill davlatlar + rangli highlight so'zlar + events (pin/line/
-arrow/highlight/flag_fill/zoom) + SFX + (stock uchun) qat'iy
-visual_query/must_contain/reject.
+Format: hook + FACT 5..1 (countdown, eng hayratlanarlisi oxirida) +
+loop = 7 sahna, 158-182 so'z (~45-55s @ +15% rate). HAMMA sahna
+real footage (stock) rejimida, xarita ma'lumoti zaxira sifatida.
 
-Total: 118-130 so'z (35-40s @ +15% rate), hook = savol, infinite loop, outro YO'Q.
+LLM: Claude Opus 5.5 (ANTHROPIC_API_KEY borida) -> Gemini zanjiri
+(src/llm.py). Mavzu: kun bo'yicha 3 ta yangi davlat nomzodi
+tarixdan (history) farq qiladigan qilib tanlanadi, LLM eng
+qiziqrog'ini tanlaydi.
 """
 import datetime
 import json
+import random
 import re
-import time
 
-from src.net import session
+from src import llm
 
-API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-# 2026-10 holati: gemini-2.5-*/2.0-flash O'CHIRILGAN (404). Tirik modellar:
-MODELS = [
-    "gemini-3.5-flash-lite",   # tez, arzon (asosiy)
-    "gemini-3.1-flash-lite",
-    "gemini-3.8-flash",
-    "gemini-3.6-flash",
+# Footage topiladigan, tomoshabinga tanish davlatlar (~170)
+COUNTRIES = [
+    "Japan", "Iceland", "Australia", "Canada", "Brazil", "Egypt",
+    "France", "Italy", "Spain", "Germany", "Norway", "Sweden",
+    "Finland", "Denmark", "Netherlands", "Belgium", "Switzerland",
+    "Austria", "Portugal", "Greece", "Turkey", "Russia", "China",
+    "India", "South Korea", "Thailand", "Vietnam", "Indonesia",
+    "Malaysia", "Singapore", "Philippines", "New Zealand", "Mexico",
+    "Argentina", "Chile", "Peru", "Colombia", "Bolivia", "Ecuador",
+    "Uruguay", "Paraguay", "Venezuela", "Panama", "Costa Rica",
+    "Cuba", "Jamaica", "Morocco", "Tunisia", "Algeria", "Libya",
+    "Ethiopia", "Kenya", "Tanzania", "Uganda", "Rwanda", "Nigeria",
+    "Ghana", "Senegal", "Mali", "Niger", "Chad", "Sudan", "Somalia",
+    "South Africa", "Namibia", "Botswana", "Zimbabwe", "Zambia",
+    "Madagascar", "Mozambique", "Angola", "Congo", "Cameroon",
+    "Saudi Arabia", "United Arab Emirates", "Qatar", "Israel",
+    "Jordan", "Lebanon", "Iraq", "Iran", "Afghanistan", "Pakistan",
+    "Bangladesh", "Sri Lanka", "Nepal", "Bhutan", "Myanmar",
+    "Cambodia", "Laos", "Mongolia", "Kazakhstan", "Uzbekistan",
+    "Kyrgyzstan", "Tajikistan", "Turkmenistan", "Azerbaijan",
+    "Georgia", "Armenia", "Ukraine", "Poland", "Czech Republic",
+    "Slovakia", "Hungary", "Romania", "Bulgaria", "Serbia", "Croatia",
+    "Slovenia", "Bosnia and Herzegovina", "Albania", "North Macedonia",
+    "Montenegro", "Estonia", "Latvia", "Lithuania", "Belarus",
+    "Moldova", "Ireland", "United Kingdom", "Scotland", "Malta",
+    "Cyprus", "Luxembourg", "Monaco", "Andorra", "San Marino",
+    "Liechtenstein", "Greenland", "Fiji", "Papua New Guinea",
+    "Samoa", "Tonga", "Vanuatu", "Solomon Islands", "Maldives",
+    "Bhutan", "Taiwan", "Hong Kong", "Oman", "Yemen", "Kuwait",
+    "Bahrain", "Syria", "Eswatini", "Lesotho", "Malawi", "Burundi",
+    "Gabon", "Benin", "Togo", "Burkina Faso", "Guinea", "Liberia",
+    "Sierra Leone", "Mauritania", "Botswana", "Timor-Leste", "Brunei",
+    "Suriname", "Guyana", "Belize", "Guatemala", "Honduras",
+    "Nicaragua", "El Salvador", "Haiti", "Dominican Republic",
+    "Bahamas", "Trinidad and Tobago", "Barbados", "Puerto Rico",
 ]
+COUNTRIES = list(dict.fromkeys(COUNTRIES))          # dublikatlarsiz
 
 # ================= MASTER SYSTEM PROMPT =================
-SYSTEM = """You are the head writer and director of a viral geography/geopolitics
-YouTube Shorts studio. Benchmark: the "map-explainer" format (e.g. "Why isn't
-the USA annexing Canada?" — 19s, millions of views). The entire video plays on
-an ANIMATED WORLD MAP with country-flag fills, glowing highlights, pins and
-arrows that pop in sync with the narration. You think in SHOTS and EVENTS,
-never paragraphs. Palette: dark navy map, white text, cyan/red/yellow
-accents."""
+SYSTEM = """You are the head writer of a viral "Top 5 facts" YouTube
+Shorts channel about countries. Format: fast countdown listicle —
+hook, five numbered facts counting down from 5 to 1 (the most
+shocking fact LAST), then a seamless loop question. Every fact is
+real, verifiable and genuinely surprising. You write clean, punchy,
+grammatically perfect American English — zero typos, zero filler,
+zero cliches."""
 
 # ================= MASTER USER PROMPT =================
-PROMPT_TMPL = """Today's topic: "{topic}" (niche: {niche}).
-Audience: USA, English, ages 13-40. Platform: YouTube Shorts (vertical 1080x1920).
+PROMPT_TMPL = """Pick ONE country from these three candidates: {candidates}.
+Niche: {niche}. Audience: USA, English, ages 13-40.
+Platform: YouTube Shorts (vertical 1080x1920).
 
 {trend_block}
-Recently used topics (STRICTLY avoid, also avoid reusing the same countries
-as the primary subject): {hist}
+Recently covered countries (STRICTLY DO NOT pick any of these): {hist}
 {avoid}
-DIRECT A 35-40 SECOND SHORT about "{topic}".
+Write a 45-55 SECOND SHORT: "5 facts about <your country>" countdown.
 
-VOICEOVER RULES (hard limits):
-- Total 118-130 words (voice at +15% speed must fill 35-40 s).
-  Each scene's "voice" is 14-18 words — COUNT the words in every line
-  before answering; short lines are rejected. 7-8 scenes.
-  First sentence = a provocative QUESTION in ~10 words;
-  motion must happen on screen within 0.5s of the start.
-- FORBIDDEN: "Did you know", "Top 5", "Welcome", any intro, any "like and
-  subscribe", any outro/CTA.
-- Sentences 14-18 words each, punchy, zero filler. Present tense, active voice.
-- The LAST sentence is a complete thought ending in a question that the HOOK
-  answers (seamless infinite loop on replay). Never end mid-sentence.
-- Facts must be real and verifiable (borders, treaties, geography).
+VOICEOVER (hard limits — COUNT the words in every line before answering):
+- Total 158-182 words across exactly 7 scenes.
+- Scene 1 (HOOK): 18-24 words. First sentence is a provocative question
+  (~10 words) that teases the #1 fact. Something must move on screen
+  within 0.5s of the start.
+- Scenes 2-6 (FACT 5 -> FACT 1 countdown, most shocking fact LAST):
+  each 25-31 words, exactly TWO sentences — the fact, then a short
+  punch line that lands it.
+- Scene 7 (LOOP): 14-18 words, ends in a question the HOOK answers
+  (seamless infinite loop on replay). Never end mid-sentence.
+- FORBIDDEN: "Did you know", "Welcome", saying "number five" or
+  "Top 5" out loud, any intro, "like and subscribe", any outro/CTA.
+- Present tense, active voice, specific place names, real numbers.
+- Facts must be real and verifiable (geography, records, laws, history).
+  If you cannot name a credible source, REPLACE the fact.
 
-SCENE RULES:
-- 5-8 scenes. AT LEAST 70% of scenes use "mode": "map".
-- "mode": "stock" (max 30%) ONLY when a human reaction adds punch (crowds,
-  border crossing, traffic). NO real politicians or public figures — generic
-  people only.
-- EVERY scene (including stock) still carries map data as fallback.
+VISUALS — REAL FOOTAGE for every scene:
+- Every scene: "mode": "stock" with visual_query = exactly 3
+  hierarchical phrases (specific -> broader -> generic), each 2-3
+  English words describing filmable real-world b-roll.
+  Example: ["shinkansen bullet train passing", "japanese train station",
+            "modern train aerial"].
+- NEVER a lone generic object ("floor", "wall", "land", "water") —
+  those queries return wrong footage. NEVER build queries from filler
+  words. NEVER queries about text, signs or logos (OCR rejects them).
+- "reject": wrong topics these queries could return.
+- Every scene ALSO carries map data (focus/lat/lon/zoom) as a fallback
+  if footage fails validation — use the exact place the fact is about.
+- "on_screen": fact scenes use "FACT 5 - HEADLINE" format (2-4 ALL-CAPS
+  words after the dash, the fact's core). Hook: a 2-4 word tease.
+  Loop: a 2-4 word question.
+- sfx_trigger: fact scenes get "ding"; hook gets "riser"; scene 6
+  (FACT 1) may add "boom".
+- highlights: 1-3 per scene, color from the palette
+  (cyan #00E5FF, red #FF2D2D, yellow #FFD400).
 
-STRICT OUTPUT — one JSON object, no markdown, no commentary:
+OUTPUT — ONE JSON object, no markdown, no commentary:
 {{
-  "title": "<<=70 chars, curiosity gap>",
+  "country": "<the country you picked>",
+  "title": "<=70 chars, curiosity gap, mentions the country>",
   "description": "<2-3 sentences>",
   "pinned_comment": "<question that drives comments>",
+  "keywords": ["<country>", "facts", "..."],
+  "hashtags": ["<3-4 tags>"],
   "scenes": [
     {{
       "id": 1,
-      "voice": "<spoken line, 14-18 words — count them>",
-      "on_screen": "<ALL-CAPS 2-4 word headline>",
-      "mode": "map",
-      "map": {{"focus": "<place name>", "lat": <real lat>, "lon": <real lon>,
-               "zoom_level": <3=continent .. 12=city street>,
-               "motion": "zoom_in" | "zoom_out"}},
-      "country_iso_codes": ["<ISO2 of countries to FILL WITH THEIR FLAG>", "..."],
-      "highlights": [
-        {{"word": "<exact word from voice>", "color": "#00E5FF|#FF2D2D|#FFD400"}}
-      ],
-      "events": [
-        {{"at_word": "<exact word from voice>", "type": "pin",
-          "target": "<ISO2 or place>", "lat": <opt>, "lon": <opt>}},
-        {{"at_word": "...", "type": "line", "target": "BE-NL"}},
-        {{"at_word": "...", "type": "arrow", "dir": "left|right|up|down"}},
-        {{"at_word": "...", "type": "highlight", "target": "<ISO2>"}},
-        {{"at_word": "...", "type": "flag_fill", "target": "<ISO2>"}},
-        {{"at_word": "...", "type": "zoom"}}
-      ],
-      "sfx_trigger": ["<pop|whoosh|ding|boom|alarm|riser>"],
-      "fact_source": "<short source name for the scene's claim, e.g. Britannica / CIA World Factbook / UN>",
-      "fallback": "map_zoom:<place>",
-      "duration_s": 4,
-      "visual_query": ["<ONLY for stock mode: 3 phrases>"],
-      "must_contain": ["<only stock>"], "reject": ["<only stock>"]
-    }}
+      "voice": "<hook, 18-24 words — count them>",
+      "on_screen": "<2-4 WORD TEASE>",
+      "mode": "stock",
+      "map": {{"focus": "<place>", "lat": <real lat>, "lon": <real lon>,
+               "zoom_level": <3=continent .. 12=city>, "motion": "zoom_in"}},
+      "country_iso_codes": ["<ISO2>"],
+      "highlights": [{{"word": "<exact word from voice>",
+                        "color": "#FFD400"}}],
+      "sfx_trigger": ["riser"],
+      "fact_source": "<credible source for the tease>",
+      "visual_query": ["<3 phrases>"],
+      "must_contain": ["<2-5 words>"],
+      "reject": ["<wrong topics>"]
+    }},
+    {{ ... scenes 2-6: FACT 5 down to FACT 1, "voice" 25-31 words,
+         "on_screen": "FACT N - HEADLINE", "sfx_trigger": ["ding"] ... }},
+    {{ ... scene 7: loop, ends in a question ... }}
   ]
-}}
+}}"""
 
-FACTS RULES:
-- Every scene carries "fact_source" — a real, citable source for its claim.
-  If you cannot name a credible source for a fact, REPLACE the fact with a
-  verifiable one (vague claims get "fake" comments and kill retention).
-- Use specific place names ("Hotel Arbez, La Cure", "Baarle-Hertog"),
-  never "a bar somewhere".
-- No claims about living politicians; no likeness of real people.
+_WORD_LO, _WORD_HI = 158, 182
 
-EVENTS RULES:
-- 2-4 events per scene, each tied to an exact spoken word (at_word) — the
-  visual appears the instant that word is said.
-- highlights: 1-3 per scene; color = the country's flag dominant color or
-  palette accent (cyan #00E5FF allies/groups, red #FF2D2D the "opponent",
-  yellow #FFD400 attention).
-- "line" target = two ISO2 joined by "-" (the shared border to draw).
-- Coordinates must be real and verifiable.
 
-STOCK SCENE QUERY RULES (visual_query — critical, past failures came from
-ignoring these):
-- Exactly 3 hierarchical phrases: specific -> broader -> generic.
-- Each phrase is 2-3 ENGLISH words describing WHAT TO SHOW ON SCREEN:
-  place/type + scene + optional action. Example scene "Order a beer in one
-  country and pay in another" -> ["pub interior drinks",
-  "bartender pouring beer", "european bar counter"].
-- NEVER a lone generic object ("floor", "stool", "land", "wall") — such
-  queries return wrong footage (a basketball court for "wooden floor").
-- NEVER build queries from filler words ("or they land in...").
-- "reject": wrong topics that could appear for these queries.
-"""
-
-def _call(key, model, prompt, cfg, timeout=90):
-    s = session()
-    for attempt in range(3):
-        try:
-            r = s.post(
-                API.format(model=model),
-                params={"key": key},
-                json={
-                    "system_instruction": {"parts": [{"text": SYSTEM}]},
-                    "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "response_mime_type": "application/json",
-                        "temperature": cfg["gemini"].get("temperature", 0.8),
-                    },
-                },
-                timeout=timeout,
-            )
-            if r.status_code == 429 and attempt < 2:
-                time.sleep(5 * (attempt + 1))
-                continue
-            if r.status_code != 200:
-                raise RuntimeError(f"Gemini {r.status_code}: {r.text[:120]}")
-            data = r.json()
-            cands = data.get("candidates") or []
-            if not cands or not (cands[0].get("content") or {}).get("parts"):
-                reason = ((cands[0].get("finishReason") if cands else None)
-                          or data.get("promptFeedback", {}).get("blockReason", "?"))
-                raise RuntimeError(f"Gemini javob bo'sh (finishReason={reason})")
-            return "".join(p.get("text", "") for p in cands[0]["content"]["parts"])
-        except RuntimeError:
-            raise
-        except Exception as e:
-            if attempt == 2:
-                raise RuntimeError(f"Gemini bilan bog'lanib bo'lmadi: {e}")
-            time.sleep(3 * (attempt + 1))
-    raise RuntimeError("Gemini javob bermadi")
+def _pick_candidates(history_kws, k=3):
+    """Tarixda yopilmagan davlatlardan 3 ta (kun+slot bo'yicha determin)."""
+    used = {str(w).strip().lower() for w in (history_kws or []) if w}
+    avail = [c for c in COUNTRIES if c.lower() not in used]
+    if len(avail) < k:
+        avail = COUNTRIES[:]
+    now = datetime.datetime.now(datetime.UTC)
+    slot = (now.hour + 1) // 8                 # 3 run/kun: 0/1/2
+    rnd = random.Random(now.timetuple().tm_yday * 8 + slot)
+    return rnd.sample(avail, k)
 
 
 def _build_prompt(cfg, trends, history_kws, avoid_title=""):
     ch = cfg["channel"]
-    sm = trends.get("summary", {})
+    sm = (trends or {}).get("summary", {})
     tops = sm.get("top_titles", [])[:6]
     trend_block = ""
     if tops:
-        trend_block = ("Trending in this niche (US, last "
+        trend_block = (f"Trending in this niche (US, last "
                        f"{cfg['sources']['days_back']} days):\n"
                        + "\n".join(f"- {t['title']} ({t['views']:,} views)"
                                    for t in tops))
-    hist = ", ".join(history_kws[-20:]) if history_kws else "(none — first video)"
-    avoid = (f"AVOID this exact topic (already generated today): {avoid_title}\n"
-             if avoid_title else "")
-    topics = ch["topics"]
-    yday = datetime.datetime.now(datetime.UTC).timetuple().tm_yday
-    topic = topics[yday % len(topics)]
-    return PROMPT_TMPL.format(topic=topic, niche=ch["niche"],
-                              trend_block=trend_block, hist=hist, avoid=avoid), topic
+    cands = _pick_candidates(history_kws)
+    hist = ", ".join(history_kws[-20:]) if history_kws else "(none yet)"
+    avoid = (f"DO NOT pick the country from this already-generated title "
+             f"today: {avoid_title}\n" if avoid_title else "")
+    prompt = PROMPT_TMPL.format(
+        candidates=", ".join(cands), niche=ch["niche"],
+        trend_block=trend_block, hist=hist, avoid=avoid)
+    return prompt, " / ".join(cands)
 
 
 def _as_list(v):
@@ -195,6 +182,28 @@ def _as_list(v):
 
 
 _EV_TYPES = ("pin", "line", "arrow", "highlight", "flag_fill", "zoom", "icon")
+
+# ASCII + imzo belgilaridan boshqa belgi bo'lmasin (ideal yozuvlar)
+_OK_EXTRA = set("\u2019\u2018\u201c\u201d\u2013\u2014\u2026%")
+
+
+def _lint_voice(v, i):
+    """Ideal matn mezoni: har qoidabuzarlik urinishni yiqitadi."""
+    v = v.strip()
+    if not v:
+        return f"{i + 1}-sahna: voice bo'sh"
+    if re.search(r"\s{2,}", v):
+        return f"{i + 1}-sahna: ikki probel"
+    if re.search(r"\s[,.;:!?]", v):
+        return f"{i + 1}-sahna: tinish belgisidan oldin probel"
+    if not v[0].isupper():
+        return f"{i + 1}-sahna: kichik harf bilan boshlanadi"
+    if v[-1] not in ".?!":
+        return f"{i + 1}-sahna: tinish belgisisiz tugaydi"
+    for ch in v:
+        if ord(ch) > 127 and ch not in _OK_EXTRA:
+            return f"{i + 1}-sahna: taqiqlangan belgi {ch!r}"
+    return None
 
 
 def _parse(raw):
@@ -206,13 +215,13 @@ def _parse(raw):
     data = json.loads(txt)
 
     segs = data.get("scenes") or data.get("segments") or []
-    if not (5 <= len(segs) <= 8):
-        raise ValueError(f"5-8 sahna kerak, {len(segs)} ta keldi")
-    n_stock = 0
+    if not (6 <= len(segs) <= 8):
+        raise ValueError(f"6-8 sahna kerak, {len(segs)} ta keldi")
     for i, sc in enumerate(segs):
-        if not sc.get("voice"):
-            raise ValueError(f"{i + 1}-sahnada voice yo'q")
-        # map (yangi sxema) yoki map_camera (eski) — ikkalasini qo'llab-quvvatla
+        err = _lint_voice(str(sc.get("voice", "")), i)
+        if err:
+            raise ValueError(err)
+        # map (yangi) yoki map_camera (eski) — ikkalasi ham
         m = sc.get("map") or sc.get("map_camera") or {}
         try:
             m["lat"] = float(m.get("lat", 0) or 0)
@@ -224,15 +233,13 @@ def _parse(raw):
         m.setdefault("focus", "")
         sc["map"] = m
         sc.pop("map_camera", None)
-        mode = str(sc.get("mode", "map")).lower()
-        if mode == "stock" and sc.get("visual_query"):
-            n_stock += 1
-        else:
-            mode = "map"
-        sc["mode"] = mode
+        mode = str(sc.get("mode", "stock")).lower()
+        # v6: stock asosiy — faqat visual_query bor bo'lsa saqlanadi,
+        # aks holda xarita zaxirasiga tushadi
+        sc["mode"] = "stock" if (mode == "stock" and sc.get("visual_query")) \
+            else "map"
         sc["country_iso_codes"] = [str(c).upper()[:2] for c in
                                    _as_list(sc.get("country_iso_codes"))][:2]
-        # highlights
         hls = []
         for h in _as_list(sc.get("highlights"))[:3]:
             if isinstance(h, dict) and h.get("word"):
@@ -241,7 +248,6 @@ def _parse(raw):
                     col = "#FFD400"
                 hls.append({"word": str(h["word"]), "color": col})
         sc["highlights"] = hls
-        # events
         evs = []
         for e in _as_list(sc.get("events"))[:4]:
             if not isinstance(e, dict):
@@ -257,7 +263,6 @@ def _parse(raw):
                     ev[f] = e[f]
             evs.append(ev)
         sc["events"] = evs
-        # overlay_icons (orqa moslik)
         icons = []
         for ic in _as_list(sc.get("overlay_icons"))[:2]:
             if isinstance(ic, dict) and ic.get("emoji"):
@@ -273,24 +278,41 @@ def _parse(raw):
         sc["visual_query"] = vq
         sc["must_contain"] = [str(x).lower() for x in
                               _as_list(sc.get("must_contain"))][:5]
-        sc["reject"] = [str(x).lower() for x in _as_list(sc.get("reject"))][:5]
-        sc["on_screen"] = str(sc.get("on_screen", ""))[:40].upper()
+        sc["reject"] = [str(x).lower() for x in
+                        _as_list(sc.get("reject"))][:5]
+        sc["on_screen"] = str(sc.get("on_screen", "")).strip()
         sc.setdefault("id", i + 1)
-    # >=70% map (doc): stock ko'p bo'lsa ortiqchalarini map'ga aylantiramiz
-    max_stock = max(1, int(len(segs) * 0.3))
-    if n_stock > max_stock:
-        for sc in segs:
-            if n_stock <= max_stock:
-                break
-            if sc["mode"] == "stock":
-                sc["mode"] = "map"
-                n_stock -= 1
 
-    data["title"] = str(data.get("title", "Geography Short"))[:100]
+    # FACT N prefiksi: sahna 2..(n-1) => FACT (n-1-i); yo'q bo'lsa qo'sh
+    n = len(segs)
+    for i in range(1, max(1, n - 1)):
+        num = n - 1 - i                          # 7 sahna: 5,4,3,2,1
+        sc = segs[i]
+        head = sc["on_screen"]
+        if not re.match(rf"^FACT\s*{num}\b", head, re.I):
+            head = re.sub(r"^FACT\s*\d+\s*[-–—:]?\s*", "", head, flags=re.I)
+            head = f"FACT {num} \u2014 {head}".strip(" -\u2014")
+        sc["on_screen"] = head[:40].upper()
+    segs[0]["on_screen"] = segs[0]["on_screen"][:40].upper()
+    segs[-1]["on_screen"] = segs[-1]["on_screen"][:40].upper()
+
+    # kamida 4 sahna real footage rejimida bo'lishi kerak (v6 formati)
+    n_stock = sum(1 for s in segs if s["mode"] == "stock")
+    if n_stock < min(4, n - 1):
+        raise ValueError(f"stock sahna kam: {n_stock}/{n}")
+
+    country = str(data.get("country") or "").strip()
+    data["title"] = str(data.get("title", "Country facts"))[:100]
+    if country and country.lower() not in data["title"].lower():
+        data["title"] = f"{data['title'][:60]} ({country})".strip()
     data["hook"] = str(data.get("hook", segs[0]["voice"]))[:200]
     data["script"] = str(data.get("script",
-                                  " ".join(s["voice"] for s in segs)))[:1500]
-    data["keywords"] = [str(k) for k in data.get("keywords", [])][:8]
+                                  " ".join(s["voice"] for s in segs)))[:2000]
+    kws = [str(k) for k in data.get("keywords", [])][:8]
+    if country and country.lower() not in [k.lower() for k in kws]:
+        kws = [country] + kws
+    data["keywords"] = kws
+    data["country"] = country
     data["description"] = str(data.get("description", "")).strip()[:4500]
     data["tags"] = [str(t).strip().lower() for t in data.get("tags", [])
                     if str(t).strip()][:20]
@@ -299,50 +321,44 @@ def _parse(raw):
                         if str(h).strip()][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
     words = len(data["script"].split())
-    lo, hi = globals().get("_WORD_LO", 112), globals().get("_WORD_HI", 138)
+    lo, hi = globals().get("_WORD_LO", 158), globals().get("_WORD_HI", 182)
     if not (lo <= words <= hi):
-        raise ValueError(f"script {words} so'z — 118-130 oralig'ida bo'lishi kerak")
+        raise ValueError(f"script {words} so'z — {lo}-{hi} oralig'ida bo'lishi kerak")
     return data
 
 
 def _parse_relaxed(raw):
-    """Oxirgi zaxira: so'z oynasi 105-140 (pads/tempo 35-40s ni tuzatadi)."""
+    """Oxirgi zaxira: so'z oynasi 150-190 (pads/tempo 45-55s ni tuzatadi)."""
     global _WORD_LO, _WORD_HI
-    _WORD_LO, _WORD_HI = 105, 140
+    _WORD_LO, _WORD_HI = 150, 190
     try:
         return _parse(raw)
     finally:
-        _WORD_LO, _WORD_HI = 112, 138
+        _WORD_LO, _WORD_HI = 158, 182
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):
-    key = cfg["secrets"]["gemini_api_key"]
-    primary = cfg["gemini"].get("model", MODELS[0])
-    models = [primary] + [m for m in MODELS if m != primary]
-    prompt, topic = _build_prompt(cfg, trends, history_kws, avoid_title)
-    print(f"   kun mavzusi: {topic}")
+    prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
+    print(f"   nomzod davlatlar: {cands} [{llm.provider(cfg)}]")
     last_err, last_raw = None, None
-    for model in models:
-        for attempt in range(2):
-            try:
-                raw = _call(key, model, prompt, cfg)
-                data = _parse(raw)
-                data["_topic"] = topic
-                return data
-            except Exception as e:
-                last_err, last_raw = e, raw
-                print(f"[script] {model} urinish {attempt + 1}: {str(e)[:120]}")
-                if ("not found" in str(e).lower()
-                        or "not_found" in str(e).lower()
-                        or "429" in str(e)):
-                    break                      # modelni o'tkazib yuborish
-                time.sleep(2)
-    # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz (crash o'rniga)
+    for attempt in range(2):
+        try:
+            raw = llm.chat(cfg, SYSTEM, prompt, json_mode=True, timeout=150)
+        except Exception as e:
+            raise RuntimeError(f"Skript yozib bo'lmadi: {e}")
+        try:
+            data = _parse(raw)
+            data["_topic"] = data.get("country") or cands.split(" / ")[0]
+            return data
+        except Exception as e:
+            last_err, last_raw = e, raw
+            print(f"[script] urinish {attempt + 1}: {str(e)[:140]}")
+    # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz
     if last_raw:
         try:
             data = _parse_relaxed(last_raw)
-            data["_topic"] = topic
-            print("[script] zaxira oyna (105-140 so'z) bilan qabul qilindi")
+            data["_topic"] = data.get("country") or cands.split(" / ")[0]
+            print("[script] zaxira oyna (150-190 so'z) bilan qabul qilindi")
             return data
         except Exception:
             pass

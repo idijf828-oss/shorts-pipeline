@@ -258,8 +258,12 @@ def render(cfg, script, items, work):
         sin, fc, last = _screen_fc(screens, dur)
         a_idx = len(screens) + 1
         fc.append(f"{last}ass='{ass}'[assv]")
-        fc.append(f"[assv]{style.GRADE_ALL},format=yuv420p[vout]")
         tail = TAIL if i == n - 1 else 0.0
+        # oxirgi segmentda video ham tail'gacha yetamiz (oxirgi kadr
+        # ushlab turiladi — pleyerlarga mustahkam)
+        tpad = (f",tpad=stop_mode=clone:stop_duration={tail:.2f}"
+                if tail > 0 else "")
+        fc.append(f"[assv]{style.GRADE_ALL}{tpad},format=yuv420p[vout]")
         # audio BUTUN segment uzunligiga padlanadi (dur pad-sukunatni
         # o'z ichiga oladi!) — aks holda concat'da audio videodan
         # qolqib, A/V desync bo'ladi (run 15/16 o'lchovlarining ildizi)
