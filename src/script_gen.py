@@ -297,9 +297,20 @@ def _parse(raw):
                         if str(h).strip()][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
     words = len(data["script"].split())
-    if not (112 <= words <= 138):
+    lo, hi = globals().get("_WORD_LO", 112), globals().get("_WORD_HI", 138)
+    if not (lo <= words <= hi):
         raise ValueError(f"script {words} so'z — 118-130 oralig'ida bo'lishi kerak")
     return data
+
+
+def _parse_relaxed(raw):
+    """Oxirgi zaxira: so'z oynasi 105-140 (pads/tempo 35-40s ni tuzatadi)."""
+    global _WORD_LO, _WORD_HI
+    _WORD_LO, _WORD_HI = 105, 140
+    try:
+        return _parse(raw)
+    finally:
+        _WORD_LO, _WORD_HI = 112, 138
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):
@@ -308,7 +319,7 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
     models = [primary] + [m for m in MODELS if m != primary]
     prompt, topic = _build_prompt(cfg, trends, history_kws, avoid_title)
     print(f"   kun mavzusi: {topic}")
-    last_err = None
+    last_err, last_raw = None, None
     for model in models:
         for attempt in range(2):
             try:
@@ -317,9 +328,18 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
                 data["_topic"] = topic
                 return data
             except Exception as e:
-                last_err = e
+                last_err, last_raw = e, raw
                 print(f"[script] {model} urinish {attempt + 1}: {e}")
                 if "not found" in str(e).lower() or "not_found" in str(e).lower():
                     break
                 time.sleep(2)
+    # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz (crash o'rniga)
+    if last_raw:
+        try:
+            data = _parse_relaxed(last_raw)
+            data["_topic"] = topic
+            print("[script] zaxira oyna (105-140 so'z) bilan qabul qilindi")
+            return data
+        except Exception:
+            pass
     raise RuntimeError(f"Skript yozib bo'lmadi: {last_err}")

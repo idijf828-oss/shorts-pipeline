@@ -160,14 +160,15 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
 
     # pad = sahna OROASIDAGI tanaffus; oxirgi sahnaga pad YO'Q —
     # tail (0.5s)gina (doc P4: tail = dur - voice_end in 0.2..0.7)
-    pads = [0.18] * (len(items) - 1) + [0.0]
+    # min 0.35s: musiqa to'liq eshitiladigan pauza (doc P2) + nafas
+    pads = [0.35] * (len(items) - 1) + [0.0]
     total = sum(it["dur"] for it in items) + sum(pads) + render.TAIL
     if total < mn + 1.0:                            # juda qisqa -> pauzalar
         extra = (mn + 1.2 - total) / max(1, len(items) - 1)
         pads = [min(1.00, p + extra) for p in pads[:-1]] + [0.0]
         print(f"   pauzalar kengaytirildi (+{extra:.2f}s/seg)")
     elif total > mx - 0.5:
-        pads = [max(0.08, p * 0.45) for p in pads[:-1]] + [0.0]
+        pads = [max(0.35, p * 0.45) for p in pads[:-1]] + [0.0]
     for i, it in enumerate(items):
         it["dur"] += pads[i]
         it["scene"] = segs[i]

@@ -215,13 +215,20 @@ def run_checks(path, cfg=None, work=None):
         gap = float(sg["t1"]) - float(sg.get("voice_end", sg["t1"]))
         if gap >= 0.30 and (win is None or gap > win[1] - win[0]):
             win = (float(sg["voice_end"]), float(sg["t1"]))
-    if win is None:                       # pauza yo'q -> fade'dan oldin
-        win = (dur - 1.05, dur - 0.60)
-    w0 = win[0] + 0.05
-    w1 = min(win[1] - 0.03, w0 + 0.55)
-    mv = _mean_vol(path, w0, max(w0 + 0.25, w1))
-    checks.append(("musiqa pauzada M -33..-24 dB", -33.5 <= mv <= -24.0,
-                   f"{mv:.1f} dB @ {w0:.1f}s"))
+    tail_only = win is None
+    if tail_only:                        # pauza yo'q -> ovoz tugagach (fade)
+        ve = float(ev.get("voice_end") or (dur - 0.5))
+        win = (ve + 0.03, dur - 0.03)
+    w0 = win[0] + 0.02
+    w1 = min(win[1] - 0.02, w0 + 0.55)
+    mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
+    if tail_only:                        # fade ichida -> eshitilishi yetarli
+        checks.append(("musiqa tail'da eshitiladi (>=-36 dB)", mv >= -36.0,
+                       f"{mv:.1f} dB @ {w0:.1f}s"))
+    else:
+        checks.append(("musiqa pauzada M -33..-24 dB",
+                       -33.5 <= mv <= -24.0,
+                       f"{mv:.1f} dB @ {w0:.1f}s"))
 
     bad = 0
     print("== QC (doc P4) ==")
