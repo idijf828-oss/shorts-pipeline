@@ -45,11 +45,13 @@ DIRECT A 35-40 SECOND SHORT about "{topic}".
 
 VOICEOVER RULES (hard limits):
 - Total 118-130 words (voice at +15% speed must fill 35-40 s).
+  Each scene's "voice" is 14-18 words — COUNT the words in every line
+  before answering; short lines are rejected. 7-8 scenes.
   First sentence = a provocative QUESTION in ~10 words;
   motion must happen on screen within 0.5s of the start.
 - FORBIDDEN: "Did you know", "Top 5", "Welcome", any intro, any "like and
   subscribe", any outro/CTA.
-- Sentences max 12 words, punchy, zero filler. Present tense, active voice.
+- Sentences 14-18 words each, punchy, zero filler. Present tense, active voice.
 - The LAST sentence is a complete thought ending in a question that the HOOK
   answers (seamless infinite loop on replay). Never end mid-sentence.
 - Facts must be real and verifiable (borders, treaties, geography).
@@ -69,7 +71,7 @@ STRICT OUTPUT — one JSON object, no markdown, no commentary:
   "scenes": [
     {{
       "id": 1,
-      "voice": "<spoken line, max 12 words>",
+      "voice": "<spoken line, 14-18 words — count them>",
       "on_screen": "<ALL-CAPS 2-4 word headline>",
       "mode": "map",
       "map": {{"focus": "<place name>", "lat": <real lat>, "lon": <real lon>,
@@ -149,7 +151,7 @@ def _call(key, model, prompt, cfg, timeout=90):
                 time.sleep(5 * (attempt + 1))
                 continue
             if r.status_code != 200:
-                raise RuntimeError(f"Gemini {r.status_code}: {r.text[:300]}")
+                raise RuntimeError(f"Gemini {r.status_code}: {r.text[:120]}")
             data = r.json()
             cands = data.get("candidates") or []
             if not cands or not (cands[0].get("content") or {}).get("parts"):
@@ -329,9 +331,11 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
                 return data
             except Exception as e:
                 last_err, last_raw = e, raw
-                print(f"[script] {model} urinish {attempt + 1}: {e}")
-                if "not found" in str(e).lower() or "not_found" in str(e).lower():
-                    break
+                print(f"[script] {model} urinish {attempt + 1}: {str(e)[:120]}")
+                if ("not found" in str(e).lower()
+                        or "not_found" in str(e).lower()
+                        or "429" in str(e)):
+                    break                      # modelni o'tkazib yuborish
                 time.sleep(2)
     # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz (crash o'rniga)
     if last_raw:

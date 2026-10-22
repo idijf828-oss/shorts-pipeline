@@ -126,15 +126,18 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
     os.makedirs(work, exist_ok=True)
     segs = script.get("scenes") or script.get("segments")
 
-    if tts_cache and tts_cache.get("items"):
+    if tts_cache and tts_cache.get("raw"):
         import copy
-        items = copy.deepcopy(tts_cache["items"])
-        gtts = tts_cache["gtts"]
-        print("   TTS cache'dan (urinish)")
+        items = copy.deepcopy(tts_cache["raw"])       # XOM TTS natijasi
+        gtts = any(it.get("engine") == "gtts" for it in items)
+        print("   TTS cache'dan (urinish) — audio post qayta hisoblanadi")
     else:
         print("== 3/7: TTS (edge / gTTS zaxira) ==")
         items = tts.synth(cfg, segs)
         gtts = any(it.get("engine") == "gtts" for it in items)
+        if tts_cache is not None:
+            import copy
+            tts_cache["raw"] = copy.deepcopy(items)
 
     print("== 4/7: Audio post (gap<=0.12s + 1.15x + tail) ==")
     gap = float(cfg.get("audio", {}).get("silence_gap", 0.12))
@@ -177,10 +180,6 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
         it["scene"] = segs[i]
     print(f"   jami timeline: {sum(it['dur'] for it in items) + render.TAIL:.1f}s"
           f" (tempo {tempo:.2f}x)")
-    if tts_cache is not None and not tts_cache.get("items"):
-        import copy
-        tts_cache["items"] = copy.deepcopy(items)
-        tts_cache["gtts"] = gtts
 
     print("== 5/7: Vizual: xarita + bayroq-fill + events / stock ==")
     used_ids = set(history.clip_ids())
@@ -287,7 +286,7 @@ def produce_with_qc(cfg, script):
                 mv = float(str(val).split("dB")[0].strip())
             except ValueError:
                 mv = -40.0
-            factor = 10 ** ((-28.0 - mv) / 20.0)      # -28 dBTP target
+            factor = 10 ** ((-27.0 - mv) / 20.0)      # -27 dB target
             cfg["sfx"]["music_volume"] = max(0.03, min(0.35, cur * factor))
             print(f"   musiqa remiks: vol {cur:.3f} -> "
                   f"{cfg['sfx']['music_volume']:.3f}")

@@ -167,20 +167,25 @@ def make_card(text, subtext, dest):
 
 
 # ---------- Boshqaruvchi ----------
-def _mid_frame(video_path, out_jpg):
-    """Klip o'rtasidan 1 kadr (validatsiya uchun)."""
+def _frame_at(video_path, frac, out_jpg):
+    """Klipning frac nisbatidagi nuqtasidan 1 kadr (validatsiya uchun)."""
     try:
         d = float(subprocess.check_output(
             ["ffprobe", "-v", "error", "-show_entries", "format=duration",
              "-of", "csv=p=0", video_path]).strip() or "2")
         subprocess.run(
-            ["ffmpeg", "-y", "-v", "error", "-ss", f"{max(0, d / 2 - 0.1):.2f}",
+            ["ffmpeg", "-y", "-v", "error",
+             "-ss", f"{max(0, d * frac - 0.05):.2f}",
              "-i", video_path, "-frames:v", "1", "-vf",
              "scale=540:-2", "-q:v", "4", out_jpg],
             check=True, capture_output=True, timeout=60)
-        return os.path.exists(out_jpg)
+        return os.path.exists(out_jpg) and os.path.getsize(out_jpg) > 1000
     except Exception:
         return False
+
+
+def _mid_frame(video_path, out_jpg):
+    return _frame_at(video_path, 0.5, out_jpg)
 
 
 def _ocr_text(jpg):
@@ -265,14 +270,20 @@ def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
                 dest = f"{prefix}_{len(found)}.bin"
                 if not _download(it["link"], dest):
                     continue
-                # kadr validatsiyasi
-                jpg = dest + "_f.jpg"
-                if _mid_frame(dest, jpg):
-                    ocr = _ocr_text(jpg)
-                    if len(ocr) >= 2:
-                        print(f"[media] rad etildi (OCR matn): {ocr[:4]}")
-                        os.remove(dest)
-                        continue
+                # kadr validatsiyasi: 3 nuqta (25/50/75%) — oraliq
+                # kadrlarda chiqadigan titrlar ham ushlanadi (run 14)
+                ocr_hit = None
+                for fi, frac in enumerate((0.25, 0.5, 0.75)):
+                    jpg = f"{dest}_f{fi}.jpg"
+                    if _frame_at(dest, frac, jpg):
+                        ocr = _ocr_text(jpg)
+                        if len(ocr) >= 2:
+                            ocr_hit = ocr
+                            break
+                if ocr_hit:
+                    print(f"[media] rad etildi (OCR matn): {ocr_hit[:4]}")
+                    os.remove(dest)
+                    continue
                     v = _vision_check(cfg, jpg, scene.get("voice", ""))
                     if v is False:
                         print(f"[media] rad etildi (vision): {it['id']}")
