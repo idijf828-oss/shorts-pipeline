@@ -55,13 +55,15 @@ COUNTRIES = [
 COUNTRIES = list(dict.fromkeys(COUNTRIES))          # dublikatlarsiz
 
 # ================= MASTER SYSTEM PROMPT =================
-SYSTEM = """You are the head writer of a viral "Top 5 facts" YouTube
-Shorts channel about countries. Format: fast countdown listicle —
-hook, five numbered facts counting down from 5 to 1 (the most
-shocking fact LAST), then a seamless loop question. Every fact is
-real, verifiable and genuinely surprising. You write clean, punchy,
-grammatically perfect American English — zero typos, zero filler,
-zero cliches."""
+SYSTEM = """You are the writer-director of a viral immersive geography
+YouTube Shorts channel. Style benchmark: slow, cinematic, SECOND-PERSON
+storytelling that puts the viewer inside the place — "Step inside this
+small tavern and sit down in two countries." Every line is short, calm
+and physical. Five numbered facts count down visually (never spoken),
+most shocking fact last, ending on a playful loop line. Every fact is
+real and verifiable. Perfect American English — zero typos, zero filler,
+no exclamation marks in the voice lines."""
+
 
 # ================= MASTER USER PROMPT =================
 PROMPT_TMPL = """Pick ONE country from these three candidates: {candidates}.
@@ -71,43 +73,42 @@ Platform: YouTube Shorts (vertical 1080x1920).
 {trend_block}
 Recently covered countries (STRICTLY DO NOT pick any of these): {hist}
 {avoid}
-Write a 45-55 SECOND SHORT: "5 facts about <your country>" countdown.
+Write a 35-40 SECOND immersive short: "5 facts about <your country>".
 
-VOICEOVER (hard limits — COUNT the words in every line before answering):
-- Total 158-182 words across exactly 7 scenes.
-- Scene 1 (HOOK): 18-24 words. First sentence is a provocative question
-  (~10 words) that teases the #1 fact. Something must move on screen
-  within 0.5s of the start.
-- Scenes 2-6 (FACT 5 -> FACT 1 countdown, most shocking fact LAST):
-  each 25-31 words, exactly TWO sentences — the fact, then a short
-  punch line that lands it.
-- Scene 7 (LOOP): 14-18 words, ends in a question the HOOK answers
-  (seamless infinite loop on replay). Never end mid-sentence.
-- FORBIDDEN: "Did you know", "Welcome", saying "number five" or
-  "Top 5" out loud, any intro, "like and subscribe", any outro/CTA.
-- Present tense, active voice, specific place names, real numbers.
-- Facts must be real and verifiable (geography, records, laws, history).
-  If you cannot name a credible source, REPLACE the fact.
+NARRATION — IMMERSIVE STORYTELLING (the benchmark style):
+"Step inside this small tavern and sit down in two countries."
+"Order a drink on the left side and you are in Spain."
+Rules derived from that style:
+- Second person, present tense, imperative. The viewer is physically
+  THERE. Use body actions: step inside, look up, order, walk, touch.
+- Concrete physical details over abstractions: "a black line painted
+  on the wooden floor", "your jacket on the chair" — never "interesting
+  legislation".
+- Total 88-102 words across exactly 7 scenes. COUNT every line.
+- Scene 1 (HOOK): 11-13 words. One action command + a tease of fact #1.
+- Scenes 2-6 (FACT 5 -> FACT 1, most shocking LAST): 14-16 words each,
+  TWO very short sentences. Present tense. Real places, real numbers.
+- Scene 7 (LOOP): 9-12 words. A playful warning or "just don't..."
+  line that the HOOK answers on replay.
+- NEVER say "fact", "number five", "Top 5", "did you know", any intro,
+  any CTA, any question except the hook may not open with one.
+- Calm declarative lines. No exclamation marks. No rhetorical hype.
 
 VISUALS — REAL FOOTAGE for every scene:
 - Every scene: "mode": "stock" with visual_query = exactly 3
   hierarchical phrases (specific -> broader -> generic), each 2-3
-  English words describing filmable real-world b-roll.
-  Example: ["shinkansen bullet train passing", "japanese train station",
-            "modern train aerial"].
-- NEVER a lone generic object ("floor", "wall", "land", "water") —
-  those queries return wrong footage. NEVER build queries from filler
-  words. NEVER queries about text, signs or logos (OCR rejects them).
+  English words describing filmable real-world b-roll (e.g.
+  ["deer walking street japan", "sika deer shrine", "wild deer town"]).
+- NEVER a lone generic object ("floor", "wall", "land"). NEVER queries
+  about text, signs or logos (OCR rejects them).
 - "reject": wrong topics these queries could return.
-- Every scene ALSO carries map data (focus/lat/lon/zoom) as a fallback
-  if footage fails validation — use the exact place the fact is about.
-- "on_screen": fact scenes use "FACT 5 - HEADLINE" format (2-4 ALL-CAPS
-  words after the dash, the fact's core). Hook: a 2-4 word tease.
-  Loop: a 2-4 word question.
-- sfx_trigger: fact scenes get "ding"; hook gets "riser"; scene 6
-  (FACT 1) may add "boom".
-- highlights: 1-3 per scene, color from the palette
-  (cyan #00E5FF, red #FF2D2D, yellow #FFD400).
+- Every scene ALSO carries map data (focus/lat/lon/zoom) as fallback.
+- "on_screen": fact scenes use "FACT 5 - HEADLINE" (2-4 ALL-CAPS words
+  after the dash — the visual countdown). Hook: 2-4 word tease. Loop:
+  2-4 word warning.
+- "mid_text": give EXACTLY 2-3 scenes a 1-3 word ALL-CAPS reveal word
+  that punches mid-screen (e.g. "IN FRANCE", "SIX AM", "STILL LEGAL").
+  Choose the moments with the biggest reveal, including one in scene 6.
 
 OUTPUT — ONE JSON object, no markdown, no commentary:
 {{
@@ -120,27 +121,27 @@ OUTPUT — ONE JSON object, no markdown, no commentary:
   "scenes": [
     {{
       "id": 1,
-      "voice": "<hook, 18-24 words — count them>",
+      "voice": "<hook, 11-13 words — count them>",
       "on_screen": "<2-4 WORD TEASE>",
       "mode": "stock",
       "map": {{"focus": "<place>", "lat": <real lat>, "lon": <real lon>,
                "zoom_level": <3=continent .. 12=city>, "motion": "zoom_in"}},
       "country_iso_codes": ["<ISO2>"],
-      "highlights": [{{"word": "<exact word from voice>",
-                        "color": "#FFD400"}}],
-      "sfx_trigger": ["riser"],
+      "sfx_trigger": [],
       "fact_source": "<credible source for the tease>",
       "visual_query": ["<3 phrases>"],
       "must_contain": ["<2-5 GENERIC visual words that literally appear in stock clip tags: mountain, snow, deer, street, train, aerial — NEVER country names or abstract words (culture, economy, history)>"],
       "reject": ["<wrong topics>"]
     }},
-    {{ ... scenes 2-6: FACT 5 down to FACT 1, "voice" 25-31 words,
-         "on_screen": "FACT N - HEADLINE", "sfx_trigger": ["ding"] ... }},
-    {{ ... scene 7: loop, ends in a question ... }}
+    {{ ... scenes 2-6: FACT 5 down to FACT 1, "voice" 14-16 words,
+         "on_screen": "FACT N - HEADLINE", 2-3 of them with
+         "mid_text": "<REVEAL WORD>" ... }},
+    {{ ... scene 7: loop, playful warning ... }}
   ]
 }}"""
 
-_WORD_LO, _WORD_HI = 152, 184
+
+_WORD_LO, _WORD_HI = 88, 102
 
 
 def _pick_candidates(history_kws, k=3):
@@ -284,6 +285,11 @@ def _parse(raw):
         sc["reject"] = [str(x).lower() for x in
                         _as_list(sc.get("reject"))][:5]
         sc["on_screen"] = str(sc.get("on_screen", "")).strip()
+        mid = str(sc.get("mid_text") or "").strip()
+        mw = mid.split()
+        if not (1 <= len(mw) <= 3) or len(mid) > 24:
+            mid = ""
+        sc["mid_text"] = mid.upper()
         sc.setdefault("id", i + 1)
 
     # FACT N prefiksi: sahna 2..(n-1) => FACT (n-1-i); yo'q bo'lsa qo'sh
@@ -331,13 +337,13 @@ def _parse(raw):
 
 
 def _parse_relaxed(raw):
-    """Oxirgi zaxira: so'z oynasi 146-198 (tempo <=1.10x 45-55s ga siqadi)."""
+    """Oxirgi zaxira: so'z oynasi 84-106 (tempo 35-40s ga siqadi)."""
     global _WORD_LO, _WORD_HI
-    _WORD_LO, _WORD_HI = 146, 198
+    _WORD_LO, _WORD_HI = 84, 106
     try:
         return _parse(raw)
     finally:
-        _WORD_LO, _WORD_HI = 152, 184
+        _WORD_LO, _WORD_HI = 88, 102
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):

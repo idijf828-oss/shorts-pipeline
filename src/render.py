@@ -98,17 +98,6 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
             ":d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
             f":s={W}x{H}:fps={FPS},setsar=1"
         )
-        if on_screen and f0 / FPS < style.ONSCREEN_MAX_DUR:
-            osd_txt, osd_sz = _fit_onscreen(on_screen)
-            tf = os.path.join(work, f"os_{i:02d}_{k}.txt")
-            with open(tf, "w", encoding="utf-8") as f:
-                f.write(osd_txt)
-            # t har subsegmentda LOKAL -> global vaqt = t + F0SEC
-            vf += (f",drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
-                   f":textfile={tf}:fontcolor=white:borderw=6:bordercolor=black"
-                   f":fontsize={osd_sz}"
-                   f":alpha='min(1,(t+F0SEC)/0.12)*clip((OSDUR-t-F0SEC)/0.18,0,1)'"
-                   f":x=(w-text_w)/2:y=104:enable='lte(t+F0SEC,OSDUR)'")
         vf += ",format=yuv420p"
         vf = vf.replace("OSDUR", f"{style.ONSCREEN_MAX_DUR:.2f}") \
                .replace("F0SEC", f"{f0 / FPS:.3f}")
@@ -220,9 +209,13 @@ def render(cfg, script, items, work):
             ev_log.append({"t": round(seg_start, 3), "type": "on_screen",
                            "seg": i, "size": style.ONSCREEN_SIZE,
                            "dur": style.ONSCREEN_MAX_DUR})
+        if scene.get("mid_text"):
+            ev_log.append({"t": round(seg_start + 0.30, 3),
+                           "type": "mid_text", "seg": i,
+                           "text": str(scene["mid_text"])[:40]})
         if vis["type"] == "map":
             base = _render_map_states(vis, fulls, punches, dur,
-                                      scene.get("on_screen", ""), work, i)
+                                      "", work, i)
         else:
             base = os.path.join(work, f"vis_{i:02d}.mp4")
             paths = vis.get("paths") or [vis["path"]]
@@ -244,6 +237,12 @@ def render(cfg, script, items, work):
         for p in punches:
             ev_log.append({"t": round(seg_start + p / FPS, 3),
                            "type": "zoom_punch", "seg": i})
+        if vis["type"] == "map":
+            # v7: xarita sahnasi uzluksiz zoompan harakati — har 1.4s da
+            # motion hodisasi (subtitr yo'q, dinamizm shu bilan ta'minlanadi)
+            for mt in range(1, max(1, int((dur - 0.4) / 1.4)) + 1):
+                ev_log.append({"t": round(seg_start + mt * 1.4, 3),
+                               "type": "zoom_motion", "seg": i})
         for ct in chunk_ts:
             ev_log.append({"t": round(seg_start + ct, 3),
                            "type": "caption", "seg": i})
@@ -258,12 +257,27 @@ def render(cfg, script, items, work):
         sin, fc, last = _screen_fc(screens, dur)
         a_idx = len(screens) + 1
         fc.append(f"{last}ass='{ass}'[assv]")
+        # v7: tepa yorliq (map VA stock uchun bir joyda, ~2.6s)
+        osd = ""
+        if scene.get("on_screen"):
+            osd_txt, osd_sz = _fit_onscreen(scene["on_screen"])
+            tf = os.path.join(work, f"os_{i:02d}.txt")
+            with open(tf, "w", encoding="utf-8") as f:
+                f.write(osd_txt)
+            osd = (f"drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
+                   f":textfile={tf}:fontcolor=white:borderw=6:bordercolor=black"
+                   f":fontsize={osd_sz}"
+                   f":alpha='min(1,t/0.12)*clip(({style.ONSCREEN_MAX_DUR:.2f}"
+                   f"-t)/0.20,0,1)'"
+                   f":x=(w-text_w)/2:y=104"
+                   f":enable='lte(t,{style.ONSCREEN_MAX_DUR:.2f})'")
         tail = TAIL if i == n - 1 else 0.0
         # oxirgi segmentda video ham tail'gacha yetamiz (oxirgi kadr
         # ushlab turiladi — pleyerlarga mustahkam)
         tpad = (f",tpad=stop_mode=clone:stop_duration={tail:.2f}"
                 if tail > 0 else "")
-        fc.append(f"[assv]{style.GRADE_ALL}{tpad},format=yuv420p[vout]")
+        fc.append(f"[assv]{osd}{',' if osd else ''}"
+                  f"{style.GRADE_ALL}{tpad},format=yuv420p[vout]")
         # audio BUTUN segment uzunligiga padlanadi (dur pad-sukunatni
         # o'z ichiga oladi!) — aks holda concat'da audio videodan
         # qolqib, A/V desync bo'ladi (run 15/16 o'lchovlarining ildizi)
@@ -319,8 +333,9 @@ def _mix_music(cfg, joined, out, mus_vol=None):
         except Exception as e:
             print("[render] musiqa topilmadi:", e)
             music = None
+    music_on = bool(cfg.get("sfx", {}).get("music_enabled", True))
     d = _probe(joined)
-    if music:
+    if music_on and music:
         try:
             # A) mix (voice zanjiri + musiqa sidechain) -> wav (loudnorm'siz)
             fc = (
@@ -364,6 +379,34 @@ def _mix_music(cfg, joined, out, mus_vol=None):
             return
         except Exception as e:
             print("[render] musiqa mix xatosi:", e)
+    else:
+        # v7 immersive (referens uslubi): MUSIQA YO'Q — faqat ovoz zanjiri
+        try:
+            fc = (
+                f"[0:a]highpass=f=80,"
+                f"acompressor=threshold=0.125:ratio=3:attack=5:release=80,"
+                f"equalizer=f=3500:t=q:w=1:g=2,alimiter=limit=0.95,"
+                f"atrim=0:{max(0.1, d - TAIL):.3f}[mix]"
+            )
+            mixw = os.path.join(os.path.dirname(out) or ".", "mix_tmp.wav")
+            _run(["ffmpeg", "-y", "-i", joined, "-filter_complex", fc,
+                  "-map", "[mix]", "-ar", "48000", "-ac", "2", mixw])
+            meas = _ebur128(mixw)
+            gain = max(-12.0, min(12.0, -15.0 - meas["I"]))
+            print(f"[render] master (musiqasiz): I={meas['I']:.1f} "
+                  f"TP={meas['TP']:.1f} -> gain {gain:+.2f} dB + limiter")
+            _run(["ffmpeg", "-y", "-i", joined, "-i", mixw,
+                  "-filter_complex",
+                  f"[1:a]volume={gain:.2f}dB,"
+                  f"alimiter=limit=0.841:level=false:attack=5,"
+                  f"apad=pad_dur={TAIL + 0.1:.2f},"
+                  f"atrim=0:{d:.3f}[a]",
+                  "-map", "0:v", "-map", "[a]", "-t", f"{d:.3f}",
+                  "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+                  "-movflags", "+faststart", out])
+            return
+        except Exception as e:
+            print("[render] musiqasiz master xatosi:", e)
     _run(["ffmpeg", "-y", "-i", joined,
           "-af", "loudnorm=I=-15:TP=-1.5:LRA=7",
           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",

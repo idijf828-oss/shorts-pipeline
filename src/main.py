@@ -159,8 +159,9 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
 
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
     base = sum(it["dur"] for it in items)
-    # min padlar (0.35s) + tail — tempo buni hisobga olishi shart
-    overhead = 0.35 * (len(items) - 1) + render.TAIL
+    # v7 immersive: pad'lar kengroq (referens pauzalari 0.6-1.5s)
+    pad_s = float(cfg.get("audio", {}).get("pad_s", 0.7))
+    overhead = pad_s * (len(items) - 1) + render.TAIL
     tempo = turbo if gtts else 1.0     # doc C2: atempo faqat gTTS zaxira
     if base + overhead > mx - 0.3:                # uzun -> tezroq
         tempo = min(1.35, base / (mx - 0.3 - overhead))
@@ -176,14 +177,14 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
     # pad = sahna OROASIDAGI tanaffus; oxirgi sahnaga pad YO'Q —
     # tail (0.5s)gina (doc P4: tail = dur - voice_end in 0.2..0.7)
     # min 0.35s: musiqa to'liq eshitiladigan pauza (doc P2) + nafas
-    pads = [0.35] * (len(items) - 1) + [0.0]
+    pads = [pad_s] * (len(items) - 1) + [0.0]
     total = sum(it["dur"] for it in items) + sum(pads) + render.TAIL
     if total < mn + 1.0:                            # juda qisqa -> pauzalar
         extra = (mn + 1.2 - total) / max(1, len(items) - 1)
-        pads = [min(1.00, p + extra) for p in pads[:-1]] + [0.0]
+        pads = [min(1.30, p + extra) for p in pads[:-1]] + [0.0]
         print(f"   pauzalar kengaytirildi (+{extra:.2f}s/seg)")
     elif total > mx - 0.5:
-        pads = [max(0.35, p * 0.45) for p in pads[:-1]] + [0.0]
+        pads = [max(0.40, p * 0.55) for p in pads[:-1]] + [0.0]
     for i, it in enumerate(items):
         it["dur"] += pads[i]
         it["scene"] = segs[i]
@@ -237,26 +238,37 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
         it["layers"] = layers
         it["punches"] = punches if vis["type"] == "map" else []
 
-        # --- SFX (doc P2 xaritasi): darajalar style.SFX_DB dan ---
+        # --- SFX: v7 minimal (faqat kesish whoosh) yoki to'liq P2 ---
+        minimal = str((cfg.get("sfx") or {}).get("mode", "")) == "minimal"
         trig = []
-        if i == 0:                       # hook: riser + 3.0s da impact
-            trig.append(("riser", 0.0, None))
-            trig.append(("impact", min(3.0, max(0.8, it["dur"] - 0.6)), None))
-        if i > 0:                        # cut/sahna o'tishi: whoosh 0.25s
-            trig.append(("whoosh", 0.02, None))
-        if vis and vis["type"] == "clip":        # stock slot kesishlari
-            n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
-            for k in range(1, n_slots):
-                trig.append(("whoosh", k * style.CLIP_MAX_S, None))
-        for name in (sc.get("sfx_trigger") or [])[:2]:
-            trig.append((name, 0.05, None))
-        for ly in layers:                        # har eventda tovush
-            trig.append((ly["sfx"], max(0.25, ly["t"]), None))
-        for p in it["punches"]:
-            trig.append(("whoosh", p / 30.0, None))
-        if i == len(items) - 1:                  # oxirgi "twist": impact
-            twist = layers[-1]["t"] if layers else it["dur"] * 0.4
-            trig.append(("impact", max(0.3, min(twist, it["dur"] - 0.4)), None))
+        if minimal:
+            if i > 0:
+                trig.append(("whoosh", 0.02, None))
+            if vis and vis["type"] == "clip":
+                n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
+                for k in range(1, n_slots):
+                    trig.append(("whoosh", k * style.CLIP_MAX_S, None))
+        if not minimal:
+            if i == 0:                 # hook: riser + 3.0s da impact
+                trig.append(("riser", 0.0, None))
+                trig.append(("impact", min(3.0, max(0.8, it["dur"] - 0.6)),
+                             None))
+            if i > 0:                  # cut/sahna o'tishi: whoosh 0.25s
+                trig.append(("whoosh", 0.02, None))
+            if vis and vis["type"] == "clip":    # stock slot kesishlari
+                n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
+                for k in range(1, n_slots):
+                    trig.append(("whoosh", k * style.CLIP_MAX_S, None))
+            for name in (sc.get("sfx_trigger") or [])[:2]:
+                trig.append((name, 0.05, None))
+            for ly in layers:                    # har eventda tovush
+                trig.append((ly["sfx"], max(0.25, ly["t"]), None))
+            for p in it["punches"]:
+                trig.append(("whoosh", p / 30.0, None))
+            if i == len(items) - 1:              # oxirgi "twist": impact
+                twist = layers[-1]["t"] if layers else it["dur"] * 0.4
+                trig.append(("impact", max(0.3, min(twist, it["dur"] - 0.4)),
+                             None))
         if trig:
             it["audio"] = sfx.add_triggers(cfg, it["audio"], trig, work, i)
 

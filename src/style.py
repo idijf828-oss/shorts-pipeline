@@ -21,8 +21,11 @@ FONT_FAMILY = "Montserrat ExtraBold"
 FONT_FILE = "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf"
 CAPTION_SIZE = 96           # doim bir xil (doc P1); 2 qator -> \N
 CAPTION_FIT_MIN = 80        # faqat kam holatda (doc P1)
-ONSCREEN_SIZE = 76          # tepa yorliq: yo'q yoki >=72px (doc P1/P4b)
-ONSCREEN_MAX_DUR = 1.2      # har sahnada <=1.2s (doc P1)
+ONSCREEN_SIZE = 84          # tepa yorliq: yo'q yoki >=72px (doc P1/P4b)
+ONSCREEN_MAX_DUR = 2.6      # v7 immersive: yorliq ~2.6s ko'rinadi (referens)
+MID_SIZE = 132              # v7: o'rtadagi katta "reveal" so'zi (IN FRANCE)
+MID_Y = 1080                # ~56% balandlikda (referens: 625/1080)
+MID_DUR = 1.5               # ~1.5s ko'rinadi
 
 # --- subtitr joyi ---
 CAP_Y_MAP = 950
@@ -49,6 +52,8 @@ STATIC_MAX_S = 1.2          # statik kadr <= 1.2s (events.json bilan tekshirilad
 SFX_DB = {"riser": -8, "impact": -9, "boom": -9, "alarm": -10,
           "whoosh": -12, "drop": -12, "swish": -12, "ding": -12,
           "pop": -12, "tick": -12, "flagpop": -11, "zip": -13}
+# v7 immersive (referens: musiqasiz, juda toza): faqat yumshoq whoosh
+MINIMAL_SFX_DB = {"whoosh": -16}
 
 
 def sfx_vol(name):

@@ -15,6 +15,7 @@ import os
 import re
 
 from . import style
+from .style import MID_Y
 
 W, H = 1080, 1920
 SAFE_W = style.SAFE_W
@@ -160,6 +161,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
 Style: Cap,{FONT},{size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,10,4,5,110,110,0,1
+Style: Mid,{FONT},132,&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,12,5,5,110,110,0,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -174,15 +176,14 @@ def caption_y(cfg, mode):
 
 
 def build_scene_ass(cfg, scene, words, dur, path):
-    """Segment subtitri: rangli highlight + aktiv so'z 115% + pop-in."""
+    """Segment ASS. Subtitr (cfg.captions.enabled) + v7 katta mid-so'z."""
     y = caption_y(cfg, scene.get("mode", "map"))
     highlights = {}
     for h in (scene.get("highlights") or []):
         w = _norm(h.get("word", ""))
-        c = _ass_color(h.get("color", ""))
-        if w and c:
-            highlights[w] = c
-    # country_iso bo'yicha zaxira rang (bayroq dominant rangi)
+        col = _ass_color(h.get("color", ""))
+        if w and col:
+            highlights[w] = col
     if not highlights:
         try:
             from . import geo
@@ -198,39 +199,52 @@ def build_scene_ass(cfg, scene, words, dur, path):
     head, size = _ass_head(cfg, y)
     yellow = _ass_color(YELLOW)
     ev, chunk_ts = [], []
-    for ch in chunk(words):
-        s = max(0.0, ch[0][1])
-        e = min(dur, ch[-1][2] + 0.10)
-        if e <= s:
-            e = s + 0.12
-        chunk_ts.append(round(s, 3))
-        active = _norm(ch[0][0])
-        split, base = _split2(ch, size)
-        parts, seen_active = [], False
-        for (wtxt, _ws, _we) in ch:
-            nw = _norm(wtxt)
-            color = highlights.get(nw)
-            is_active = (nw == active) and not seen_active
-            if is_active:
-                seen_active = True
-            txt = _clean(wtxt).upper()
-            if is_active:
-                # aktiv so'z: o'z rangi (yoki sariq) + 70->115 pop (doc B4)
-                parts.append("{\\c" + (color or yellow)
-                             + r"\fscx70\fscy70\t(0,110,\fscx115\fscy115)"
-                             + "}" + txt + "{\\r}")
-            elif color:
-                parts.append("{\\c" + color + "}" + txt + "{\\r}")
+    sub_on = bool(cfg.get("captions", {}).get("enabled", True))
+    if sub_on:
+        for ch in chunk(words):
+            s = max(0.0, ch[0][1])
+            e = min(dur, ch[-1][2] + 0.10)
+            if e <= s:
+                e = s + 0.12
+            chunk_ts.append(round(s, 3))
+            active = _norm(ch[0][0])
+            split, base = _split2(ch, size)
+            parts, seen_active = [], False
+            for (wtxt, _ws, _we) in ch:
+                nw = _norm(wtxt)
+                color = highlights.get(nw)
+                is_active = (nw == active) and not seen_active
+                if is_active:
+                    seen_active = True
+                txt = _clean(wtxt).upper()
+                if is_active:
+                    parts.append("{\\c" + (color or yellow)
+                                 + r"\fscx70\fscy70\t(0,110,\fscx115\fscy115)"
+                                 + "}" + txt + "{\\r}")
+                elif color:
+                    parts.append("{\\c" + color + "}" + txt + "{\\r}")
+                else:
+                    parts.append(txt)
+            if split:
+                line = " ".join(parts[:split]) + "\\N" + " ".join(parts[split:])
             else:
-                parts.append(txt)
-        if split:
-            line = " ".join(parts[:split]) + "\\N" + " ".join(parts[split:])
-        else:
-            line = " ".join(parts)
-        ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,"
-                  r"{\an5\pos(540," + str(y) + r")\fs" + str(base)
-                  + r"\fscx84\fscy84\t(0,110,\fscx100\fscy100)}"
-                  + line)
+                line = " ".join(parts)
+            ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,"
+                      r"{\an5\pos(540," + str(y) + r")\fs" + str(base)
+                      + r"\fscx84\fscy84\t(0,110,\fscx100\fscy100)}"
+                      + line)
+    # v7 immersive: o'rtadagi katta "reveal" so'zi (IN FRANCE uslubi)
+    mid = str(scene.get("mid_text") or "").strip()
+    if mid:
+        m0 = 0.30
+        m1 = min(dur - 0.15, m0 + 1.5)
+        if m1 > m0 + 0.2:
+            ev.append(f"Dialogue: 1,{_t(m0)},{_t(m1)},Mid,,0,0,0,,"
+                      r"{\an5\pos(540," + str(MID_Y) + r")"
+                      r"\fscx60\fscy60\t(0,120,\fscx100\fscy100)"
+                      r"\t(120,320,\fscx104\fscy104)"
+                      r"\t(320,520,\fscx100\fscy100)}"
+                      + _clean(mid).upper())
     with open(path, "w", encoding="utf-8") as f:
         f.write(head + "\n".join(ev) + "\n")
     return path, chunk_ts

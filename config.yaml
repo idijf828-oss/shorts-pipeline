@@ -18,20 +18,20 @@ channel:
   # Ovoz variantlari: en-US-ChristopherNeural (erkak, hujjatli),
   #                   en-US-GuyNeural (erkak, jonli), en-US-AriaNeural (ayol),
   #                   en-US-JennyNeural (ayol, iliq)
-  voice_rate: "+15%"                          # doc P2/C2 (tempo adaptive 35-40s saqlaydi)
+  voice_rate: "+0%"                            # v7 immersive: tabiiy, sekinroq nutq (referens ~2.2 so'z/s)
 
 video:
   width: 1080
   height: 1920
   fps: 30
   # V4 (doc): 5-8 sahna, 95-110 so'z
-  min_duration: 45                            # sekund (v6: 5-fakt listicle)
-  max_duration: 55                            # sekund (qattiy cheklov)
+  min_duration: 35                            # sekund (v7 immersive, referens 35.7s)
+  max_duration: 40                            # sekund (qattiy cheklov)
   tags: [geography, facts, countries, 5 facts, top 5, world facts,
          did you know, education, shorts]
 
 captions:
-  enabled: true
+  enabled: false      # v7 immersive: uzluksiz subtitr YO'Q (referens uslubi)
   y_map: 950             # xarita sahnalarida (doc B4)
   y_stock: 1150          # stock/odam kadrlarida pastroq
   safe_w: 860            # maksimal matn kengligi (x: 110..970 safe zone)
@@ -53,11 +53,14 @@ sources:
     - "city skyline aerial"
 
 sfx:
-  enabled: true                    # SFX triggerlar + fon musiqasi
+  enabled: true                    # SFX triggerlar
+  mode: "minimal"                  # v7: faqat nozik kesish whoosh (referens)
+  music_enabled: false             # v7 immersive: musiqa YO'Q (pauzalar tabiiy)
   music_volume: 0.11             # ~ -18dB (musiqa ovoz ostida, ustida emas)
 
 audio:
-  turbo: 1.15                      # doimiy tezlik (pitch buzilmasdan)
+  turbo: 1.05                      # gTTS zaxira tezligi (pitch buzilmasdan)
+  pad_s: 0.7                       # v7: sahna-oralig'i (referens pauzalari)
   silence_gap: 0.12                # gaplar orasi <=0.12s (doc C2)
   tail_pad: 0.5                    # video = ovoz + 0.5s (doc C3)
 

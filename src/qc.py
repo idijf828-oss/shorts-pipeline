@@ -141,8 +141,9 @@ def run_checks(path, cfg=None, work=None):
         ("LUFS -16..-14", -16.2 <= lufs <= -13.8, f"{lufs:.1f}"),
         ("true peak <= -1", tp <= -1.0, f"{tp:.1f}"),
         ("tail 0.2-0.7s (ovoz oxiri)", 0.2 <= tail <= 0.7, f"{tail:.2f}s"),
-        ("ichki jimlik >=0.25s = 0", len(mid) == 0,
-         f"{len(mid)} ta {mid[:3]}"),
+        # v7 immersive: 0.4-1.6s pauzalar ATAYLAB (nafas); >1.7s = xato
+        ("uzun jimlik >1.7s = 0", not any(d > 1.7 for _s, d in mid),
+         f"{len(mid)} pauza, eng uzuni {max((d for _s, d in mid), default=0):.2f}s"),
     ]
 
     # --- events.json (doc P4) ---
@@ -151,7 +152,8 @@ def run_checks(path, cfg=None, work=None):
         ts = sorted(float(e["t"]) for e in evs)
         max_gap = max([b - a for a, b in zip([0.0] + ts, ts + [dur])],
                       default=dur)
-        checks.append(("har <=1.2s da hodisa", max_gap <= 1.26,
+        checks.append(("har <=3.0s da hodisa (kesish/yorliq)",
+                       max_gap <= 3.0,
                        f"max gap {max_gap:.2f}s ({len(evs)} hodisa)"))
         engine = str(ev.get("engine", "edge"))
         tol = 0.30 if engine == "gtts" else 0.15
@@ -164,9 +166,9 @@ def run_checks(path, cfg=None, work=None):
         osd = [e for e in evs if e.get("type") == "on_screen"]
         if osd:
             o0 = osd[0]
-            checks.append(("tepa yorliq >=72px, <=1.2s",
+            checks.append(("tepa yorliq >=72px, <=3.2s",
                            int(o0.get("size", 0)) >= 72
-                           and float(o0.get("dur", 9)) <= 1.2,
+                           and float(o0.get("dur", 9)) <= 3.2,
                            f"{o0.get('size')}px/{o0.get('dur')}s"))
         else:
             checks.append(("tepa yorliq yo'q yoki >=72px", True, "yo'q"))
@@ -175,21 +177,23 @@ def run_checks(path, cfg=None, work=None):
     else:
         checks.append(("events.json mavjud", False, "yo'q"))
 
-    # --- subtitr shrift bir xilligi (doc P4a) ---
+    # --- subtitr shrift bir xilligi (doc P4a; v7: subtitrsiz rejimda yo'q) ---
     sizes = set()
+    if not bool((cfg.get("captions") or {}).get("enabled", True)):
+        sizes = set()  # subtitr o'chiq -> pastdagi blok o'tkazib yuboriladi
     for fn in sorted(os.listdir(work)) if os.path.isdir(work) else []:
         if fn.startswith("subs_") and fn.endswith(".ass"):
             with open(os.path.join(work, fn), encoding="utf-8") as f:
                 sizes |= set(int(x) for x in re.findall(r"\\fs(\d+)", f.read()))
-    if sizes:
+    if bool((cfg.get("captions") or {}).get("enabled", True)) and sizes:
         # doc P1: 96 doimiy; 80 faqat kam holatda (bitta uzun so'z)
-        n80 = 0
         checks.append(("subtitr shrift 96 (80 kam holat)",
                        sizes <= {96, 80},
                        "/".join(str(x) for x in sorted(sizes)) + "px"))
 
     # --- safe-zone (doc P4c): subtitr x in [110,970] ---
-    if os.path.isdir(work):
+    if os.path.isdir(work) and bool((cfg.get("captions") or {})
+                                    .get("enabled", True)):
         edge = _ass_safe_zone(work)            # eng chekkadagi matn chizig'i
         checks.append(("safe-zone subtitr x in [110,970]",
                        edge <= 976, f"eng chetki x={edge:.0f}"))
@@ -209,31 +213,33 @@ def run_checks(path, cfg=None, work=None):
     else:
         checks.append(("stock kadrlarda OCR matni yo'q", True, "stock yo'q"))
 
-    # --- musiqa pauzada eshitiladi (doc P2/P4e) ---
-    # BARCHA sahna-oralig'i oynalarini o'lchaymiz -> median (bitta
-    # oynadagi jim pasaj yolg'on natija bermaydi)
-    wins = []
-    for sg in (ev.get("segments") or [])[:-1]:
-        gap = float(sg["t1"]) - float(sg.get("voice_end", sg["t1"]))
-        if gap >= 0.30:
-            wins.append((float(sg["voice_end"]), float(sg["t1"])))
-    if wins:
-        mvs = []
-        for (a, b) in wins:
-            w0, w1 = a + 0.08, min(b - 0.02, a + 0.63)
-            if w1 - w0 >= 0.15:
-                mvs.append(_mean_vol(path, w0, w1))
-        mvs.sort()
-        mv = mvs[len(mvs) // 2] if mvs else -99.0
-        checks.append(("musiqa pauzada M -33..-24 dB (median)",
-                       -33.5 <= mv <= -24.0,
-                       f"{mv:.1f} dB ({len(mvs)} oyna)"))
-    else:                                # pauza yo'q -> tail (fade ichida)
-        ve = float(ev.get("voice_end") or (dur - 0.5))
-        w0, w1 = ve + 0.03, dur - 0.03
-        mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
-        checks.append(("musiqa tail'da eshitiladi (>=-36 dB)", mv >= -36.0,
-                       f"{mv:.1f} dB @ {w0:.1f}s"))
+    # --- musiqa pauzada eshitiladi (doc P2/P4e; v7 musiqasiz -> o'tadi) ---
+    if bool((cfg.get("sfx") or {}).get("music_enabled", True)):
+        wins = []
+        for sg in (ev.get("segments") or [])[:-1]:
+            gap = float(sg["t1"]) - float(sg.get("voice_end", sg["t1"]))
+            if gap >= 0.30:
+                wins.append((float(sg["voice_end"]), float(sg["t1"])))
+        if wins:
+            mvs = []
+            for (a, b) in wins:
+                w0, w1 = a + 0.08, min(b - 0.02, a + 0.63)
+                if w1 - w0 >= 0.15:
+                    mvs.append(_mean_vol(path, w0, w1))
+            mvs.sort()
+            mv = mvs[len(mvs) // 2] if mvs else -99.0
+            checks.append(("musiqa pauzada M -33..-24 dB (median)",
+                           -33.5 <= mv <= -24.0,
+                           f"{mv:.1f} dB ({len(mvs)} oyna)"))
+        else:                            # pauza yo'q -> tail (fade ichida)
+            ve = float(ev.get("voice_end") or (dur - 0.5))
+            w0, w1 = ve + 0.03, dur - 0.03
+            mv = _mean_vol(path, w0, max(w0 + 0.20, w1))
+            checks.append(("musiqa tail'da eshitiladi (>=-36 dB)",
+                           mv >= -36.0, f"{mv:.1f} dB @ {w0:.1f}s"))
+    else:
+        checks.append(("musiqa: o'chirilgan (v7 immersive)", True,
+                       "pauzalar tabiiy jim (referens)"))
 
     bad = 0
     print("== QC (doc P4) ==")

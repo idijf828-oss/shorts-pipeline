@@ -3,7 +3,7 @@ name: Daily Shorts Pipeline
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3,11,19 * * *"   # Tashkent: 08/16/24
+    - cron: "0 9 * * *"
 
 permissions:
   contents: write
@@ -38,7 +38,6 @@ jobs:
           PYTHONUNBUFFERED: "1"
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
