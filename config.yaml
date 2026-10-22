@@ -54,7 +54,7 @@ sources:
 
 sfx:
   enabled: true                    # SFX triggerlar + fon musiqasi
-  music_volume: 0.085              # ~ -18dB (musiqa ovoz ostida, ustida emas)
+  music_volume: 0.125             # ~ -18dB (musiqa ovoz ostida, ustida emas)
 
 audio:
   turbo: 1.15                      # doimiy tezlik (pitch buzilmasdan)

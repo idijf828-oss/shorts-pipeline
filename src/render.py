@@ -260,8 +260,11 @@ def render(cfg, script, items, work):
         fc.append(f"{last}ass='{ass}'[assv]")
         fc.append(f"[assv]{style.GRADE_ALL},format=yuv420p[vout]")
         tail = TAIL if i == n - 1 else 0.0
+        # audio BUTUN segment uzunligiga padlanadi (dur pad-sukunatni
+        # o'z ichiga oladi!) — aks holda concat'da audio videodan
+        # qolqib, A/V desync bo'ladi (run 15/16 o'lchovlarining ildizi)
         fc.append(f"[{a_idx}:a]aresample=48000,aformat=channel_layouts=stereo,"
-                  f"apad=pad_dur={tail + 0.05:.2f}[af]")
+                  f"apad=whole_dur={dur + tail + 0.05:.3f}[af]")
 
         seg = os.path.join(work, f"seg_{i:02d}.mp4")
         _run(["ffmpeg", "-y", "-i", base, *sin, "-i", it["audio"],
@@ -315,6 +318,7 @@ def _mix_music(cfg, joined, out, mus_vol=None):
     d = _probe(joined)
     if music:
         try:
+            # A) mix (voice zanjiri + musiqa sidechain) -> wav (loudnorm'siz)
             fc = (
                 f"[1:a]volume={mus_vol},atrim=0:{d:.2f},"
                 f"afade=t=out:st={max(0.0, d - 1.0):.2f}:d=1.0,"
@@ -327,15 +331,29 @@ def _mix_music(cfg, joined, out, mus_vol=None):
                 f"asplit=2[v1][v2];"
                 f"[m][v2]sidechaincompress=threshold=0.03:ratio=8:"
                 f"attack=20:release=300[md];"
-                f"[v1][md]amix=inputs=2:duration=first:normalize=0[mix];"
-                # dinamik loudnorm jim tailni ko'tarib yuboradi -> tail'ni
-                # loudnorm'dan KEYIN qayta qo'shamiz (doc C3: oxiri jim)
-                f"[mix]atrim=0:{max(0.1, d - TAIL):.3f},"
-                f"loudnorm=I=-15:TP=-1.5:LRA=7,"
-                f"apad=pad_dur={TAIL + 0.1:.2f},atrim=0:{d:.3f}[a]"
+                f"[v1][md]amix=inputs=2:duration=first:normalize=0,"
+                f"atrim=0:{max(0.1, d - TAIL):.3f}[mix]"
             )
+            mixw = os.path.join(os.path.dirname(out) or ".", "mix_tmp.wav")
             _run(["ffmpeg", "-y", "-i", joined, "-stream_loop", "-1",
                   "-i", str(music), "-filter_complex", fc,
+                  "-map", "[mix]", "-ar", "48000", "-ac", "2", mixw])
+            # B) MASTERING: o'lchangan STATIK gain + brickwall limiter
+            # (doc P2 maqsadi: I=-15, TP<=-1.5, bir marta, oxirida).
+            # Dinamik loudnorm jim pad'larni ko'tarib yuborardi (run
+            # 15/16: musiqa darajasi o'zgarmasa ham oyna -18.4); statik
+            # gain pad nisbatlarini saqlaydi -> musiqa o'lchovi
+            # deterministik bo'ladi.
+            meas = _ebur128(mixw)
+            gain = max(-12.0, min(12.0, -15.0 - meas["I"]))
+            print(f"[render] master: I={meas['I']:.1f} TP={meas['TP']:.1f} "
+                  f"-> gain {gain:+.2f} dB + limiter")
+            _run(["ffmpeg", "-y", "-i", joined, "-i", mixw,
+                  "-filter_complex",
+                  f"[1:a]volume={gain:.2f}dB,"
+                  f"alimiter=limit=0.841:level=false:attack=5,"
+                  f"apad=pad_dur={TAIL + 0.1:.2f},"
+                  f"atrim=0:{d:.3f}[a]",
                   "-map", "0:v", "-map", "[a]", "-t", f"{d:.3f}",
                   "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
                   "-movflags", "+faststart", out])
@@ -356,6 +374,22 @@ def remix(cfg, work_dir, out, mus_vol=None):
     _mix_music(cfg, joined, out, mus_vol=mus_vol)
     _verify(out, cfg)
     return out
+
+
+def _ebur128(path):
+    """Ikki passli loudnorm uchun o'lchov (I/TP/LRA/threshold)."""
+    r = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-i", path, "-af",
+         "ebur128=peak=true:framelog=quiet", "-f", "null", "-"],
+        capture_output=True, text=True, timeout=180)
+    o = r.stderr
+    import re as _re
+    I = float(_re.findall(r"I:\s+(-?[\d.]+) LUFS", o)[-1])
+    TP = float(_re.findall(r"Peak:\s+(-?[\d.]+) dBFS", o)[-1])
+    LRA = float(_re.findall(r"LRA:\s+(-?[\d.]+) LU", o)[-1])
+    th = _re.findall(r"Threshold:\s+(-?[\d.]+) LUFS", o)
+    thresh = float(th[-1]) if th else (I - 10.0)
+    return {"I": I, "TP": TP, "LRA": LRA, "thresh": thresh}
 
 
 def _probe(p):
