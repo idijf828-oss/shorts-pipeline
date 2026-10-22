@@ -92,7 +92,7 @@ STRICT OUTPUT — one JSON object, no markdown, no commentary:
       "must_contain": ["<only stock>"], "reject": ["<only stock>"]
     }}
   ]
-}
+}}
 
 EVENTS RULES:
 - 2-4 events per scene, each tied to an exact spoken word (at_word) — the
