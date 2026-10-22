@@ -78,8 +78,7 @@ def run(cfg):
         script = script_gen.write_script(
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
     segs = script.get("scenes") or script.get("segments")
-    print(f"   davlat: {script.get('country', '?')} | sarlavha: "
-          f"{script['title']} "
+    print(f"   joy: {script.get('place', '?')} | sarlavha: {script['title']} "
           f"({len(segs)} sahna, {len(script['script'].split())} so'z, "
           f"{sum(1 for s in segs if s['mode'] == 'stock')} stock)")
 

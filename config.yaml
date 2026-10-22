@@ -4,15 +4,11 @@
 # ============================================
 
 channel:
-  niche: "Mind-blowing geography and country facts"   # nich
-  topics:                                     # mavzular (har kuni bittasi avtomatik tanlanadi)
-    - borders
-    - capitals
-    - islands
-    - mountains and volcanoes
-    - deserts and oceans
-    - unusual countries
-    - maps and time zones
+  niche: "Strange borders and two-country places"   # v8: bitta joy hikoyalari
+  topics:                                     # TREND so'rovlari uchun
+    - strange borders
+    - border stories
+    - weird places
   language: "en-US"                           # video tili
   voice: "en-US-ChristopherNeural"            # chuqur, professional (documentary) ovoz
   # Ovoz variantlari: en-US-ChristopherNeural (erkak, hujjatli),
@@ -27,7 +23,7 @@ video:
   # V4 (doc): 5-8 sahna, 95-110 so'z
   min_duration: 35                            # sekund (v7 immersive, referens 35.7s)
   max_duration: 40                            # sekund (qattiy cheklov)
-  tags: [geography, facts, countries, 5 facts, top 5, world facts,
+  tags: [geography, borders, strange places, world facts, maps,
          did you know, education, shorts]
 
 captions:
@@ -43,7 +39,7 @@ sources:
   youtube_category: "27"                      # 27 = Education
   days_back: 30
   max_trend_items: 40
-  trend_query_template: "{t} facts"           # trend qidiruv shabloni
+  trend_query_template: "{t}"                  # trend qidiruv shabloni
   # Xarita fallback'dan oldin emas — bu umumiy B-roll so'rovlari emas,
   # endi har sahna o'z visual_query ro'yxatini Gemini'dan oladi.
   generic_queries:

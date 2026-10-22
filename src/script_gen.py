@@ -16,144 +16,126 @@ import re
 
 from src import llm
 
-# Footage topiladigan, tomoshabinga tanish davlatlar (~170)
-COUNTRIES = [
-    "Japan", "Iceland", "Australia", "Canada", "Brazil", "Egypt",
-    "France", "Italy", "Spain", "Germany", "Norway", "Sweden",
-    "Finland", "Denmark", "Netherlands", "Belgium", "Switzerland",
-    "Austria", "Portugal", "Greece", "Turkey", "Russia", "China",
-    "India", "South Korea", "Thailand", "Vietnam", "Indonesia",
-    "Malaysia", "Singapore", "Philippines", "New Zealand", "Mexico",
-    "Argentina", "Chile", "Peru", "Colombia", "Bolivia", "Ecuador",
-    "Uruguay", "Paraguay", "Venezuela", "Panama", "Costa Rica",
-    "Cuba", "Jamaica", "Morocco", "Tunisia", "Algeria", "Libya",
-    "Ethiopia", "Kenya", "Tanzania", "Uganda", "Rwanda", "Nigeria",
-    "Ghana", "Senegal", "Mali", "Niger", "Chad", "Sudan", "Somalia",
-    "South Africa", "Namibia", "Botswana", "Zimbabwe", "Zambia",
-    "Madagascar", "Mozambique", "Angola", "Congo", "Cameroon",
-    "Saudi Arabia", "United Arab Emirates", "Qatar", "Israel",
-    "Jordan", "Lebanon", "Iraq", "Iran", "Afghanistan", "Pakistan",
-    "Bangladesh", "Sri Lanka", "Nepal", "Bhutan", "Myanmar",
-    "Cambodia", "Laos", "Mongolia", "Kazakhstan", "Uzbekistan",
-    "Kyrgyzstan", "Tajikistan", "Turkmenistan", "Azerbaijan",
-    "Georgia", "Armenia", "Ukraine", "Poland", "Czech Republic",
-    "Slovakia", "Hungary", "Romania", "Bulgaria", "Serbia", "Croatia",
-    "Slovenia", "Bosnia and Herzegovina", "Albania", "North Macedonia",
-    "Montenegro", "Estonia", "Latvia", "Lithuania", "Belarus",
-    "Moldova", "Ireland", "United Kingdom", "Scotland", "Malta",
-    "Cyprus", "Luxembourg", "Monaco", "Andorra", "San Marino",
-    "Liechtenstein", "Greenland", "Fiji", "Papua New Guinea",
-    "Samoa", "Tonga", "Vanuatu", "Solomon Islands", "Maldives",
-    "Bhutan", "Taiwan", "Hong Kong", "Oman", "Yemen", "Kuwait",
-    "Bahrain", "Syria", "Eswatini", "Lesotho", "Malawi", "Burundi",
-    "Gabon", "Benin", "Togo", "Burkina Faso", "Guinea", "Liberia",
-    "Sierra Leone", "Mauritania", "Botswana", "Timor-Leste", "Brunei",
-    "Suriname", "Guyana", "Belize", "Guatemala", "Honduras",
-    "Nicaragua", "El Salvador", "Haiti", "Dominican Republic",
-    "Bahamas", "Trinidad and Tobago", "Barbados", "Puerto Rico",
+# Hikoya temalari (kun+slot bo'yicha aylanadi; trend so'rovlari
+# config'dagi topics ro'yxatidan alohida)
+THEMES = [
+    "a building that sits on an international border",
+    "a town split between two countries",
+    "an island shared by two (or more) countries",
+    "a road, bridge or tunnel that changes country midway",
+    "an enclave completely inside another country",
+    "a place where you can stand in two countries at once",
+    "a border that runs through a house or a hotel",
+    "a place where the timezone or calendar changes as you walk",
+    "the world's strangest border crossing",
+    "a border drawn by a river, lake or sea that moved",
+    "a place that two countries both claim",
+    "a border town with two of everything (mayor, clock, police)",
+    "a place only reachable through another country",
+    "a border that runs through a sports field or a restaurant",
 ]
-COUNTRIES = list(dict.fromkeys(COUNTRIES))          # dublikatlarsiz
 
 # ================= MASTER SYSTEM PROMPT =================
 SYSTEM = """You are the writer-director of a viral immersive geography
-YouTube Shorts channel. Style benchmark: slow, cinematic, SECOND-PERSON
-storytelling that puts the viewer inside the place — "Step inside this
-small tavern and sit down in two countries." Every line is short, calm
-and physical. Five numbered facts count down visually (never spoken),
-most shocking fact last, ending on a playful loop line. Every fact is
-real and verifiable. Perfect American English — zero typos, zero filler,
-no exclamation marks in the voice lines."""
+YouTube Shorts channel. Every short is ONE TRUE STORY about ONE real
+place — "The bar where you sit in two countries", "The library with a
+border through it". Style: slow, cinematic, SECOND-PERSON storytelling
+that puts the viewer inside the place: "Step inside this small tavern
+and sit down in two countries." Short calm lines, physical details,
+no hype. End on a playful loop line. Facts are real and verifiable.
+Perfect American English — zero typos, zero filler."""
+
 
 
 # ================= MASTER USER PROMPT =================
-PROMPT_TMPL = """Pick ONE country from these three candidates: {candidates}.
+PROMPT_TMPL = """Pick ONE specific real place that fits this theme: {theme}.
+It must be a real, verifiable place with a surprising story (border
+oddity, split town, enclave, two-countries-at-once spot).
 Niche: {niche}. Audience: USA, English, ages 13-40.
 Platform: YouTube Shorts (vertical 1080x1920).
 
 {trend_block}
-Recently covered countries (STRICTLY DO NOT pick any of these): {hist}
+Recently covered places/topics (STRICTLY avoid anything similar): {hist}
 {avoid}
-Write a 35-40 SECOND immersive short: "5 facts about <your country>".
+Write a 35-40 SECOND immersive short about that ONE place.
 
 NARRATION — IMMERSIVE STORYTELLING (the benchmark style):
 "Step inside this small tavern and sit down in two countries."
 "Order a drink on the left side and you are in Spain."
 Rules derived from that style:
 - Second person, present tense, imperative. The viewer is physically
-  THERE. Use body actions: step inside, look up, order, walk, touch.
+  THERE. Use body actions: step inside, look down, order, walk, cross.
 - Concrete physical details over abstractions: "a black line painted
   on the wooden floor", "your jacket on the chair" — never "interesting
   legislation".
 - Total 88-102 words across exactly 7 scenes. COUNT every line.
-- Scene 1 (HOOK): 11-13 words. One action command + a tease of fact #1.
-- Scenes 2-6 (FACT 5 -> FACT 1, most shocking LAST): 14-16 words each,
-  TWO very short sentences. Present tense. Real places, real numbers.
+- Scene 1 (HOOK): 11-13 words. Put the viewer inside the place and
+  tease its strangest detail.
+- Scenes 2-6 (STORY BEATS): 14-16 words each, TWO very short
+  sentences. One continuous story that moves the viewer physically
+  through the place, beat by beat, escalating — the strangest detail
+  LAST (scene 6). Real place names, real numbers.
 - Scene 7 (LOOP): 9-12 words. A playful warning or "just don't..."
   line that the HOOK answers on replay.
-- NEVER say "fact", "number five", "Top 5", "did you know", any intro,
-  any CTA, any question except the hook may not open with one.
-- Calm declarative lines. No exclamation marks. No rhetorical hype.
+- NEVER say "did you know", any intro, any CTA, no exclamation marks,
+  no rhetorical hype. The title pattern: "The X Where You Y".
 
 VISUALS — REAL FOOTAGE for every scene:
 - Every scene: "mode": "stock" with visual_query = exactly 3
   hierarchical phrases (specific -> broader -> generic), each 2-3
   English words describing filmable real-world b-roll (e.g.
-  ["deer walking street japan", "sika deer shrine", "wild deer town"]).
+  ["cozy tavern wooden interior", "bartender pouring beer",
+   "european bar counter"]).
 - NEVER a lone generic object ("floor", "wall", "land"). NEVER queries
   about text, signs or logos (OCR rejects them).
 - "reject": wrong topics these queries could return.
 - Every scene ALSO carries map data (focus/lat/lon/zoom) as fallback.
-- "on_screen": fact scenes use "FACT 5 - HEADLINE" (2-4 ALL-CAPS words
-  after the dash — the visual countdown). Hook: 2-4 word tease. Loop:
-  2-4 word warning.
+- "on_screen": a 2-4 ALL-CAPS word headline naming the story beat
+  (e.g. "TAPE ON THE FLOOR", "STEPS TO FRANCE", "MIND THE LINE").
 - "mid_text": give EXACTLY 2-3 scenes a 1-3 word ALL-CAPS reveal word
-  that punches mid-screen (e.g. "IN FRANCE", "SIX AM", "STILL LEGAL").
-  Choose the moments with the biggest reveal, including one in scene 6.
+  that punches mid-screen (e.g. "IN FRANCE", "TWO MAYORS", "STILL
+  LEGAL"). Choose the biggest reveal moments, including one in scene 6.
 
 OUTPUT — ONE JSON object, no markdown, no commentary:
 {{
-  "country": "<the country you picked>",
-  "title": "<=70 chars, curiosity gap, mentions the country>",
+  "place": "<the specific place, e.g. Haskell Free Library, Derby Line>",
+  "country": "<main country or 'BE-NL' style pair>",
+  "title": "<=70 chars, 'The X Where You Y' curiosity gap>",
   "description": "<2-3 sentences>",
   "pinned_comment": "<question that drives comments>",
-  "keywords": ["<country>", "facts", "..."],
+  "keywords": ["<place>", "<theme keywords>", "..."],
   "hashtags": ["<3-4 tags>"],
   "scenes": [
     {{
       "id": 1,
       "voice": "<hook, 11-13 words — count them>",
-      "on_screen": "<2-4 WORD TEASE>",
+      "on_screen": "<2-4 WORD HEADLINE>",
       "mode": "stock",
       "map": {{"focus": "<place>", "lat": <real lat>, "lon": <real lon>,
-               "zoom_level": <3=continent .. 12=city>, "motion": "zoom_in"}},
-      "country_iso_codes": ["<ISO2>"],
+               "zoom_level": <3=continent .. 12=building>, "motion": "zoom_in"}},
+      "country_iso_codes": ["<ISO2>", "<ISO2>"],
       "sfx_trigger": [],
-      "fact_source": "<credible source for the tease>",
+      "fact_source": "<credible source for the beat>",
       "visual_query": ["<3 phrases>"],
-      "must_contain": ["<2-5 GENERIC visual words that literally appear in stock clip tags: mountain, snow, deer, street, train, aerial — NEVER country names or abstract words (culture, economy, history)>"],
+      "must_contain": ["<2-5 GENERIC visual words that literally appear in stock clip tags: tavern, library, street, border, aerial — NEVER country names or abstract words (culture, economy, history)>"],
       "reject": ["<wrong topics>"]
     }},
-    {{ ... scenes 2-6: FACT 5 down to FACT 1, "voice" 14-16 words,
-         "on_screen": "FACT N - HEADLINE", 2-3 of them with
-         "mid_text": "<REVEAL WORD>" ... }},
+    {{ ... scenes 2-6: story beats, "voice" 14-16 words, 2-3 of them
+         with "mid_text": "<REVEAL WORD>" ... }},
     {{ ... scene 7: loop, playful warning ... }}
   ]
 }}"""
 
 
+
 _WORD_LO, _WORD_HI = 88, 102
 
 
-def _pick_candidates(history_kws, k=3):
-    """Tarixda yopilmagan davlatlardan 3 ta (kun+slot bo'yicha determin)."""
-    used = {str(w).strip().lower() for w in (history_kws or []) if w}
-    avail = [c for c in COUNTRIES if c.lower() not in used]
-    if len(avail) < k:
-        avail = COUNTRIES[:]
+def _pick_theme():
+    """Kun+slot bo'yicha determin tema (3 run/kun har xil)."""
     now = datetime.datetime.now(datetime.UTC)
     slot = (now.hour + 1) // 8                 # 3 run/kun: 0/1/2
-    rnd = random.Random(now.timetuple().tm_yday * 8 + slot)
-    return rnd.sample(avail, k)
+    return THEMES[(now.timetuple().tm_yday * 8 + slot) % len(THEMES)]
 
 
 def _build_prompt(cfg, trends, history_kws, avoid_title=""):
@@ -166,14 +148,14 @@ def _build_prompt(cfg, trends, history_kws, avoid_title=""):
                        f"{cfg['sources']['days_back']} days):\n"
                        + "\n".join(f"- {t['title']} ({t['views']:,} views)"
                                    for t in tops))
-    cands = _pick_candidates(history_kws)
+    theme = _pick_theme()
     hist = ", ".join(history_kws[-20:]) if history_kws else "(none yet)"
-    avoid = (f"DO NOT pick the country from this already-generated title "
+    avoid = (f"DO NOT use the place from this already-generated title "
              f"today: {avoid_title}\n" if avoid_title else "")
-    prompt = PROMPT_TMPL.format(
-        candidates=", ".join(cands), niche=ch["niche"],
-        trend_block=trend_block, hist=hist, avoid=avoid)
-    return prompt, " / ".join(cands)
+    prompt = PROMPT_TMPL.format(theme=theme, niche=ch["niche"],
+                                trend_block=trend_block, hist=hist,
+                                avoid=avoid)
+    return prompt, theme
 
 
 def _as_list(v):
@@ -292,35 +274,36 @@ def _parse(raw):
         sc["mid_text"] = mid.upper()
         sc.setdefault("id", i + 1)
 
-    # FACT N prefiksi: sahna 2..(n-1) => FACT (n-1-i); yo'q bo'lsa qo'sh
-    n = len(segs)
-    for i in range(1, max(1, n - 1)):
-        num = n - 1 - i                          # 7 sahna: 5,4,3,2,1
-        sc = segs[i]
-        head = sc["on_screen"]
-        if not re.match(rf"^FACT\s*{num}\b", head, re.I):
-            head = re.sub(r"^FACT\s*\d+\s*[-–—:]?\s*", "", head, flags=re.I)
-            head = f"FACT {num} \u2014 {head}".strip(" -\u2014")
+    # v8: on_screen = hikoya beat sarlavhasi (2-4 SO'Z, FACT YO'Q)
+    for sc in segs:
+        head = re.sub(r"^FACT\s*\d+\s*[-–—:]?\s*", "",
+                      sc["on_screen"], flags=re.I)
+        words = head.split()
+        if len(words) > 5:                       # eng muhim so'zlar qoladi
+            head = " ".join(words[-4:])
         sc["on_screen"] = head[:40].upper()
-    segs[0]["on_screen"] = segs[0]["on_screen"][:40].upper()
-    segs[-1]["on_screen"] = segs[-1]["on_screen"][:40].upper()
 
-    # kamida 4 sahna real footage rejimida bo'lishi kerak (v6 formati)
+    # kamida 4 sahna real footage rejimida bo'lishi kerak
+    n = len(segs)
     n_stock = sum(1 for s in segs if s["mode"] == "stock")
     if n_stock < min(4, n - 1):
         raise ValueError(f"stock sahna kam: {n_stock}/{n}")
 
+    place = str(data.get("place") or "").strip()
     country = str(data.get("country") or "").strip()
-    data["title"] = str(data.get("title", "Country facts"))[:100]
-    if country and country.lower() not in data["title"].lower():
-        data["title"] = f"{data['title'][:60]} ({country})".strip()
+    data["title"] = str(data.get("title", "A strange place"))[:100]
+    if place and place.lower() not in data["title"].lower() \
+            and len(data["title"]) < 58:
+        data["title"] = f"{data['title']} ({place})"[:100]
     data["hook"] = str(data.get("hook", segs[0]["voice"]))[:200]
     data["script"] = str(data.get("script",
                                   " ".join(s["voice"] for s in segs)))[:2000]
     kws = [str(k) for k in data.get("keywords", [])][:8]
-    if country and country.lower() not in [k.lower() for k in kws]:
-        kws = [country] + kws
-    data["keywords"] = kws
+    for tag in (place, country):
+        if tag and tag.lower() not in [k.lower() for k in kws]:
+            kws = [tag] + kws
+    data["keywords"] = kws[:8]
+    data["place"] = place
     data["country"] = country
     data["description"] = str(data.get("description", "")).strip()[:4500]
     data["tags"] = [str(t).strip().lower() for t in data.get("tags", [])
@@ -348,7 +331,7 @@ def _parse_relaxed(raw):
 
 def write_script(cfg, trends, history_kws, avoid_title=""):
     prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
-    print(f"   nomzod davlatlar: {cands} [{llm.provider(cfg)}]")
+    print(f"   tema: {cands} [{llm.provider(cfg)}]")
     last_err, last_raw = None, None
     for attempt in range(3):
         try:
@@ -357,7 +340,8 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
             raise RuntimeError(f"Skript yozib bo'lmadi: {e}")
         try:
             data = _parse(raw)
-            data["_topic"] = data.get("country") or cands.split(" / ")[0]
+            data["_topic"] = data.get("place") or data.get("country") \
+                or cands
             return data
         except Exception as e:
             last_err, last_raw = e, raw
@@ -366,7 +350,8 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
     if last_raw:
         try:
             data = _parse_relaxed(last_raw)
-            data["_topic"] = data.get("country") or cands.split(" / ")[0]
+            data["_topic"] = data.get("place") or data.get("country") \
+                or cands
             print("[script] zaxira oyna (150-190 so'z) bilan qabul qilindi")
             return data
         except Exception:
