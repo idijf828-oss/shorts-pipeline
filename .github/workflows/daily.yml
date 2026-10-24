@@ -3,7 +3,7 @@ name: Daily Shorts Pipeline
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 3,11,19 * * *"   # Tashkent: 08/16/24 (user jadvali: 3 run/kun)
 
 permissions:
   contents: write
