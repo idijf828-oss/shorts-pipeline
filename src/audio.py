@@ -128,6 +128,14 @@ def strip_dead_air(words, src, work, gap=0.10, thresh=0.16, margin=0.020):
             elif out_words:
                 lw, ls, le = out_words[-1]
                 out_words[-1] = (lw, ls, max(le, bounds[-1][1]))
+    # v9: boshiga 0.10s, oxiriga 0.25s sukunat — TTS oxirgi bo'g'ini
+    # ("history") va birinchi portlovchi undovi kesilmaydi
+    padded = dest + ".pad.wav"
+    _run(["ffmpeg", "-y", "-i", dest, "-af",
+          "adelay=100:all=1,apad=pad_dur=0.25",
+          "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", padded])
+    os.replace(padded, dest)
+    out_words = [(w, ws + 0.10, we + 0.10) for (w, ws, we) in out_words]
     return dest, out_words, _probe(dest)
 
 

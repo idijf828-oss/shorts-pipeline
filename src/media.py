@@ -25,7 +25,7 @@ PIXABAY = "https://pixabay.com/api/videos/"
 BLACKLIST_TOKENS = {
     "logo", "watermark", "caption", "sign", "signboard", "banner",
     "placard", "overlay", "graphic", "animation", "render", "3d",
-    "cgi", "text", "intro", "template",
+    "cgi", "text", "intro", "template", "chroma", "greenscreen",
 }
 
 
@@ -207,6 +207,22 @@ def _ocr_text(jpg):
         return []
 
 
+def _green_frac(jpg):
+    """Kadrdagi yashil fon (chroma key) ulushi (0..1).
+    Run 23: 3D Yer shari klipi yashil fonda chiqqan — B-roll sifatida
+    yaramaydi. HSV: H 60..113 (85-160 deg), S>64, V>51."""
+    try:
+        from PIL import Image
+        im = Image.open(jpg).convert("RGB").resize((160, 90))
+        hsv = im.convert("HSV")
+        px = list(hsv.getdata())
+        n = len(px)
+        hit = sum(1 for (h, s, v) in px if 60 <= h <= 113 and s > 64 and v > 51)
+        return hit / max(1, n)
+    except Exception:
+        return 0.0
+
+
 def _vision_check(cfg, jpg, scene_voice):
     """LLM vision (Claude -> Gemini zanjiri): kadr sahnaga mosmi?
     True/False/None (bilmaymiz)."""
@@ -217,7 +233,11 @@ def _vision_check(cfg, jpg, scene_voice):
             "You are a strict stock-footage QA checker. "
             "Answer strictly 'yes' or 'no' — nothing else.",
             "Does this footage frame clearly and safely illustrate this "
-            f"narration: \"{scene_voice}\"? Answer strictly yes or no.",
+            f"narration: \"{scene_voice}\"? "
+            "It must also show the CORRECT TYPE OF PLACE for the story "
+            "(an inland town must NOT show open ocean, a beach or a "
+            "spinning globe; no green-screen / chroma-key studio look). "
+            "Answer strictly yes or no.",
             images=[jpg], temperature=0.0, timeout=30)
     except Exception as e:
         print(f"[media] vision xatosi: {e}")
@@ -259,6 +279,10 @@ def fetch_scene_media(cfg, scene, used, prefix, n_want=3):
                     break
         if ocr_hit:
             print(f"[media] rad etildi (OCR matn): {ocr_hit[:4]}")
+            os.remove(dest)
+            return False
+        if jpg and _green_frac(jpg) > 0.12:
+            print(f"[media] rad etildi (yashil fon/chroma): {it['id']}")
             os.remove(dest)
             return False
         if jpg:

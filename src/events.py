@@ -57,10 +57,33 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
 
     # bayroq-fill: events da aniq vaqt berilmasa, birinchi highlight
     # so'zida (yoki 0.2s da) reveal qilinadi
+    def _visible(iso2):
+        """Bayroq-fill faqat davlat xarita oynasida KO'RINSA (run 23:
+        Shveytsariya kadriga Janubiy Afrika bayrog'i tushgan).
+        Centroid oynada YOKI davlat poligoni oyna bilan kesishsa."""
+        c = (ctx.get("centroids") or {}).get(iso2)
+        if c:
+            x, y = float(c[0]), float(c[1])
+            if -80 <= x <= W_CENTER * 2 + 80 and -80 <= y <= 2560 + 80:
+                return True
+        win = ctx.get("win")
+        iso3s = set(geo.resolve(iso2))
+        if not win or not iso3s:
+            return True                      # bilmaymiz -> qoldiramiz
+        w0, n0, wd, hd = win
+        m = 0.15                             # 15% chegara
+        exp = (w0 - wd * m, n0 + hd * m, wd * (1 + 2 * m), hd * (1 + 2 * m))
+        for (iso3, _nm, rings, _c) in geo._countries():
+            if iso3 in iso3s and geo._in_window(rings, exp):
+                return True
+        return False
+
     ev_fill = [e for e in evs if str(e.get("type")) == "flag_fill"]
     for iso2, png in (ctx.get("fills") or {}).items():
         if any(str(e.get("target", "")).lower() == iso2.lower()
                for e in ev_fill):
+            continue
+        if not _visible(iso2):
             continue
         t = _first_highlight_time(scene, words)
         layers.append({"path": png, "t": t, "full": True, "pos": None,
@@ -75,7 +98,7 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
             iso2 = str(target).upper()[:2]
             png = (ctx.get("fills") or {}).get(iso2) or \
                      (ctx.get("fills") or {}).get(iso2.upper())
-            if png:
+            if png and _visible(iso2):
                 layers.append({"path": png, "t": t, "full": True,
                                "pos": None, "sfx": SFX_FOR.get(k, "flagpop"),
                                "kind": k, "iso": iso2, "word_t": t})
@@ -87,20 +110,38 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                                "word_t": t})
         elif k == "pin":
             pos = None
+            iso_t = str(target or "").strip()
+            want = set(geo.resolve(iso_t))
+            if not want:                    # target ISO emas -> sahna davlati
+                for c in (scene.get("country_iso_codes") or []):
+                    if geo.resolve(str(c)[:2]):
+                        iso_t = str(c)[:2].upper()
+                        want = set(geo.resolve(iso_t))
+                        break
             if ev.get("lat") is not None and ev.get("lon") is not None:
                 try:
-                    pos = ctx["to_px"](float(ev["lon"]), float(ev["lat"]))
+                    lo, la = float(ev["lon"]), float(ev["lat"])
+                    pos = ctx["to_px"](lo, la)
+                    # run 23: Pin okean/noto'g'ri joyga tushgan. Nuqta
+                    # davlat quruqligida emas -> centroid'ga qaytaramiz
+                    if want and geo.point_in_country(iso_t, lo, la) is False:
+                        print(f"[events] pin {iso_t}: ({la:.2f},{lo:.2f}) "
+                              f"quruqlikda emas -> centroid")
+                        pos = None
                 except Exception:
                     pos = None
             if pos is None:
-                want = set(geo.resolve(target))
                 for iso2, c in (ctx.get("centroids") or {}).items():
                     if set(geo.resolve(iso2)) & want:
                         pos = c
                         break
             if pos is None:
                 pos = (W_CENTER, 0.35 * 2560)
-            png = geo.pin_png(work)
+            # shahar nomi label ("Canberra"): target ISO bo'lmasa focus'dan
+            t_label = str(target or "").strip()
+            if len(t_label) <= 3 or not t_label:
+                t_label = str(scene.get("map", {}).get("focus") or "")
+            png = geo.pin_png(work, label=t_label[:18])
             layers.append({"path": png, "t": t, "full": False, "pos": pos,
                            "sfx": "drop", "kind": "pin", "word_t": t})
         elif k == "arrow":

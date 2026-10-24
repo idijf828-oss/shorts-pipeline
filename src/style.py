@@ -53,7 +53,7 @@ SFX_DB = {"riser": -8, "impact": -9, "boom": -9, "alarm": -10,
           "whoosh": -12, "drop": -12, "swish": -12, "ding": -12,
           "pop": -12, "tick": -12, "flagpop": -11, "zip": -13}
 # v7 immersive (referens: musiqasiz, juda toza): faqat yumshoq whoosh
-MINIMAL_SFX_DB = {"whoosh": -16}
+MINIMAL_SFX_DB = {"whoosh": -18}   # v9: ovozni bosmasin
 
 
 def sfx_vol(name):

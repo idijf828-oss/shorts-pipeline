@@ -309,7 +309,7 @@ def compose_map(cam, iso_codes, work_dir):
     print(f"[geo] xarita z={z} ({'raster' if use_raster else 'vektor'}), "
           f"{len(fills)} bayroq-qatlam, {os.path.basename(out_base)}")
     return {"base": out_base, "fills": fills, "zs": zs, "ze": ze,
-            "to_px": to_px, "centroids": centroids,
+            "to_px": to_px, "centroids": centroids, "win": win,
             "mode": "raster" if use_raster else "vector"}
 
 
@@ -351,20 +351,57 @@ def country_layer(iso_target, style, work_dir, ctx, tag=""):
     return out
 
 
-def pin_png(work_dir, color=YELLOW):
-    """Oddiy pin (doira + uchburchak) — joy belgilash uchun."""
-    out = os.path.join(work_dir, "pin.png")
+def pin_png(work_dir, color=YELLOW, label=""):
+    """Pin + ixtiyoriy shahar nomi yozuvi ("Canberra") — joy belgilash.
+
+    Label har xil bo'lsa har biri alohida fayl (kesh kaliti label'da)."""
+    import re as _re
+    safe = _re.sub(r"[^A-Za-z0-9]+", "", str(label))[:18]
+    out = os.path.join(work_dir, f"pin_{safe}.png" if safe else "pin.png")
     if os.path.exists(out):
         return out
     S = 512
-    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    Wc = 512 + (26 * (len(safe) + 1) if safe else 0)   # label uchun joy
+    img = Image.new("RGBA", (max(S, Wc), S), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.ellipse([(96, 16), (416, 336)], fill=color + (255,), outline=(0, 0, 0, 255), width=12)
     d.polygon([(196, 300), (316, 300), (256, 480)], fill=color + (255,),
               outline=(0, 0, 0, 255))
     d.ellipse([(196, 116), (316, 236)], fill=(255, 255, 255, 230))
+    if safe:
+        try:
+            from PIL import ImageFont
+            fnt = ImageFont.truetype(
+                "/usr/share/fonts/truetype/montserrat/"
+                "Montserrat-ExtraBold.ttf", 54)
+            d.text((452, 120), str(label)[:18],
+                   font=fnt, fill=(255, 255, 255, 255),
+                   stroke_width=8, stroke_fill=(0, 0, 0, 255))
+        except Exception:
+            pass
     img.save(out)
     return out
+
+
+def point_in_country(iso_target, lon, lat):
+    """(lon, lat) nuqta mamlakat poligonida (quruqlikda) yoki yo'qmi.
+    Pin okeanga tushib qolmasligi uchun (ray-casting)."""
+    iso3s = resolve(iso_target)
+    if not iso3s:
+        return None                     # bilmaymiz
+    inside = False
+    for (iso3, _nm, rings, _c) in _countries():
+        if iso3 not in iso3s:
+            continue
+        for r in rings:
+            n = len(r)
+            for i in range(n):
+                (x1, y1), (x2, y2) = r[i], r[(i + 1) % n]
+                if (y1 > lat) != (y2 > lat):
+                    xint = x1 + (lat - y1) * (x2 - x1) / (y2 - y1)
+                    if lon < xint:
+                        inside = not inside
+    return inside
 
 
 def flag_color(iso2, work_dir=None):

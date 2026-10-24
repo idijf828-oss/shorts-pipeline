@@ -237,14 +237,60 @@ def build_scene_ass(cfg, scene, words, dur, path):
     mid = str(scene.get("mid_text") or "").strip()
     if mid:
         m0 = 0.30
-        m1 = min(dur - 0.15, m0 + 1.5)
+        # v9: mid ham kesishdan 0.35s oldin yo'qoladi (ustma-ust yo'q)
+        m1 = min(dur - 0.35, m0 + 1.5)
         if m1 > m0 + 0.2:
+            # v9: kenglik fit ("WORST BORDERS ON EARTH" kesilmasin):
+            # 132 -> 116 -> 100 -> 88; hali keng bo'lsa 2 qator \N
+            txt = _clean(mid).upper()
+            shown, size = txt, 132
+            for size in (132, 116, 100, 88):
+                if text_width(txt, size) <= 880:
+                    break
+            else:
+                size = 88
+                ws = txt.split()
+                best, bw = txt, text_width(txt, size)
+                for k in range(1, len(ws)):
+                    l1 = "\\N".join([" ".join(ws[:k]), " ".join(ws[k:])])
+                    w1 = max(text_width(p, size) for p in l1.split("\\N"))
+                    if w1 < bw:
+                        best, bw = l1, w1
+                shown = best
             ev.append(f"Dialogue: 1,{_t(m0)},{_t(m1)},Mid,,0,0,0,,"
                       r"{\an5\pos(540," + str(MID_Y) + r")"
                       r"\fscx60\fscy60\t(0,120,\fscx100\fscy100)"
                       r"\t(120,320,\fscx104\fscy104)"
-                      r"\t(320,520,\fscx100\fscy100)}"
-                      + _clean(mid).upper())
+                      r"\t(320,520,\fscx100\fscy100)"
+                      r"\fs" + str(size) + "}"
+                      + shown)
+    # v9: bir xil Style'da dialoglar ustma-ust tushmasin —
+    # yangi chiqqanda eskisi avval o'chadi
+    import re as _re
+
+    def _ts2s(x):
+        h, m, s = x.split(":")
+        return int(h) * 3600 + int(m) * 60 + float(s)
+
+    def _s2ts(v):
+        v = max(0.0, v)
+        return f"{int(v // 3600)}:{int((v % 3600) // 60):02d}:{v % 60:05.2f}"
+
+    _last = {}
+    fixed = []
+    for line in ev:
+        mm = _re.match(r"(Dialogue: \d+,)([\d:.]+),([\d:.]+),([^,]*)(,.*)$",
+                       line)
+        if not mm:
+            fixed.append(line)
+            continue
+        st, en, sty = _ts2s(mm.group(2)), _ts2s(mm.group(3)), mm.group(4)
+        st = max(st, _last.get(sty, -1.0) + 0.001)
+        en = max(en, st + 0.05)
+        _last[sty] = en
+        fixed.append(mm.group(1) + _s2ts(st) + "," + _s2ts(en)
+                     + "," + sty + mm.group(5))
+    ev = fixed
     with open(path, "w", encoding="utf-8") as f:
         f.write(head + "\n".join(ev) + "\n")
     return path, chunk_ts

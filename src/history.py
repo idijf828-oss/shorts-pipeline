@@ -43,14 +43,24 @@ def clip_ids(entries=None):
     return out
 
 
-def too_similar(new_title, new_keywords, entries, title_thresh=0.6, kw_overlap=3):
-    """Yangi mavzu oldingi video'lardan juda o'xshashmi?"""
+def too_similar(new_title, new_keywords, entries, title_thresh=0.55,
+                kw_overlap=3):
+    """Yangi mavzu oldingi videolardan juda o'xshashmi?
+
+    v9: OXIRGI 5 videoda BITTA umumiy kalit so'z ham takrorlanmaydi
+    (bir davlat ketma-ket chiqmasin). Eski videolar bilan 3 ta
+    overlap / 0.55 title o'xshashligi cheki."""
     new_kw = set(k.lower() for k in new_keywords)
-    for e in entries:
+    n = len(entries)
+    for idx, e in enumerate(entries):
         old = e.get("title", "")
-        if old and difflib.SequenceMatcher(None, new_title.lower(), old.lower()).ratio() > title_thresh:
+        if old and difflib.SequenceMatcher(None, new_title.lower(),
+                                           old.lower()).ratio() > title_thresh:
             return True
-        if len(new_kw & set(k.lower() for k in e.get("keywords", []))) >= kw_overlap:
+        shared = new_kw & set(k.lower() for k in e.get("keywords", []))
+        if len(shared) >= kw_overlap:
+            return True
+        if idx >= n - 5 and any(len(s) >= 4 for s in shared):
             return True
     return False
 

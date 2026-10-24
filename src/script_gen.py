@@ -10,6 +10,7 @@ tarixdan (history) farq qiladigan qilib tanlanadi, LLM eng
 qiziqrog'ini tanlaydi.
 """
 import datetime
+import difflib
 import json
 import random
 import re
@@ -76,7 +77,8 @@ Rules derived from that style:
   through the place, beat by beat, escalating — the strangest detail
   LAST (scene 6). Real place names, real numbers.
 - Scene 7 (LOOP): 9-12 words. A playful warning or "just don't..."
-  line that the HOOK answers on replay.
+  line that the HOOK answers on replay. It must be a DIFFERENT sentence
+  than the hook — never repeat or lightly rephrase it.
 - NEVER say "did you know", any intro, any CTA, no exclamation marks,
   no rhetorical hype. The title pattern: "The X Where You Y".
 
@@ -88,10 +90,15 @@ VISUALS — REAL FOOTAGE for every scene:
    "european bar counter"]).
 - NEVER a lone generic object ("floor", "wall", "land"). NEVER queries
   about text, signs or logos (OCR rejects them).
+- The b-roll must match the place TYPE: an inland village story gets
+  streets, houses, markets, forests — NEVER open ocean, beaches or a
+  spinning globe. NEVER suggest green-screen / chroma-key studio shots.
 - "reject": wrong topics these queries could return.
 - Every scene ALSO carries map data (focus/lat/lon/zoom) as fallback.
 - "on_screen": a 2-4 ALL-CAPS word headline naming the story beat
   (e.g. "TAPE ON THE FLOOR", "STEPS TO FRANCE", "MIND THE LINE").
+  NEVER meta/technical words: "LOOP", "INFINITE", "REPLAY", "REWIND",
+  "NEXT VIDEO", "SUBSCRIBE" — these are FORBIDDEN on screen.
 - "mid_text": give EXACTLY 2-3 scenes a 1-3 word ALL-CAPS reveal word
   that punches mid-screen (e.g. "IN FRANCE", "TWO MAYORS", "STILL
   LEGAL"). Choose the biggest reveal moments, including one in scene 6.
@@ -249,6 +256,9 @@ def _parse(raw):
                     ev[f] = e[f]
             evs.append(ev)
         sc["events"] = evs
+        # v9: pin bor sahnada over-zoom yo'q — davlat chegarasi ko'rinadi
+        if any(ev["type"] == "pin" for ev in evs):
+            m["zoom_level"] = min(m["zoom_level"], 9)
         icons = []
         for ic in _as_list(sc.get("overlay_icons"))[:2]:
             if isinstance(ic, dict) and ic.get("emoji"):
@@ -274,14 +284,22 @@ def _parse(raw):
         sc["mid_text"] = mid.upper()
         sc.setdefault("id", i + 1)
 
+    # v9: texnik so'zlar (run 23'da "INFINITE LOOP" chiqdi) ASLO ko'rinmasin
+    _BAN = {"INFINITE", "LOOP", "REPLAY", "REWIND", "AGAIN", "REWATCH",
+            "NEXT", "VIDEO", "SUBSCRIBE", "SHORTS", "PART2", "PART"}
     # v8: on_screen = hikoya beat sarlavhasi (2-4 SO'Z, FACT YO'Q)
     for sc in segs:
         head = re.sub(r"^FACT\s*\d+\s*[-–—:]?\s*", "",
                       sc["on_screen"], flags=re.I)
-        words = head.split()
+        words = [w for w in head.split() if w.strip(".,!?-_").upper() not in _BAN]
+        if not words:                            # to'liq blacklisted -> voice'dan
+            words = sc["voice"].split()[:2]
         if len(words) > 5:                       # eng muhim so'zlar qoladi
-            head = " ".join(words[-4:])
-        sc["on_screen"] = head[:40].upper()
+            words = words[-4:]
+        sc["on_screen"] = " ".join(words)[:40].upper()
+        mw = [w for w in sc["mid_text"].split()
+              if w.strip(".,!?-_").upper() not in _BAN]
+        sc["mid_text"] = " ".join(mw)[:24].upper()
 
     # kamida 4 sahna real footage rejimida bo'lishi kerak
     n = len(segs)
@@ -308,10 +326,19 @@ def _parse(raw):
     data["description"] = str(data.get("description", "")).strip()[:4500]
     data["tags"] = [str(t).strip().lower() for t in data.get("tags", [])
                     if str(t).strip()][:20]
-    data["hashtags"] = [re.sub(r"^#", "", str(h).strip()).lower()
+    # v9: hashtag ichida probel ASLO qolmasin ("#strange borders" -> "#strangeborders")
+    data["hashtags"] = [re.sub(r"[^A-Za-z0-9_]", "", str(h)).lower()
                         for h in _as_list(data.get("hashtags"))
-                        if str(h).strip()][:4]
+                        if re.sub(r"[^A-Za-z0-9_]", "", str(h))][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
+    # v9: oxirgi (LOOP) gap hook'ni so'zma-so'z takrorlamasin
+    def _norm(t):
+        return re.sub(r"[^a-z0-9 ]", "", str(t).lower()).strip()
+    hv, lv = _norm(segs[0]["voice"]), _norm(segs[-1]["voice"])
+    if hv and lv and (hv == lv or hv in lv or lv in hv
+                      or difflib.SequenceMatcher(None, hv, lv).ratio() > 0.70):
+        raise ValueError("loop gap hook bilan deyarli bir xil — qayta yoz")
+
     words = len(data["script"].split())
     lo, hi = globals().get("_WORD_LO", 158), globals().get("_WORD_HI", 182)
     if not (lo <= words <= hi):

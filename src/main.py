@@ -26,7 +26,13 @@ def build_description(cfg, script):
         pc = script.get("pinned_comment") or "Which place should I cover next? 👇"
         desc = f"{hook}\n{facts}\n\n{pc}\nNew geography fact every day.\n"
     hashtags = script.get("hashtags") or ["shorts", "geography", "facts"]
-    tagline = " ".join("#" + h.lstrip("#") for h in hashtags[:3])
+    import re as _re
+    clean = []
+    for h in hashtags:
+        hh = _re.sub(r"[^A-Za-z0-9_]", "", str(h))
+        if hh and hh.lower() not in [c.lower() for c in clean]:
+            clean.append(hh)
+    tagline = " ".join("#" + c for c in clean[:3])
     if tagline and tagline not in desc:
         desc = desc.rstrip() + "\n\n" + tagline
     return desc[:4800]
@@ -240,9 +246,14 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
         # --- SFX: v7 minimal (faqat kesish whoosh) yoki to'liq P2 ---
         minimal = str((cfg.get("sfx") or {}).get("mode", "")) == "minimal"
         trig = []
+        # v9: kesish whoosh'i JORIY segment oxiridagi pauzada — keyingi
+        # sahnaning birinchi so'zini bosmaydi (run 23: whoosh ovozni yopgan)
+        last_end = max((w[2] for w in (it.get("words") or [("", 0, 0)])),
+                       default=0.0)
+        out_t = max(last_end + 0.04, it["dur"] - 0.30)
         if minimal:
-            if i > 0:
-                trig.append(("whoosh", 0.02, None))
+            if i < len(items) - 1 and out_t < it["dur"] - 0.05:
+                trig.append(("whoosh", out_t, None))
             if vis and vis["type"] == "clip":
                 n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
                 for k in range(1, n_slots):
@@ -252,8 +263,8 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 trig.append(("riser", 0.0, None))
                 trig.append(("impact", min(3.0, max(0.8, it["dur"] - 0.6)),
                              None))
-            if i > 0:                  # cut/sahna o'tishi: whoosh 0.25s
-                trig.append(("whoosh", 0.02, None))
+            if i < len(items) - 1 and out_t < it["dur"] - 0.05:
+                trig.append(("whoosh", out_t, None))
             if vis and vis["type"] == "clip":    # stock slot kesishlari
                 n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
                 for k in range(1, n_slots):

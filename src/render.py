@@ -27,7 +27,7 @@ from . import captions, style
 
 W, H = 1080, 1920
 FPS = 30
-TAIL = 0.5          # doc C3: video = ovoz + 0.5s
+TAIL = 0.30         # v9: 0.5 -> 0.30 (audio oxiri endi +0.25s pad bilan)
 CRF = "18"
 FONT_DIR = "/usr/share/fonts/truetype/montserrat"
 
@@ -70,8 +70,8 @@ def _fit_onscreen(text):
     words = t.split()
     for n in (len(words), 4, 3, 2, 1):
         cand = " ".join(words[-n:]) if n < len(words) else t
-        for size in (style.ONSCREEN_SIZE, 74, 72):
-            if captions.text_width(cand, size) <= 940:
+        for size in (style.ONSCREEN_SIZE, 76, 72):
+            if captions.text_width(cand, size) <= 880:
                 return cand, size
     return words[-1], 72
 
@@ -206,9 +206,10 @@ def render(cfg, script, items, work):
         ev_log.append({"t": round(seg_start, 3), "type": "cut",
                        "seg": i, "mode": mode})
         if scene.get("on_screen"):
+            osd_dur = min(style.ONSCREEN_MAX_DUR, max(0.8, dur - 0.35))
             ev_log.append({"t": round(seg_start, 3), "type": "on_screen",
                            "seg": i, "size": style.ONSCREEN_SIZE,
-                           "dur": style.ONSCREEN_MAX_DUR})
+                           "dur": round(osd_dur, 2)})
         if scene.get("mid_text"):
             ev_log.append({"t": round(seg_start + 0.30, 3),
                            "type": "mid_text", "seg": i,
@@ -261,16 +262,19 @@ def render(cfg, script, items, work):
         osd = ""
         if scene.get("on_screen"):
             osd_txt, osd_sz = _fit_onscreen(scene["on_screen"])
+            # v9: yorliq KESISHdan 0.35s oldin yashirinadi — yangi
+            # sahna matni chiqqanda eskisi umuman ko'rinmaydi
+            osd_dur = min(style.ONSCREEN_MAX_DUR, max(0.8, dur - 0.35))
             tf = os.path.join(work, f"os_{i:02d}.txt")
             with open(tf, "w", encoding="utf-8") as f:
                 f.write(osd_txt)
             osd = (f"drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
                    f":textfile={tf}:fontcolor=white:borderw=6:bordercolor=black"
                    f":fontsize={osd_sz}"
-                   f":alpha='min(1,t/0.12)*clip(({style.ONSCREEN_MAX_DUR:.2f}"
+                   f":alpha='min(1,t/0.12)*clip(({osd_dur:.2f}"
                    f"-t)/0.20,0,1)'"
                    f":x=(w-text_w)/2:y=104"
-                   f":enable='lte(t,{style.ONSCREEN_MAX_DUR:.2f})'")
+                   f":enable='lte(t,{osd_dur:.2f})'")
         tail = TAIL if i == n - 1 else 0.0
         # oxirgi segmentda video ham tail'gacha yetamiz (oxirgi kadr
         # ushlab turiladi — pleyerlarga mustahkam)

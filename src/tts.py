@@ -77,6 +77,48 @@ def speed_audio(path, tempo, dest):
     return dest
 
 
+# v9: TTS fonetik lug'at — murakkab joy nomlari to'g'ri talaffuz qilinadi
+# (Llívia -> "Libya" deb o'qilardi; Canberra -> "Camber").
+# FAQAT so'zma-so'z almashtirish — so'z soni va chegaralari saqlanadi.
+PHONETIC = {
+    "llívia": "Livia", "llivia": "Livia", "lívia": "Livia",
+    "canberra": "Canburra", "canburra": "Canburra",
+    "baarle": "Barleh", "hertog": "Hertok", "nassau": "Nassaw",
+    "baarle-hertog": "Barleh-Hertok", "baarle-nassau": "Barleh-Nassaw",
+    "küçük": "Kuchuk", "kucuk": "Kuchuk",
+    "québec": "Kaybek", "quebec": "Kaybek",
+    "montréal": "Monreal", "türkiye": "Turkiya",
+    "ceuta": "Sayuta", "melilla": "Melilya", "djibouti": "Jibuti",
+}
+
+
+def _phonetic_word(w):
+    """Bitta so'z: belgilarni olib tashla + lug'at. Tinish belgilari saqlanadi."""
+    import unicodedata
+    lead = ""
+    core = w
+    trail = ""
+    while core and not core[0].isalnum():
+        lead += core[0]
+        core = core[1:]
+    while core and not core[-1].isalnum():
+        trail = core[-1] + trail
+        core = core[:-1]
+    # de-aksent: Llívia -> Llivia (katta-kichik saqlanadi)
+    de = "".join(ch for ch in unicodedata.normalize("NFD", core)
+                 if not unicodedata.combining(ch))
+    rep = PHONETIC.get(de.lower())
+    if rep and de.isupper():
+        rep = rep.upper()
+    elif rep and de[:1].isupper():
+        rep = rep[:1].upper() + rep[1:]
+    return lead + (rep if rep else de) + trail
+
+
+def _phonetic(text):
+    return " ".join(_phonetic_word(w) for w in str(text).split())
+
+
 def synth(cfg, scenes):
     """Har sahna uchun ovoz + so'z vaqtlari."""
     tmp = cfg["_paths"]["work"]
@@ -86,7 +128,8 @@ def synth(cfg, scenes):
     engine = "edge"
     out = []
     for i, sc in enumerate(scenes):
-        text = sc["voice"]
+        orig_words = str(sc["voice"]).split()
+        text = _phonetic(sc["voice"])          # talaffuz uchun nom
         p = os.path.join(tmp, f"scene_{i:02d}.mp3")
         words, ok = [], False
         if engine == "edge":
@@ -94,6 +137,11 @@ def synth(cfg, scenes):
                 words = _edge_words(text, voice, rate, p)
                 if _ffprobe_duration(p) < 0.3 or not words:
                     raise RuntimeError("bo'sh audio/so'zlar")
+                # fonetik nusxani asl so'zlarga qaytaramiz (1:1)
+                if len(words) == len(orig_words):
+                    words = [(w0, ws, we)
+                             for (_wp, ws, we), w0
+                             in zip(words, orig_words)]
                 ok = True
             except Exception as e:
                 print(f"[tts] edge-tts ishlamadi ({type(e).__name__}); gTTS'ga o'tamiz")
