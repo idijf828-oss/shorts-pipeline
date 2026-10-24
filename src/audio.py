@@ -139,6 +139,16 @@ def strip_dead_air(words, src, work, gap=0.10, thresh=0.16, margin=0.020):
     return dest, out_words, _probe(dest)
 
 
+def lead_in(src, sec, work):
+    """v10: audio boshiga sec sekund sukunat (birinchi ~0.3s jim,
+    qo'llanma uslubi). So'z vaqtlari chaqiruvchi tomonidan siljiydi."""
+    out = os.path.join(work, "lead_in.wav")
+    _run(["ffmpeg", "-y", "-i", src, "-af",
+          f"adelay={int(sec * 1000)}:all=1",
+          "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", out])
+    return out, _probe(out)
+
+
 def speed(path, tempo, dest):
     """Pitch buzmagan tezlashtirish (atempo)."""
     _run(["ffmpeg", "-y", "-i", path, "-filter:a", f"atempo={tempo:.4f}",

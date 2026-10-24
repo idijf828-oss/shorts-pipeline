@@ -1,13 +1,9 @@
-"""2-qadam: MASTER LLM — "5 FACTS ABOUT {country}" listicle (v6).
+"""2-qadam: MASTER LLM — MAP EXPLAINER (v10, qo'llanma: map-explainer-video).
 
-Format: hook + FACT 5..1 (countdown, eng hayratlanarlisi oxirida) +
-loop = 7 sahna, 158-182 so'z (~45-55s @ +15% rate). HAMMA sahna
-real footage (stock) rejimida, xarita ma'lumoti zaxira sifatida.
-
-LLM: Claude Opus 5.5 (ANTHROPIC_API_KEY borida) -> Gemini zanjiri
-(src/llm.py). Mavzu: kun bo'yicha 3 ta yangi davlat nomzodi
-tarixdan (history) farq qiladigan qilib tanlanadi, LLM eng
-qiziqrog'ini tanlaydi.
+Format: bitta savol ("Why isn't the US annexing Canada?") + 2-3 sabab +
+CTA savol. 45-70 so'z, 15-35s. Vizuallar: satellite xarita asosiy
+(bayroq-poligon, strelka, sticker, davlat nomi yorlig'i), 2 ta qisqa
+stock insert. So'zma-so'z markaz subtitr, kalit so'z cyan.
 """
 import datetime
 import difflib
@@ -20,122 +16,109 @@ from src import llm
 # Hikoya temalari (kun+slot bo'yicha aylanadi; trend so'rovlari
 # config'dagi topics ro'yxatidan alohida)
 THEMES = [
-    "a building that sits on an international border",
-    "a town split between two countries",
-    "an island shared by two (or more) countries",
-    "a road, bridge or tunnel that changes country midway",
-    "an enclave completely inside another country",
-    "a place where you can stand in two countries at once",
-    "a border that runs through a house or a hotel",
-    "a place where the timezone or calendar changes as you walk",
-    "the world's strangest border crossing",
-    "a border drawn by a river, lake or sea that moved",
-    "a place that two countries both claim",
-    "a border town with two of everything (mayor, clock, police)",
-    "a place only reachable through another country",
-    "a border that runs through a sports field or a restaurant",
+    # v10 aralash mavzular (user: savol + chegara joyi + hayratlanarli fakt)
+    "a geopolitics why-question (why isn't / why doesn't a country do X)",
+    "a strange border place explained (why is this town in two countries?)",
+    "a surprising geography fact (why does a border/river/island look like this?)",
+    "a tiny country or enclave and why it still exists",
+    "an island, sea or river two countries disagree about",
+    "why a border wall, fence or crossing is exactly there",
+    "how geography made a country rich, safe or isolated",
+    "a weird-looking border on the map and the story behind it",
+    "why two countries share one thing (island, mountain, city, port)",
+    "a place that changed countries and why",
+    "why a huge country has almost no coastline or no neighbors",
+    "a map oddity: panhandles, holes and dead-end borders",
 ]
 
 # ================= MASTER SYSTEM PROMPT =================
-SYSTEM = """You are the writer-director of a viral immersive geography
-YouTube Shorts channel. Every short is ONE TRUE STORY about ONE real
-place — "The bar where you sit in two countries", "The library with a
-border through it". Style: slow, cinematic, SECOND-PERSON storytelling
-that puts the viewer inside the place: "Step inside this small tavern
-and sit down in two countries." Short calm lines, physical details,
-no hype. End on a playful loop line. Facts are real and verifiable.
-Perfect American English — zero typos, zero filler."""
+SYSTEM = """You are the writer-director of a viral geography and
+geopolitics YouTube Shorts channel. Every short answers ONE surprising
+real-world question on a satellite map — "Why isn't the US annexing
+Canada?", "Why is this village in two countries?". One question, two or
+three concrete reasons, one closing line that invites the next question.
+Fast, clear, factual, neutral on political topics. Perfect American
+English — zero typos, zero filler."""
 
 
 
 # ================= MASTER USER PROMPT =================
-PROMPT_TMPL = """Pick ONE specific real place that fits this theme: {theme}.
-It must be a real, verifiable place with a surprising story (border
-oddity, split town, enclave, two-countries-at-once spot).
-Niche: {niche}. Audience: USA, English, ages 13-40.
-Platform: YouTube Shorts (vertical 1080x1920).
+PROMPT_TMPL = """Answer ONE surprising question that fits this theme: {theme}.
+The question must be real, answerable with 2-3 concrete geographical or
+historical reasons, and verifiable. Niche: {niche}. Audience: USA,
+English, ages 13-40. Platform: YouTube Shorts (vertical 1080x1920).
 
 {trend_block}
-Recently covered places/topics (STRICTLY avoid anything similar): {hist}
+Recently covered questions/topics (STRICTLY avoid anything similar): {hist}
 {avoid}
-Write a 35-40 SECOND immersive short about that ONE place.
+Write a 15-30 SECOND map-explainer short: 45-70 words total,
+6-8 scenes.
 
-NARRATION — IMMERSIVE STORYTELLING (the benchmark style):
-"Step inside this small tavern and sit down in two countries."
-"Order a drink on the left side and you are in Spain."
-Rules derived from that style:
-- Second person, present tense, imperative. The viewer is physically
-  THERE. Use body actions: step inside, look down, order, walk, cross.
-- Concrete physical details over abstractions: "a black line painted
-  on the wooden floor", "your jacket on the chair" — never "interesting
-  legislation".
-- Total 88-102 words across exactly 7 scenes. COUNT every line.
-- Scene 1 (HOOK): 11-13 words. Put the viewer inside the place and
-  tease its strangest detail.
-- Scenes 2-6 (STORY BEATS): 14-16 words each, TWO very short
-  sentences. One continuous story that moves the viewer physically
-  through the place, beat by beat, escalating — the strangest detail
-  LAST (scene 6). Real place names, real numbers.
-- Scene 7 (LOOP): 9-12 words. A playful warning or "just don't..."
-  line that the HOOK answers on replay. It must be a DIFFERENT sentence
-  than the hook — never repeat or lightly rephrase it.
-- NEVER say "did you know", any intro, any CTA, no exclamation marks,
-  no rhetorical hype. The title pattern: "The X Where You Y".
+NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
+- Scene 1 (HOOK, 5-8 words): the question itself, ending with "?".
+  Example: "Why isn't the US simply annexing Canada?"
+- Scenes 2-6 (REASONS, 7-12 words each): one reason per beat. Concrete
+  facts, real numbers, real names. Natural flow or "First / Second".
+  The strongest reason LAST.
+- Final scene (CLOSE + CTA, 6-10 words): one-line answer summary, then
+  a short question that invites the next video, ending with "?".
+- Active voice. Every line adds NEW information. NEVER "did you know",
+  intros, thank-yous, or hype. No exclamation marks.
+- Neutral, factual tone on political topics — explain, never take sides.
 
-VISUALS — REAL FOOTAGE for every scene:
-- Every scene: "mode": "stock" with visual_query = exactly 3
-  hierarchical phrases (specific -> broader -> generic), each 2-3
-  English words describing filmable real-world b-roll (e.g.
-  ["cozy tavern wooden interior", "bartender pouring beer",
-   "european bar counter"]).
-- NEVER a lone generic object ("floor", "wall", "land"). NEVER queries
-  about text, signs or logos (OCR rejects them).
-- The b-roll must match the place TYPE: an inland village story gets
-  streets, houses, markets, forests — NEVER open ocean, beaches or a
-  spinning globe. NEVER suggest green-screen / chroma-key studio shots.
-- "reject": wrong topics these queries could return.
-- Every scene ALSO carries map data (focus/lat/lon/zoom) as fallback.
-- "on_screen": a 2-4 ALL-CAPS word headline naming the story beat
-  (e.g. "TAPE ON THE FLOOR", "STEPS TO FRANCE", "MIND THE LINE").
-  NEVER meta/technical words: "LOOP", "INFINITE", "REPLAY", "REWIND",
-  "NEXT VIDEO", "SUBSCRIBE" — these are FORBIDDEN on screen.
-- "mid_text": give EXACTLY 2-3 scenes a 1-3 word ALL-CAPS reveal word
-  that punches mid-screen (e.g. "IN FRANCE", "TWO MAYORS", "STILL
-  LEGAL"). Choose the biggest reveal moments, including one in scene 6.
+VISUALS — SATELLITE MAP is the star (guide style):
+- Most scenes are map scenes: "mode": "map" with focus/lat/lon and
+  zoom_level (3=continent, 5=whole country, 7=region, 9=city).
+  The camera slowly zooms; the topic change is a hard cut.
+- Give each map scene 1-3 "events" from:
+  "flag_fill" target ISO2 — fills the country with its flag texture
+  (use for the 1-2 main countries);
+  "highlight" target ISO2 — cyan ally/ bloc fill;
+  "arrow" dir up/down/left/right — big yellow arrow (pressure, movement);
+  "icon" emoji — one sticker per event: handshake, siren, money bag, rocket, warning sign, checkered flag (use the actual emoji characters);
+  "label" target — a small black name tag on the country (country name).
+- EXACTLY 2 scenes are stock inserts: "mode": "stock" with
+  visual_query = 3 hierarchical phrases (2-3 words each) about filmable
+  real-world b-roll (e.g. ["protest crowd street", "angry crowd signs",
+  "demonstration city"]). Inserts are 1-2 seconds, subtitles continue.
+- "highlights": at most 1 keyword per scene, color "#22D3EE" — the
+  word shown BIG and cyan in the subtitles. Pick the punch words.
 
 OUTPUT — ONE JSON object, no markdown, no commentary:
 {{
-  "place": "<the specific place, e.g. Haskell Free Library, Derby Line>",
-  "country": "<main country or 'BE-NL' style pair>",
-  "title": "<=70 chars, 'The X Where You Y' curiosity gap>",
+  "question": "<the full question>",
+  "place": "<main place or ''>",
+  "country": "<main country or 'US-CA' style pair>",
+  "title": "<<=70 chars, the question, 'Why ...?' pattern>",
   "description": "<2-3 sentences>",
-  "pinned_comment": "<question that drives comments>",
-  "keywords": ["<place>", "<theme keywords>", "..."],
-  "hashtags": ["<3-4 tags>"],
+  "pinned_comment": "<CTA question driving comments>",
+  "keywords": ["<place/question keywords>", "..."],
+  "hashtags": ["<3-4 tags like geopolitics, maps, shorts>"],
   "scenes": [
     {{
       "id": 1,
-      "voice": "<hook, 11-13 words — count them>",
-      "on_screen": "<2-4 WORD HEADLINE>",
-      "mode": "stock",
+      "voice": "<hook question, 5-8 words, ends with ?>",
+      "mode": "map",
       "map": {{"focus": "<place>", "lat": <real lat>, "lon": <real lon>,
-               "zoom_level": <3=continent .. 12=building>, "motion": "zoom_in"}},
+               "zoom_level": <3-9>, "motion": "zoom_in"}},
       "country_iso_codes": ["<ISO2>", "<ISO2>"],
+      "events": [{{"type": "flag_fill", "target": "US", "at_word": "..."}},
+                 {{"type": "label", "target": "United States", "at_word": "..."}}],
+      "highlights": [{{"word": "<keyword>", "color": "#22D3EE"}}],
       "sfx_trigger": [],
-      "fact_source": "<credible source for the beat>",
-      "visual_query": ["<3 phrases>"],
-      "must_contain": ["<2-5 GENERIC visual words that literally appear in stock clip tags: tavern, library, street, border, aerial — NEVER country names or abstract words (culture, economy, history)>"],
-      "reject": ["<wrong topics>"]
+      "fact_source": "<credible source>",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
     }},
-    {{ ... scenes 2-6: story beats, "voice" 14-16 words, 2-3 of them
-         with "mid_text": "<REVEAL WORD>" ... }},
-    {{ ... scene 7: loop, playful warning ... }}
+    {{ ... scenes 2-6: reasons; 2 of them "mode": "stock" inserts ... }},
+    {{ ... final scene: close + CTA question ... }}
   ]
-}}"""
+}}
+"""
 
 
-
-_WORD_LO, _WORD_HI = 88, 102
+_WORD_LO, _WORD_HI = 45, 70
 
 
 def _pick_theme():
@@ -171,7 +154,8 @@ def _as_list(v):
     return list(v or [])
 
 
-_EV_TYPES = ("pin", "line", "arrow", "highlight", "flag_fill", "zoom", "icon")
+_EV_TYPES = ("pin", "line", "arrow", "highlight", "flag_fill", "zoom",
+              "icon", "label")
 
 # ASCII + imzo belgilaridan boshqa belgi bo'lmasin (ideal yozuvlar)
 _OK_EXTRA = set("\u2019\u2018\u201c\u201d\u2013\u2014\u2026%")
@@ -208,8 +192,8 @@ def _parse(raw):
     data = json.loads(txt)
 
     segs = data.get("scenes") or data.get("segments") or []
-    if not (6 <= len(segs) <= 8):
-        raise ValueError(f"6-8 sahna kerak, {len(segs)} ta keldi")
+    if not (5 <= len(segs) <= 9):
+        raise ValueError(f"5-9 sahna kerak, {len(segs)} ta keldi")
     for i, sc in enumerate(segs):
         err = _lint_voice(str(sc.get("voice", "")), i)
         if err:
@@ -292,7 +276,9 @@ def _parse(raw):
         head = re.sub(r"^FACT\s*\d+\s*[-–—:]?\s*", "",
                       sc["on_screen"], flags=re.I)
         words = [w for w in head.split() if w.strip(".,!?-_").upper() not in _BAN]
-        if not words:                            # to'liq blacklisted -> voice'dan
+        if not head.split():
+            words = []                           # v10: kiritilmagan -> YO'Q
+        elif not words:                          # to'liq blacklisted -> voice'dan
             words = sc["voice"].split()[:2]
         if len(words) > 5:                       # eng muhim so'zlar qoladi
             words = words[-4:]
@@ -301,14 +287,21 @@ def _parse(raw):
               if w.strip(".,!?-_").upper() not in _BAN]
         sc["mid_text"] = " ".join(mw)[:24].upper()
 
-    # kamida 4 sahna real footage rejimida bo'lishi kerak
+    # v10 map-explainer: xarita ASOSIY, 1-3 ta qisqa stock insert
     n = len(segs)
     n_stock = sum(1 for s in segs if s["mode"] == "stock")
-    if n_stock < min(4, n - 1):
-        raise ValueError(f"stock sahna kam: {n_stock}/{n}")
+    if not (1 <= n_stock <= 3):
+        raise ValueError(f"stock insert 1-3 ta bo'lishi kerak: {n_stock}/{n}")
+    # v10: hook SAVOL, yakuniy gap CTA savol bilan tugashi shart
+    if "?" not in segs[0]["voice"]:
+        raise ValueError("1-sahna (hook) savol bo'lishi kerak ('?')")
+    if "?" not in segs[-1]["voice"]:
+        raise ValueError("oxirgi gap CTA savol bilan tugasin ('?')")
 
     place = str(data.get("place") or "").strip()
     country = str(data.get("country") or "").strip()
+    data["question"] = str(data.get("question")
+                           or data.get("title") or "").strip()[:150]
     data["title"] = str(data.get("title", "A strange place"))[:100]
     if place and place.lower() not in data["title"].lower() \
             and len(data["title"]) < 58:
@@ -347,13 +340,13 @@ def _parse(raw):
 
 
 def _parse_relaxed(raw):
-    """Oxirgi zaxira: so'z oynasi 84-106 (tempo 35-40s ga siqadi)."""
+    """Oxirgi zaxira: so'z oynasi 40-78 (qisqa video uchun)."""
     global _WORD_LO, _WORD_HI
-    _WORD_LO, _WORD_HI = 84, 106
+    _WORD_LO, _WORD_HI = 40, 78
     try:
         return _parse(raw)
     finally:
-        _WORD_LO, _WORD_HI = 88, 102
+        _WORD_LO, _WORD_HI = 45, 70
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):

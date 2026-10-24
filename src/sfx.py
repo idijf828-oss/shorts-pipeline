@@ -366,7 +366,9 @@ def add_triggers(cfg, audio_path, triggers, work, idx):
     if not triggers:
         return audio_path
     fx = ensure_sfx(work)
-    minimal = str((cfg.get("sfx") or {}).get("mode", "")) == "minimal"
+    _mode = str((cfg.get("sfx") or {}).get("mode", ""))
+    minimal = _mode == "minimal"
+    explainer = _mode == "explainer"
     picks = []
     for (n, t, v) in triggers:
         if n in fx and t is not None:
@@ -374,8 +376,14 @@ def add_triggers(cfg, audio_path, triggers, work, idx):
             if vol is None:
                 # v7 immersive: minimal rejimda yanada yumshoq (referens:
                 # deyarli toza ovoz, faqat nozik kesish tovushi)
-                db = (style.MINIMAL_SFX_DB.get(n, style.SFX_DB.get(n, -12))
-                      if minimal else None)
+                if minimal:
+                    db = style.MINIMAL_SFX_DB.get(n,
+                                                 style.SFX_DB.get(n, -12))
+                elif explainer:
+                    db = style.EXPLAINER_SFX_DB.get(n,
+                                                    style.SFX_DB.get(n, -12))
+                else:
+                    db = None
                 vol = (10 ** ((db + 2) / 20)) if db is not None \
                     else style.sfx_vol(n)
             picks.append((fx[n], max(0.0, t) * 1000, round(vol, 3)))

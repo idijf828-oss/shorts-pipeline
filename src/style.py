@@ -38,7 +38,7 @@ SLIDE_PX = 80
 POP_SCALE = 1.08            # 1.0 -> 1.08 -> 1.0 (doc P1)
 
 # --- color grade (doc P1: hamma kadrga bir xil) ---
-GRADE_ALL = "eq=contrast=1.05:saturation=1.1,vignette=a=PI/8"  # yengil (doc P1)
+GRADE_ALL = "eq=contrast=1.06:saturation=1.12,vignette=a=PI/6.5"  # v10: quyuq qirralar (qo'llanma)
 GRADE_STOCK = ("colorbalance=rs=-0.08:gs=0.01:bs=0.12:"
                "rm=-0.05:gm=0.0:bm=0.07,eq=saturation=1.06:contrast=1.03")
 
@@ -54,6 +54,8 @@ SFX_DB = {"riser": -8, "impact": -9, "boom": -9, "alarm": -10,
           "pop": -12, "tick": -12, "flagpop": -11, "zip": -13}
 # v7 immersive (referens: musiqasiz, juda toza): faqat yumshoq whoosh
 MINIMAL_SFX_DB = {"whoosh": -18}   # v9: ovozni bosmasin
+EXPLAINER_SFX_DB = {"whoosh": -20, "pop": -18, "drop": -18,
+                    "flagpop": -18, "swish": -18, "impact": -17}  # v10: nozik
 
 
 def sfx_vol(name):

@@ -144,6 +144,25 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
             png = geo.pin_png(work, label=t_label[:18])
             layers.append({"path": png, "t": t, "full": False, "pos": pos,
                            "sfx": "drop", "kind": "pin", "word_t": t})
+        elif k == "label":
+            # v10: davlat nomi yorlig'i (kichik qora lavha, oq matn)
+            pos = None
+            want = set(geo.resolve(target))
+            for iso2, c in (ctx.get("centroids") or {}).items():
+                if set(geo.resolve(iso2)) & want:
+                    pos = c
+                    break
+            if pos is None and ev.get("lat") is not None:
+                try:
+                    pos = ctx["to_px"](float(ev["lon"]), float(ev["lat"]))
+                except Exception:
+                    pos = None
+            if pos is None:
+                pos = (W_CENTER, 0.30 * 2560)
+            png = geo.label_png(target, work)
+            if png:
+                layers.append({"path": png, "t": t, "full": False, "pos": pos,
+                               "sfx": None, "kind": "label", "word_t": t})
         elif k == "arrow":
             png = icons.get_icon(
                 {"emoji": f"arrow_{str(ev.get('dir', 'right')).lower()}"}, work)

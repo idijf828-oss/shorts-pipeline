@@ -138,10 +138,10 @@ def run_checks(path, cfg=None, work=None):
         (f"{cfg['video']['min_duration']}-{cfg['video']['max_duration']} s",
          cfg["video"]["min_duration"] <= dur <= cfg["video"]["max_duration"] + 0.2,
          f"{dur:.2f}s"),
-        ("LUFS -16..-14", -16.2 <= lufs <= -13.8, f"{lufs:.1f}"),
+        ("LUFS -15..-13", -15.2 <= lufs <= -12.8, f"{lufs:.1f}"),  # v10: -14
         ("true peak <= -1", tp <= -1.0, f"{tp:.1f}"),
         ("tail 0.2-0.7s (ovoz oxiri)", 0.2 <= tail <= 0.7, f"{tail:.2f}s"),
-        # v7 immersive: 0.4-1.6s pauzalar ATAYLAB (nafas); >1.7s = xato
+        # v10 explainer: pauzalar qisqa; >1.7s = xato (qo'llanma: tez)
         ("uzun jimlik >1.7s = 0", not any(d > 1.7 for _s, d in mid),
          f"{len(mid)} pauza, eng uzuni {max((d for _s, d in mid), default=0):.2f}s"),
     ]
@@ -152,8 +152,8 @@ def run_checks(path, cfg=None, work=None):
         ts = sorted(float(e["t"]) for e in evs)
         max_gap = max([b - a for a, b in zip([0.0] + ts, ts + [dur])],
                       default=dur)
-        checks.append(("har <=3.0s da hodisa (kesish/yorliq)",
-                       max_gap <= 3.0,
+        checks.append(("har <=2.2s da vizual o'zgarish (qo'llanma)",
+                       max_gap <= 2.2,
                        f"max gap {max_gap:.2f}s ({len(evs)} hodisa)"))
         engine = str(ev.get("engine", "edge"))
         tol = 0.30 if engine == "gtts" else 0.15
@@ -187,8 +187,8 @@ def run_checks(path, cfg=None, work=None):
                 sizes |= set(int(x) for x in re.findall(r"\\fs(\d+)", f.read()))
     if bool((cfg.get("captions") or {}).get("enabled", True)) and sizes:
         # doc P1: 96 doimiy; 80 faqat kam holatda (bitta uzun so'z)
-        checks.append(("subtitr shrift 96 (80 kam holat)",
-                       sizes <= {96, 80},
+        checks.append(("subtitr shrift 100 (88/80 kam holat)",
+                       sizes <= {100, 88, 80},
                        "/".join(str(x) for x in sorted(sizes)) + "px"))
 
     # --- safe-zone (doc P4c): subtitr x in [110,970] ---

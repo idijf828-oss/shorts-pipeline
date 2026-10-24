@@ -4,35 +4,37 @@
 # ============================================
 
 channel:
-  niche: "Strange borders and two-country places"   # v8: bitta joy hikoyalari
+  niche: "Geography & geopolitics explained on satellite maps"   # v10 map-explainer
   topics:                                     # TREND so'rovlari uchun
+    - geopolitics
+    - why questions geography
+    - world map facts
     - strange borders
-    - border stories
-    - weird places
+    - surprising places
   language: "en-US"                           # video tili
   voice: "en-US-ChristopherNeural"            # chuqur, professional (documentary) ovoz
   # Ovoz variantlari: en-US-ChristopherNeural (erkak, hujjatli),
   #                   en-US-GuyNeural (erkak, jonli), en-US-AriaNeural (ayol),
   #                   en-US-JennyNeural (ayol, iliq)
-  voice_rate: "+0%"                            # v7 immersive: tabiiy, sekinroq nutq (referens ~2.2 so'z/s)
+  voice_rate: "+8%"                            # v10 explainer: tez, aniq diktor (~150-170 so'z/min)
 
 video:
   width: 1080
   height: 1920
   fps: 30
-  # V4 (doc): 5-8 sahna, 95-110 so'z
-  min_duration: 35                            # sekund (v7 immersive, referens 35.7s)
-  max_duration: 40                            # sekund (qattiy cheklov)
-  tags: [geography, borders, strange places, world facts, maps,
-         did you know, education, shorts]
+  # v10 map-explainer (qo'llanma): 15-35s, bitta savol + 2-3 sabab, 45-70 so'z
+  min_duration: 18                            # sekund
+  max_duration: 34                            # sekund (qattiy cheklov)
+  tags: [geopolitics, maps, geography, world facts, borders,
+         why, explained, shorts]
 
 captions:
-  enabled: false      # v7 immersive: uzluksiz subtitr YO'Q (referens uslubi)
-  y_map: 950             # xarita sahnalarida (doc B4)
-  y_stock: 1150          # stock/odam kadrlarida pastroq
-  safe_w: 860            # maksimal matn kengligi (x: 110..970 safe zone)
-  font_size: 96          # doc P1: doimiy 96px (2 qator, 96->80 kam)
-  max_words: 3           # bir vaqtda maks 3 so'z (doc: 1-3)
+  enabled: true       # v10 map-explainer: so'zma-so'z markaz subtitr (qo'llanma: eng muhim element)
+  y_map: 780              # ekran markazi atrofi (0.40H, past 20% safe-zone'dan yuqori)
+  y_stock: 780            # insert kadrlarida ham markazda (subtitr uzluksiz)
+  safe_w: 840            # maksimal matn kengligi (yon chetlar 8% safe zone)
+  font_size: 100         # qalin oq + qora kontur (qo'llanma uslubi)
+  max_words: 2           # qo'llanma: har kadrda 1-2 so'z
 
 sources:
   youtube_region: "US"
@@ -50,14 +52,14 @@ sources:
 
 sfx:
   enabled: true                    # SFX triggerlar
-  mode: "minimal"                  # v7: faqat nozik kesish whoosh (referens)
-  music_enabled: false             # v7 immersive: musiqa YO'Q (pauzalar tabiiy)
-  music_volume: 0.11             # ~ -18dB (musiqa ovoz ostida, ustida emas)
+  mode: "explainer"                # v10: pop/whoosh/impact — ovozdan ~10dB past
+  music_enabled: true              # v10: kuchsiz fon musiqa (qo'llanma: -15..-20dB past)
+  music_volume: 0.04               # ~ -28dB (qo'llanma: ovozdan 15-20dB past)
 
 audio:
   turbo: 1.05                      # gTTS zaxira tezligi (pitch buzilmasdan)
-  pad_s: 0.7                       # v7: sahna-oralig'i (referens pauzalari)
-  silence_gap: 0.12                # gaplar orasi <=0.12s (doc C2)
+  pad_s: 0.32                      # v10: pauzalar qisqa (qo'llanma: "pauzani kesib tashla")
+  silence_gap: 0.10                # gaplar orasi (doc C2)
   tail_pad: 0.5                    # video = ovoz + 0.5s (doc C3)
 
 behavior:

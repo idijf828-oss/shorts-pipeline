@@ -383,6 +383,38 @@ def pin_png(work_dir, color=YELLOW, label=""):
     return out
 
 
+def label_png(name, work_dir):
+    """v10: davlat nomi yorlig'i — kvadrat kanvasda markazda kichik
+    qora lavha + oq qalin matn (screen-layer 260px scale uchun KVADRAT)."""
+    import re as _re
+    txt = _re.sub(r"[^A-Za-z0-9 .'-]", "", str(name or "")).strip()[:22]
+    if not txt:
+        return None
+    key = _re.sub(r"[^A-Za-z0-9]+", "_", txt).strip("_")
+    out = os.path.join(work_dir, f"lbl_{key}.png")
+    if os.path.exists(out):
+        return out
+    try:
+        from PIL import ImageFont
+        S = 512
+        img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        fnt = ImageFont.truetype(
+            "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", 46)
+        tw = int(d.textlength(txt.upper(), font=fnt))
+        w, h = min(460, tw + 52), 84
+        x0, y0 = (S - w) // 2, (S - h) // 2
+        d.rounded_rectangle([x0, y0, x0 + w - 1, y0 + h - 1], radius=16,
+                            fill=(10, 12, 18, 218),
+                            outline=(255, 255, 255, 70), width=2)
+        d.text((x0 + 26, y0 + 18), txt.upper(), font=fnt,
+               fill=(255, 255, 255, 255))
+        img.save(out)
+        return out
+    except Exception:
+        return None
+
+
 def point_in_country(iso_target, lon, lat):
     """(lon, lat) nuqta mamlakat poligonida (quruqlikda) yoki yo'qmi.
     Pin okeanga tushib qolmasligi uchun (ray-casting)."""

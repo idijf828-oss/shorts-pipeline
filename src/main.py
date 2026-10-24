@@ -24,7 +24,7 @@ def build_description(cfg, script):
         hook = segs[0]["voice"] if segs else ""
         facts = " ".join(s["voice"] for s in segs[1:7])
         pc = script.get("pinned_comment") or "Which place should I cover next? 👇"
-        desc = f"{hook}\n{facts}\n\n{pc}\nNew geography fact every day.\n"
+        desc = f"{hook}\n{facts}\n\n{pc}\nOne question, three reasons, every day.\n"
     hashtags = script.get("hashtags") or ["shorts", "geography", "facts"]
     import re as _re
     clean = []
@@ -161,6 +161,11 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
         os.makedirs(sd, exist_ok=True)
         it["audio"], it["words"], it["dur"] = audio.strip_dead_air(
             it["words"], it["audio"], sd, gap=gap)
+        if i == 0:
+            # v10: birinchi ~0.3s deyarli jim — keyin darhol gap (qo'llanma)
+            it["audio"], it["dur"] = audio.lead_in(it["audio"], 0.25, sd)
+            it["words"] = [(w, s + 0.25, e + 0.25)
+                           for (w, s, e) in it["words"]]
 
     mn, mx = cfg["video"]["min_duration"], cfg["video"]["max_duration"]
     base = sum(it["dur"] for it in items)
@@ -243,8 +248,10 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
         it["layers"] = layers
         it["punches"] = punches if vis["type"] == "map" else []
 
-        # --- SFX: v7 minimal (faqat kesish whoosh) yoki to'liq P2 ---
-        minimal = str((cfg.get("sfx") or {}).get("mode", "")) == "minimal"
+        # --- SFX: minimal / explainer (v10) / to'liq P2 ---
+        sfx_mode = str((cfg.get("sfx") or {}).get("mode", ""))
+        minimal = sfx_mode == "minimal"
+        explainer = sfx_mode == "explainer"
         trig = []
         # v9: kesish whoosh'i JORIY segment oxiridagi pauzada — keyingi
         # sahnaning birinchi so'zini bosmaydi (run 23: whoosh ovozni yopgan)
@@ -258,7 +265,23 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 n_slots = max(1, int(-(-it["dur"] // style.CLIP_MAX_S)))
                 for k in range(1, n_slots):
                     trig.append(("whoosh", k * style.CLIP_MAX_S, None))
-        if not minimal:
+        elif explainer:
+            # v10 map-explainer: sticker/bayroq pop-lari, insert zarbasi,
+            # kesish whoosh'i — barchasi ovozdan ~10dB past (sfx.py)
+            if i == 0:
+                # v10: birinchi 0.3s jim qoladi (qo'llanma) -> zarba
+                # lead-in tugagach, birinchi so'z bilan chalinadi
+                trig.append(("impact", 0.32, None))
+            for ly in layers:
+                if ly.get("sfx"):
+                    trig.append((ly["sfx"], max(0.25, ly["t"]), None))
+            if i < len(items) - 1 and out_t < it["dur"] - 0.05:
+                trig.append(("whoosh", out_t, None))
+            if vis and vis["type"] == "clip":           # insert: qisqa zarba
+                trig.append(("impact", 0.06, None))
+            for p in it["punches"]:
+                trig.append(("whoosh", p / 30.0, None))
+        else:
             if i == 0:                 # hook: riser + 3.0s da impact
                 trig.append(("riser", 0.0, None))
                 trig.append(("impact", min(3.0, max(0.8, it["dur"] - 0.6)),
@@ -272,7 +295,8 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
             for name in (sc.get("sfx_trigger") or [])[:2]:
                 trig.append((name, 0.05, None))
             for ly in layers:                    # har eventda tovush
-                trig.append((ly["sfx"], max(0.25, ly["t"]), None))
+                if ly.get("sfx"):
+                    trig.append((ly["sfx"], max(0.25, ly["t"]), None))
             for p in it["punches"]:
                 trig.append(("whoosh", p / 30.0, None))
             if i == len(items) - 1:              # oxirgi "twist": impact

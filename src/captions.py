@@ -51,12 +51,21 @@ def text_width(text, size):
     return max(len(l) for l in text.split("\n")) * size * 0.62
 
 
+def _ladder(base):
+    """100 -> 88 -> 80 -> ... (QC ro'yxati: {100, 88, 80})."""
+    vals, s = [], base
+    while s >= FIT_MIN:
+        vals.append(s)
+        s -= 12 if len(vals) == 1 else 8
+    return vals or [FIT_MIN]
+
+
 def fit_font(text, base=FONT_SIZE, max_w=SAFE_W):
-    """Doc P1: 96 doimiy; keng bo'lsa 2 qator; 96->80 faqat kam holatda."""
-    size = base
-    while size > FIT_MIN and text_width(text, size) > max_w:
-        size -= 4
-    return size
+    """Doc P1: katta shrift doimiy; keng bo'lsa narvon bo'yicha kichrayadi."""
+    for s in _ladder(base):
+        if text_width(text, s) <= max_w:
+            return s
+    return FIT_MIN
 
 
 def _split2(ch, size):
@@ -76,6 +85,14 @@ def _split2(ch, size):
             best_k, bw = k, w
     if bw is not None and bw <= SAFE_W:
         return best_k, size
+    if best_k is not None:
+        # v10: bir qator sig'madi -> 2 qator + narvon shrifti MAJBUR
+        # (aks holda "UNDEFENDED BORDER." 80px bir qator deb toshib ketardi)
+        for s2 in _ladder(size):
+            if max(_line_w(words[:best_k], s2, active=True),
+                   _line_w(words[best_k:], s2)) <= SAFE_W:
+                return best_k, s2
+        return best_k, FIT_MIN
     return None, fit_font(plain, size)
 
 
@@ -128,7 +145,7 @@ def _line_w(txt_words, size, active=False):
     """Qator kengligi; active=True -> birinchi so'z 115% (doc B4 pop)."""
     if not txt_words:
         return 0.0
-    w = text_width(txt_words[0], size) * (1.15 if active else 1.0)
+    w = text_width(txt_words[0], size) * (1.20 if active else 1.0)
     if len(txt_words) > 1:
         w += text_width(" ".join(txt_words[1:]), size) \
             + text_width(" ", size) * (len(txt_words) - 1)
@@ -160,7 +177,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Cap,{FONT},{size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,10,4,5,110,110,0,1
+Style: Cap,{FONT},{size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,11,3,5,110,110,0,1
 Style: Mid,{FONT},132,&H00FFFFFF,&H00FFFFFF,&H00000000,&H90000000,-1,0,0,0,100,100,0,0,1,12,5,5,110,110,0,1
 
 [Events]
@@ -198,10 +215,12 @@ def build_scene_ass(cfg, scene, words, dur, path):
 
     head, size = _ass_head(cfg, y)
     yellow = _ass_color(YELLOW)
+    cyan = _ass_color("#22D3EE")   # v10: kalit so'z cyan (qo'llanma)
     ev, chunk_ts = [], []
     sub_on = bool(cfg.get("captions", {}).get("enabled", True))
     if sub_on:
-        for ch in chunk(words):
+        mw = max(1, int(cfg.get("captions", {}).get("max_words", 2)))
+        for ch in chunk(words, n=mw):
             s = max(0.0, ch[0][1])
             e = min(dur, ch[-1][2] + 0.10)
             if e <= s:
@@ -218,8 +237,8 @@ def build_scene_ass(cfg, scene, words, dur, path):
                     seen_active = True
                 txt = _clean(wtxt).upper()
                 if is_active:
-                    parts.append("{\\c" + (color or yellow)
-                                 + r"\fscx70\fscy70\t(0,110,\fscx115\fscy115)"
+                    parts.append("{\\c" + (color or cyan)
+                                 + r"\fscx70\fscy70\t(0,110,\fscx118\fscy118)"
                                  + "}" + txt + "{\\r}")
                 elif color:
                     parts.append("{\\c" + color + "}" + txt + "{\\r}")

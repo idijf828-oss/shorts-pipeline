@@ -368,13 +368,14 @@ def _mix_music(cfg, joined, out, mus_vol=None):
             # gain pad nisbatlarini saqlaydi -> musiqa o'lchovi
             # deterministik bo'ladi.
             meas = _ebur128(mixw)
-            gain = max(-12.0, min(12.0, -15.0 - meas["I"]))
+            gain = max(-12.0, min(12.0, -14.0 - meas["I"]))
             print(f"[render] master: I={meas['I']:.1f} TP={meas['TP']:.1f} "
                   f"-> gain {gain:+.2f} dB + limiter")
             _run(["ffmpeg", "-y", "-i", joined, "-i", mixw,
                   "-filter_complex",
                   f"[1:a]volume={gain:.2f}dB,"
-                  f"alimiter=limit=0.841:level=false:attack=5,"
+                  f"alimiter=limit=0.794:level=false:attack=5,"
+                  f"alimiter=limit=0.780:level=false:attack=1:release=25,"
                   f"apad=pad_dur={TAIL + 0.1:.2f},"
                   f"atrim=0:{d:.3f}[a]",
                   "-map", "0:v", "-map", "[a]", "-t", f"{d:.3f}",
@@ -396,13 +397,14 @@ def _mix_music(cfg, joined, out, mus_vol=None):
             _run(["ffmpeg", "-y", "-i", joined, "-filter_complex", fc,
                   "-map", "[mix]", "-ar", "48000", "-ac", "2", mixw])
             meas = _ebur128(mixw)
-            gain = max(-12.0, min(12.0, -15.0 - meas["I"]))
+            gain = max(-12.0, min(12.0, -14.0 - meas["I"]))
             print(f"[render] master (musiqasiz): I={meas['I']:.1f} "
                   f"TP={meas['TP']:.1f} -> gain {gain:+.2f} dB + limiter")
             _run(["ffmpeg", "-y", "-i", joined, "-i", mixw,
                   "-filter_complex",
                   f"[1:a]volume={gain:.2f}dB,"
-                  f"alimiter=limit=0.841:level=false:attack=5,"
+                  f"alimiter=limit=0.794:level=false:attack=5,"
+                  f"alimiter=limit=0.780:level=false:attack=1:release=25,"
                   f"apad=pad_dur={TAIL + 0.1:.2f},"
                   f"atrim=0:{d:.3f}[a]",
                   "-map", "0:v", "-map", "[a]", "-t", f"{d:.3f}",
@@ -412,7 +414,7 @@ def _mix_music(cfg, joined, out, mus_vol=None):
         except Exception as e:
             print("[render] musiqasiz master xatosi:", e)
     _run(["ffmpeg", "-y", "-i", joined,
-          "-af", "loudnorm=I=-15:TP=-1.5:LRA=7",
+          "-af", "loudnorm=I=-14:TP=-1.0:LRA=9",   # v10: qo'llanma -14 LUFS
           "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
           "-movflags", "+faststart", out])
 
