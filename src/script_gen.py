@@ -74,6 +74,12 @@ NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
   The strongest reason LAST. Everyday facts a kid knows.
 - Final scene (CLOSE + CTA, 6-10 words): one-line answer summary, then
   a short question that invites the next video, ending with "?".
+  The CTA must be a COMPLETE, interesting question about the topic
+  (like "Which border would you visit?") — never a filler fragment
+  like "Which strange..." or "Should I explain next?". A kid must be
+  able to answer it in the comments.
+- Every line must be a COMPLETE phrase. Meaningless fragments are
+  banned ("Which strange", "But wait", "And then?").
 - Active voice. Every line adds NEW information. NEVER "did you know",
   intros, thank-yous, or hype. No exclamation marks.
 - Neutral, factual tone on political topics — explain, never take sides.
@@ -115,6 +121,7 @@ OUTPUT — ONE JSON object, no markdown, no commentary:
   "place": "<main place or ''>",
   "country": "<main country or 'US-CA' style pair>",
   "title": "<<=70 chars, the question, 'Why ...?' pattern>",
+  "headline": "<=30 chars, UPPERCASE short label of the place/topic, e.g. 'POINT ROBERTS' or 'ONE ROAD IN' — shown the WHOLE video, so make it punchy and specific>",
   "description": "<2-3 sentences>",
   "pinned_comment": "<CTA question driving comments>",
   "keywords": ["<place/question keywords>", "..."],
@@ -477,6 +484,14 @@ def _parse(raw, strict_insert=True):
                         for h in _as_list(data.get("hashtags"))
                         if re.sub(r"[^A-Za-z0-9_]", "", str(h))][:4]
     data["pinned_comment"] = str(data.get("pinned_comment", "")).strip()[:200]
+    # v11 (V2-1): ZONA A statik sarlavhasi — headline (yoki place)
+    hl = str(data.get("headline") or "").strip()
+    if not hl:
+        hl = place or " ".join(segs[0]["voice"].split()[:4])
+    hl = "".join(c for c in unicodedata.normalize("NFKD", hl)
+                 if not unicodedata.combining(c))
+    hl = re.sub(r"[^A-Za-z0-9 .'\-]", "", hl).strip().upper()[:30]
+    data["headline"] = hl
     # v9: oxirgi (LOOP) gap hook'ni so'zma-so'z takrorlamasin
     def _norm(t):
         return re.sub(r"[^a-z0-9 ]", "", str(t).lower()).strip()
