@@ -251,47 +251,63 @@ def _render_broll(paths, dur, out):
     return out, cuts
 
 
-def _screen_fc(screens, dur, sub_y=None, mid_y=None):
-    """Screen-space qatlamlar: alpha fade + y-siljish.
-    v10.2 (user #2): subtitr zonasi [sub_y-180, sub_y+180] (va MID
-    sarlavha bandi) taqiqlangan — icon/arrow qutisi bandga tushsa
-    avtomatik suriladi (pin/label geo-aniq joyida qoladi).
-    -> (inputs, fc, last, boxes)"""
+def _screen_fc(screens, dur, sub_y=None):
+    """v11 (V2-1): ZONALI joylashtirish.
+    - ikonka/strelka: ZONA C qatori (y=1430), bir nechtasi bo'lsa X bo'ylab
+      yoyiladi (bir-biriga tegishmaydi);
+    - pin: xarita koordinatasida (bias bilan yuqorida), ZONA B'ga tushsa
+      avtomatik siljiydi;
+    - label: xarita koordinatasida, ekranda TO'LIQ, ZONA B'dan tashqarida.
+    -> (inputs, fc, last, boxes); boxes = (x, y, s, vx, vy, vw, vh)
+    (to'liq quti + ko'rinadigan quti)."""
     inputs, fc, last, boxes = [], [], "[0:v]", []
-    ivs = []
-    if sub_y:
-        ivs.append((sub_y - 180, sub_y + 180))
-    if mid_y:
-        ivs.append((mid_y - 120, mid_y + 120))
+    B0, B1 = (sub_y - 80, sub_y + 80) if sub_y else (None, None)
+    # ko'rinadigan quti (kvadrat kanvas markazidagi grafika ulushi)
+    VIS = {"icon": (0.10, 0.10, 0.80, 0.80),
+           "arrow": (0.10, 0.10, 0.80, 0.80),
+           "pin": (0.08, 0.08, 0.84, 0.84),
+           "label": (0.06, 0.36, 0.88, 0.28)}
+    kinds = [str(ly.get("kind") or "") for ly in screens[:4]]
+    n_stick = sum(1 for k in kinds if k in ("icon", "arrow"))
+    i_stick = 0
     for k, ly in enumerate(screens[:4]):
         t0 = float(ly.get("t", 0.2))
         px, py = ly.get("pos") or (0.5, 0.35)
-        # v10.1: label/sticker O'QILADIGAN (>=48px matn) — turlar bo'yicha
-        kind = str(ly.get("kind") or "")
+        kind = kinds[k]
         S = 420 if kind == "label" else 380 if kind == "arrow" else 340
         half = S // 2
-        if isinstance(px, (int, float)) and px <= 1.0:     # nisbiy (0..1)
+        if kind in ("icon", "arrow"):
+            # ZONA C: bitta qatorda, X bo'ylab yoyilgan
+            S = 320
+            cx = 540 + (i_stick - (n_stick - 1) / 2.0) * 380
+            i_stick += 1
+            X = max(20, min(W - S - 20, int(cx) - S // 2))
+            Y = style.ZONE_C[0] + 10
+        elif isinstance(px, (int, float)) and px <= 1.0:     # nisbiy
             X = max(20, min(W - S - 20, int(px * W) - half))
             Y = max(90, min(H - S - 160, int(py * H) - half))
         else:                                              # geo canvas px
             X = max(20, min(W - S - 20, int(px * W / 1440.0) - half))
             Y = max(90, min(H - S - 160, int(py * H / 2560.0) - half))
-        # v10.2 (user #2): icon/arrow taqiqlangan bandlardan tashqarida
-        if ivs and kind in ("icon", "arrow"):
-            for _ in range(3):                  # surilgach qayta tekshir
-                moved = False
-                for lo, hi in ivs:
-                    if Y < hi and Y + S > lo:
-                        below = hi + 8
-                        above = lo - 8 - S
-                        if below + S <= H - 160:
-                            Y = below
-                        elif above >= 90:
-                            Y = above
-                        moved = True
-                if not moved:
-                    break
-        boxes.append((int(X), int(Y), int(S)))
+        # ko'rinadigan quti
+        fx, fy, fw, fh = VIS.get(kind, (0.1, 0.1, 0.8, 0.8))
+        # ZONA B (subtitr) bilan kesishsa - pin/label siljiydi
+        if kind in ("pin", "label") and B0 is not None:
+            vx, vy = X + int(S * fx), Y + int(S * fy)
+            vw, vh = int(S * fw), int(S * fh)
+            if vy < B1 and vy + vh > B0:
+                up = B0 - 8 - vh - int(S * fy)          # tepaga
+                down = B1 + 8 - int(S * fy)             # pastga
+                if up >= 90:
+                    Y = up
+                elif down + int(S * (fy + fh)) <= H - 60:
+                    Y = down
+        # pin/label ekranda TO'LIQ (qirqilmasin)
+        X = max(6, min(W - S - 6, X))
+        Y = max(6, min(H - S - 6, Y))
+        vx, vy = X + int(S * fx), Y + int(S * fy)
+        boxes.append((int(X), int(Y), int(S),
+                      int(vx), int(vy), int(S * fw), int(S * fh)))
         inputs += ["-loop", "1", "-framerate", str(FPS),
                    "-t", f"{max(0.5, dur):.2f}", "-i", ly["path"]]
         fc.append(f"[{k + 1}:v]scale={S}:{S},format=rgba,"
@@ -303,6 +319,96 @@ def _screen_fc(screens, dur, sub_y=None, mid_y=None):
     return inputs, fc, last, boxes
 
 
+def _static_title(script):
+    """v11 (V2-1): ZONA A uchun bitta statik sarlavha.
+    Manba: headline (kuchli model skriptida) -> place -> hook so'zlari."""
+    import re as _re
+    import unicodedata as _ud
+    t = str(script.get("headline") or script.get("place") or "").strip()
+    if not t:
+        q = str(script.get("question") or script.get("title") or "")
+        t = " ".join(q.split()[:4])
+    # diakritikani translit qilib keyin tozalash (u -> u, emas: Bsingen)
+    t = "".join(c for c in _ud.normalize("NFKD", t)
+                if not _ud.combining(c))
+    t = _re.sub(r"[^A-Za-z0-9 .'\-]", "", t).strip().upper()
+    return t[:30].strip()
+
+
+def _title_fc(fc, last, title, seg_i, words, dur, work, chunk_ts=None):
+    """ZONA A statik sarlavhasi: oq matn, qora kontur, opacity 100%.
+    Subtitrda sarlavha so'zi ko'rinayotganda sarlavha yashirinadi
+    (V2-1 qoida: dublikat = 0). Yashirish BUTUN CHUNK davomida —
+    so'z tugasa ham chunk (masalan "CANADA RIGHT NOW?") o'qiladi.
+    -> box dict | None."""
+    from .captions import text_width, fit_font
+    txt = str(title or "").strip()
+    if not txt:
+        return None
+    # V2: sarlavha >=72px KAFOLATI — sig'masa oxirgi so'zlar tashlanadi
+    # (bir so'z qolsa ham 72px+; "AFRICA'S STRAIGHT LINES" -> 64px YO'Q)
+    size = 104
+    while size > 72 and text_width(txt, size) > style.TITLE_MAX_W:
+        size -= 8
+    while (size <= 72 and text_width(txt, size) > style.TITLE_MAX_W
+           and " " in txt):
+        txt = " ".join(txt.split()[:-1])     # oxirgi so'zni tashla
+        size = 104
+        while size > 72 and text_width(txt, size) > style.TITLE_MAX_W:
+            size -= 8
+    if text_width(txt, size) > style.TITLE_MAX_W:
+        size = fit_font(txt, 104, style.TITLE_MAX_W)
+    toks = set()
+    for w in txt.split():
+        w_ = w.strip(".,!?\"'").lower()
+        if len(w_) >= 4:
+            toks.add(w_)
+    hide = []
+    if toks:
+        # chunk chegaralari: chunk_ts (boshlanish vaqtlari) + oxirgi chegar
+        cts = sorted({max(0.0, float(c)) for c in (chunk_ts or [])})
+        bounds = cts + [dur]
+        wds = [(str(w).strip(".,!?\"'").lower(), float(t0), float(t1))
+               for (w, t0, t1) in (words or [])]
+        for ci, c0 in enumerate(bounds[:-1]):
+            c1 = bounds[ci + 1]
+            # chunk ichida sarlavha tokeni bormi?
+            if any(w in toks and t0 >= c0 - 0.02 and t0 < c1
+                   for (w, t0, t1) in wds):
+                a = max(0.0, c0 - 0.10)
+                b = (min(dur, c1 + 0.10) if ci + 1 < len(cts)
+                     else min(dur, c1 + 0.25))
+                hide.append((a, b))
+        # kesishgan oynalarni birlashtirish
+        hide.sort()
+        merged = []
+        for (a, b) in hide:
+            if merged and a <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+            else:
+                merged.append((a, b))
+        hide = merged
+    alpha = "min(1,t/0.25)" if seg_i == 0 else "1"
+    for (a, b) in hide[:8]:
+        # 0.12s FADE — keskin o'chib-yonish (miltillash) yo'q
+        alpha += (f"*(1-clip((t-{a:.2f})/0.12,0,1)"
+                  f"+clip((t-{b:.2f})/0.12,0,1))")
+    cy = (style.ZONE_A[0] + style.ZONE_A[1]) // 2
+    tfp = os.path.join(work, f"ttl_{seg_i:02d}.txt")
+    with open(tfp, "w", encoding="utf-8") as f:
+        f.write(txt)
+    fc.append(
+        f"{last}drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
+        f":textfile={tfp}:fontcolor=white:borderw=6:bordercolor=black"
+        f":shadowcolor=black@0.35:shadowx=3:shadowy=3:fontsize={size}"
+        f":alpha='{alpha}'"
+        f":x=(w-text_w)/2:y=({cy}-th/2)[vt{seg_i}]")
+    w_ = int(text_width(txt, size))
+    return {"x": max(80, (1080 - w_) // 2), "y": cy - (size + 16) // 2,
+            "w": min(w_, 940), "h": size + 16, "size": size, "text": txt}
+
+
+
 def render(cfg, script, items, work):
     """items: [{scene, visual{type,base,path,paths,zs,ze}, layers, punches,
                audio, words, dur}] -> final.mp4 (+ work/events.json, doc P4)"""
@@ -311,6 +417,7 @@ def render(cfg, script, items, work):
     seg_paths = []
     ev_log = []                     # doc P4: events.json
     segments = []
+    TTL_TEXT = _static_title(script)
     seg_start = 0.0
     for i, it in enumerate(items):
         vis = it["visual"]
@@ -331,15 +438,6 @@ def render(cfg, script, items, work):
                            "lat": round(float(_m.get("lat", 0)), 2),
                            "lon": round(float(_m.get("lon", 0)), 2),
                            "z": int(_m.get("zoom_level", 5))})
-        if scene.get("on_screen"):
-            osd_dur = min(style.ONSCREEN_MAX_DUR, max(0.8, dur - 0.35))
-            ev_log.append({"t": round(seg_start, 3), "type": "on_screen",
-                           "seg": i, "size": style.ONSCREEN_SIZE,
-                           "dur": round(osd_dur, 2)})
-        if scene.get("mid_text"):
-            ev_log.append({"t": round(seg_start + 0.30, 3),
-                           "type": "mid_text", "seg": i,
-                           "text": str(scene["mid_text"])[:40]})
         if vis["type"] == "map":
             base = _render_map_states(vis, fulls, punches, dur,
                                       "", work, i)
@@ -356,11 +454,18 @@ def render(cfg, script, items, work):
             os.path.join(work, f"subs_{i:02d}.ass"))
 
         for l in layers:
-            ev_log.append({"t": round(seg_start + l["t"], 3),
-                           "type": str(l.get("kind", "event")),
-                           "seg": i,
-                           "word_t": round(seg_start + l.get("word_t",
-                                                             l["t"]), 3)})
+            _e = {"t": round(seg_start + l["t"], 3),
+                  "type": str(l.get("kind", "event")),
+                  "seg": i,
+                  "word_t": round(seg_start + l.get("word_t",
+                                                    l["t"]), 3)}
+            if l.get("iso") is not None:
+                _e["iso"] = str(l["iso"])
+            if l.get("area") is not None:
+                _e["area"] = l["area"]  # V2-2: fill ekran maydon nisbati
+            if l.get("light"):
+                _e["light"] = True      # V2-2: kontur+tint rejimi
+            ev_log.append(_e)
         for p in punches:
             ev_log.append({"t": round(seg_start + p / FPS, 3),
                            "type": "zoom_punch", "seg": i})
@@ -385,39 +490,33 @@ def render(cfg, script, items, work):
 
         from .captions import caption_y
         sub_y = caption_y(cfg, mode)
-        mid_y = 1080 if str(scene.get("mid_text") or "").strip() else None
         seg_t0 = seg_start - dur          # segment boshi (seg_start allaqachon ++)
-        sin, fc, last, scr_boxes = _screen_fc(screens, dur, sub_y, mid_y)
-        for ly, (bx, by, bs) in zip(screens[:4], scr_boxes):
+        sin, fc, last, scr_boxes = _screen_fc(screens, dur, sub_y)
+        for ly, (bx, by, bs, vx, vy, vw, vh) in zip(screens[:4], scr_boxes):
             ev_log.append({"t": round(seg_t0 + float(ly.get("t", 0.2)), 3),
                            "type": str(ly.get("kind") or "screen"), "seg": i,
-                           "x": bx, "y": by, "s": bs})
+                           "x": bx, "y": by, "s": bs,
+                           "vx": vx, "vy": vy, "vw": vw, "vh": vh})
         a_idx = len(screens) + 1
         fc.append(f"{last}ass='{ass}'[assv]")
-        # v7: tepa yorliq (map VA stock uchun bir joyda, ~2.6s)
-        osd = ""
-        if scene.get("on_screen"):
-            osd_txt, osd_sz = _fit_onscreen(scene["on_screen"])
-            # v9: yorliq KESISHdan 0.35s oldin yashirinadi — yangi
-            # sahna matni chiqqanda eskisi umuman ko'rinmaydi
-            osd_dur = min(style.ONSCREEN_MAX_DUR, max(0.8, dur - 0.35))
-            tf = os.path.join(work, f"os_{i:02d}.txt")
-            with open(tf, "w", encoding="utf-8") as f:
-                f.write(osd_txt)
-            osd = (f"drawtext=fontfile={FONT_DIR}/Montserrat-ExtraBold.ttf"
-                   f":textfile={tf}:fontcolor=white:borderw=6:bordercolor=black"
-                   f":fontsize={osd_sz}"
-                   f":alpha='min(1,t/0.12)*clip(({osd_dur:.2f}"
-                   f"-t)/0.20,0,1)'"
-                   f":x=(w-text_w)/2:y=104"
-                   f":enable='lte(t,{osd_dur:.2f})'")
+        # v11 (V2-1): ZONA A — bitta STATIK sarlavha butun video davomida
+        # (har segmentda bir xil — kesishlarda uzluksiz). Eski har-sahna
+        # OSD yorlig'i va MID matn o'lib, matn dublikati yo'qoldi.
+        ttl_box = _title_fc(fc, "[assv]", TTL_TEXT, i,
+                            it.get("words") or [], dur, work,
+                            chunk_ts=chunk_ts)
+        if ttl_box:
+            ev_log.append({"t": round(seg_start - dur, 3), "type": "title",
+                           "seg": i, "x": ttl_box["x"], "y": ttl_box["y"],
+                           "w": ttl_box["w"], "h": ttl_box["h"],
+                           "size": ttl_box["size"], "text": ttl_box["text"]})
         tail = TAIL if i == n - 1 else 0.0
         # oxirgi segmentda video ham tail'gacha yetamiz (oxirgi kadr
         # ushlab turiladi — pleyerlarga mustahkam)
         tpad = (f",tpad=stop_mode=clone:stop_duration={tail:.2f}"
                 if tail > 0 else "")
-        fc.append(f"[assv]{osd}{',' if osd else ''}"
-                  f"{style.GRADE_ALL}{tpad},format=yuv420p[vout]")
+        _vsrc = f"[vt{i}]" if ttl_box else "[assv]"
+        fc.append(f"{_vsrc}{style.GRADE_ALL}{tpad},format=yuv420p[vout]")
         # audio BUTUN segment uzunligiga padlanadi (dur pad-sukunatni
         # o'z ichiga oladi!) — aks holda concat'da audio videodan
         # qolqib, A/V desync bo'ladi (run 15/16 o'lchovlarining ildizi)
