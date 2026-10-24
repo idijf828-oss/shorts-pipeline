@@ -133,6 +133,9 @@ def _compose_state(base_png, layer_paths, work, tag):
 def _fit_onscreen(text):
     """Doc P1: tepa yorliq >=72px, kalit-ibora (oxirgi so'zlar saqlanadi)."""
     t = " ".join(str(text or "").split())[:60]
+    # v10.2 (user #4): so'z o'rtasidan kesmasin — probelgacha qisqartir
+    if len(t) == 60 and " " in t:
+        t = t[:t.rfind(" ")]
     words = t.split()
     for n in (len(words), 4, 3, 2, 1):
         cand = " ".join(words[-n:]) if n < len(words) else t
@@ -248,9 +251,18 @@ def _render_broll(paths, dur, out):
     return out, cuts
 
 
-def _screen_fc(screens, dur):
-    """Screen-space qatlamlar: 260px, alpha fade + y-siljish."""
-    inputs, fc, last = [], [], "[0:v]"
+def _screen_fc(screens, dur, sub_y=None, mid_y=None):
+    """Screen-space qatlamlar: alpha fade + y-siljish.
+    v10.2 (user #2): subtitr zonasi [sub_y-180, sub_y+180] (va MID
+    sarlavha bandi) taqiqlangan — icon/arrow qutisi bandga tushsa
+    avtomatik suriladi (pin/label geo-aniq joyida qoladi).
+    -> (inputs, fc, last, boxes)"""
+    inputs, fc, last, boxes = [], [], "[0:v]", []
+    ivs = []
+    if sub_y:
+        ivs.append((sub_y - 180, sub_y + 180))
+    if mid_y:
+        ivs.append((mid_y - 120, mid_y + 120))
     for k, ly in enumerate(screens[:4]):
         t0 = float(ly.get("t", 0.2))
         px, py = ly.get("pos") or (0.5, 0.35)
@@ -264,6 +276,22 @@ def _screen_fc(screens, dur):
         else:                                              # geo canvas px
             X = max(20, min(W - S - 20, int(px * W / 1440.0) - half))
             Y = max(90, min(H - S - 160, int(py * H / 2560.0) - half))
+        # v10.2 (user #2): icon/arrow taqiqlangan bandlardan tashqarida
+        if ivs and kind in ("icon", "arrow"):
+            for _ in range(3):                  # surilgach qayta tekshir
+                moved = False
+                for lo, hi in ivs:
+                    if Y < hi and Y + S > lo:
+                        below = hi + 8
+                        above = lo - 8 - S
+                        if below + S <= H - 160:
+                            Y = below
+                        elif above >= 90:
+                            Y = above
+                        moved = True
+                if not moved:
+                    break
+        boxes.append((int(X), int(Y), int(S)))
         inputs += ["-loop", "1", "-framerate", str(FPS),
                    "-t", f"{max(0.5, dur):.2f}", "-i", ly["path"]]
         fc.append(f"[{k + 1}:v]scale={S}:{S},format=rgba,"
@@ -272,7 +300,7 @@ def _screen_fc(screens, dur):
                   f"y='{Y} - (1 - min(1,(t-{t0:.2f})/0.20))*80':"
                   f"enable='gte(t,{t0:.2f})'[v{k}]")
         last = f"[v{k}]"
-    return inputs, fc, last
+    return inputs, fc, last, boxes
 
 
 def render(cfg, script, items, work):
@@ -350,10 +378,19 @@ def render(cfg, script, items, work):
                             default=0.0)
         segments.append({"i": i, "mode": mode, "t0": round(seg_start, 3),
                          "t1": round(seg_start + dur, 3),
-                         "voice_end": round(seg_start + last_word_end, 3)})
+                         "voice_end": round(seg_start + last_word_end, 3),
+                         "voice": " ".join(
+                             str(w[0]) for w in (it.get("words") or []))})
         seg_start += dur
 
-        sin, fc, last = _screen_fc(screens, dur)
+        from .captions import caption_y
+        sub_y = caption_y(cfg, mode)
+        mid_y = 1080 if str(scene.get("mid_text") or "").strip() else None
+        sin, fc, last, scr_boxes = _screen_fc(screens, dur, sub_y, mid_y)
+        for ly, (bx, by, bs) in zip(screens[:4], scr_boxes):
+            ev_log.append({"t": round(seg_start + float(ly.get("t", 0.2)), 3),
+                           "type": str(ly.get("kind") or "screen"), "seg": i,
+                           "x": bx, "y": by, "s": bs})
         a_idx = len(screens) + 1
         fc.append(f"{last}ass='{ass}'[assv]")
         # v7: tepa yorliq (map VA stock uchun bir joyda, ~2.6s)

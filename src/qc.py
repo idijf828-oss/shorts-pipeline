@@ -5,7 +5,7 @@ Har FAIL -> main.produce_with_qc retry (musiqa remiks / stock'siz render),
 
 Tekshiruvlar (doc D0/D + P4 qo'shimchalar):
   1. 1080x1920, >=30fps, 45-55.2s (v6 listicle)
-  2. LUFS -16..-14, true peak <= -1 dBTP (ebur128)
+  2. LUFS -14±1, true peak <= -1 dBTP (ebur128)
   3. tail 0.2-0.7s (VOICE oxiri — events.json'dan; musiqa fonida
      silencedetect musiqa pauzasini "ovoz" deb biladi)
   4. ichki jimlik >=0.25s = 0 (silencedetect -35dB)
@@ -138,7 +138,8 @@ def run_checks(path, cfg=None, work=None):
         (f"{cfg['video']['min_duration']}-{cfg['video']['max_duration']} s",
          cfg["video"]["min_duration"] <= dur <= cfg["video"]["max_duration"] + 0.2,
          f"{dur:.2f}s"),
-        ("LUFS -15..-13", -15.2 <= lufs <= -12.8, f"{lufs:.1f}"),  # v10: -14
+        # v10.2 (user #5): QAT'IY -14±1 (aks holda PASS yo'q)
+        ("LUFS -14±1", -15.0 <= lufs <= -13.0, f"{lufs:.1f}"),
         ("true peak <= -1", tp <= -1.0, f"{tp:.1f}"),
         ("tail 0.2-0.7s (ovoz oxiri)", 0.2 <= tail <= 0.7, f"{tail:.2f}s"),
         # v10 explainer: pauzalar qisqa; >1.7s = xato (qo'llanma: tez)
@@ -191,10 +192,107 @@ def run_checks(path, cfg=None, work=None):
             with open(os.path.join(work, fn), encoding="utf-8") as f:
                 sizes |= set(int(x) for x in re.findall(r"\\fs(\d+)", f.read()))
     if bool((cfg.get("captions") or {}).get("enabled", True)) and sizes:
-        # doc P1: 96 doimiy; 80 faqat kam holatda (bitta uzun so'z)
-        checks.append(("subtitr shrift 100 (88 kam holat)",
-                       sizes <= {100, 88},
+        # v10.2-a: so'z narxoni 100->88->80->72 (pop YO'Q, bitta tanlov)
+        checks.append(("subtitr shrift 100 (narxon 88/80/72)",
+                       sizes <= {100, 88, 80, 72},
                        "/".join(str(x) for x in sorted(sizes)) + "px"))
+
+    # --- v10.2 (user, topshiriq #4): qiyin so'z yo'q (on_screen + OCR) ---
+    HARD = ("jurisdiction", "contiguous", "exclave", "enclave", "feudal",
+            "sovereignty", "sovereign", "demarcation", "cession",
+            "irredentist", "condominium", "estoppel", "pursuant",
+            "whereas")
+    hard_bad = []
+    for e in (ev.get("events") or []):
+        if str(e.get("type")) == "on_screen":
+            t = " " + re.sub(r"[^a-z]+", " ",
+                             str(e.get("text") or "").lower()) + " "
+            for b in HARD:
+                if f" {b} " in t or f" {b}s " in t:
+                    hard_bad.append(f"on_screen:{b}")
+    try:
+        mid = dur / 2.0
+        for tt in (mid - 1.0, mid + 1.0):
+            if tt < 0.3 or tt > dur - 0.3:
+                continue
+            jp = f"/tmp/qc_hard_{int(tt*10)}.jpg"
+            if _frame(path, tt, jp):
+                o = _run(["tesseract", jp, "stdout", "--psm", "6"])
+                low = " " + re.sub(r"[^a-z]+", " ", o.lower()) + " "
+                for b in HARD:
+                    if f" {b} " in low or f" {b}s " in low:
+                        hard_bad.append(f"ocr@{tt:.0f}s:{b}")
+    except Exception:
+        pass
+    checks.append(("qiyin so'z yo'q (7-8 yosh tili)", not hard_bad,
+                    ",".join(sorted(set(hard_bad))[:3]) or "toza"))
+
+    # --- v10.2 (user, topshiriq #2): ikonka/strelka subtitr ustida emas ---
+    sub_y = None
+    if os.path.isdir(work):
+        for fn in sorted(os.listdir(work)):
+            if fn.startswith("subs_") and fn.endswith(".ass"):
+                with open(os.path.join(work, fn), encoding="utf-8") as f:
+                    m = re.search(r"\\pos\(540,(\d+)\)", f.read())
+                if m:
+                    sub_y = int(m.group(1))
+                break
+    band_bad = []
+    if sub_y:
+        for e in (ev.get("events") or []):
+            if str(e.get("type")) in ("icon", "arrow") and e.get("y") is not None:
+                sz = int(e.get("s") or 340)
+                if e["y"] < sub_y + 180 and e["y"] + sz > sub_y - 180:
+                    band_bad.append(f"seg{e.get('seg')}:{e.get('type')}")
+    checks.append(("ikonka/strelka subtitr ustida emas", not band_bad,
+                    ",".join(band_bad[:3]) or f"banda yo'q (sub_y={sub_y})"))
+
+    # --- v10.2 (user, topshiriq #3): kamera — zoom o'sishi + pin ---
+    mvs = [e for e in (ev.get("events") or [])
+           if str(e.get("type")) == "map_view"]
+    cam_ok, cam_note = True, "xarita sahna yo'q"
+    if mvs:
+        zs = [int(e.get("z") or 0) for e in mvs]
+        distinct = len({(e.get("lat"), e.get("lon"), e.get("z"))
+                        for e in mvs})
+        prog = all(b >= a for a, b in zip(zs, zs[1:]))
+        pin = any(str(e.get("type")) == "pin"
+                  for e in (ev.get("events") or []))
+        cam_ok = bool(prog and distinct >= 3 and zs and max(zs) >= 6 and pin)
+        cam_note = (f"z={zs}, {distinct} xil kadr, pin="
+                    + ("bor" if pin else "yo'q"))
+    checks.append(("kamera: zoom o'sadi + pin bor", cam_ok, cam_note))
+
+    # --- v10.2 (user, topshiriq #1): so'z ichida uzilish YO'Q ---
+    seg_voices = [str(sg.get("voice") or "").lower()
+                  for sg in (ev.get("segments") or [])]
+    broken = []
+    if os.path.isdir(work) and bool((cfg.get("captions") or {})
+                                    .get("enabled", True)):
+        for fn in sorted(os.listdir(work)):
+            if not (fn.startswith("subs_") and fn.endswith(".ass")):
+                continue
+            try:
+                i_seg = int(fn[5:7])
+            except ValueError:
+                continue
+            vw = set()
+            if i_seg < len(seg_voices):
+                vw = set(re.sub(r"[^a-z0-9'\- ]", " ",
+                                seg_voices[i_seg]).split())
+            with open(os.path.join(work, fn), encoding="utf-8") as f:
+                for line in f:
+                    if not line.startswith("Dialogue:") or ",Cap," not in line:
+                        continue
+                    body = ",".join(line.split(",", 9)[9:])
+                    clean = re.sub(r"\{[^}]*\}", "", body)
+                    for ln in clean.split("\\N"):
+                        for tok in re.findall(r"[A-Za-z][A-Za-z\-']*", ln):
+                            t_ = tok.strip("'-").lower()
+                            if t_ and vw and t_ not in vw:
+                                broken.append(f"{fn[:-4]}:{tok}")
+    checks.append(("so'z ichida bo'linish yo'q", not broken,
+                    ",".join(broken[:3]) if broken else "ok"))
 
     # --- safe-zone (doc P4c): subtitr x in [110,970] ---
     if os.path.isdir(work) and bool((cfg.get("captions") or {})

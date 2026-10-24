@@ -87,8 +87,10 @@ def _gem_call(key, model, system, user, b64s, temperature, json_mode, timeout):
 def chat(cfg, system, user, images=None, json_mode=False,
          temperature=None, timeout=90):
     """Bitta matn javobi. images = jpg fayl yo'llari (vision).
-    Zanjir: Claude Opus 5.5 -> Sonnet 5.5 -> Gemini (4 model).
-    Hammasi yiqilsa RuntimeError."""
+    v10.2 (user qoidasi): ENG KUCHLI MODEL SHART — faqat Anthropic
+    (Claude Opus 5.5 -> Sonnet 5.5). Kalit yo'q = RuntimeError (sir
+    saqlanadi, zaif modelga yashirin tushish YO'Q). Gemini faqat
+    cfg["llm"]["allow_gemini"]=true bayrog'i bilan (test rejim)."""
     b64s = []
     for p in (images or []):
         with open(p, "rb") as f:
@@ -97,6 +99,12 @@ def chat(cfg, system, user, images=None, json_mode=False,
     errs = []
 
     akey = (cfg.get("secrets") or {}).get("anthropic_api_key") or ""
+    allow_gemini = bool((cfg.get("llm") or {}).get("allow_gemini", False))
+    if not (akey and akey != "FAKE") and not allow_gemini:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY yo'q — eng kuchli model (Claude Opus) "
+            "shart. Zaif modelga tushish taqiqlangan (user qoidasi). "
+            "Kalitni GitHub secret sifatida qo'shing.")
     if akey and akey != "FAKE":
         content = [{"type": "text", "text": user}]
         for b in b64s:
@@ -117,7 +125,7 @@ def chat(cfg, system, user, images=None, json_mode=False,
                 break                                # keyingi model
 
     gkey = (cfg.get("secrets") or {}).get("gemini_api_key") or ""
-    if gkey and gkey != "FAKE":
+    if gkey and gkey != "FAKE" and allow_gemini:
         primary = cfg.get("gemini", {}).get("model")
         models = ([primary] if primary in _GEM_MODELS else [])
         models += [m for m in _GEM_MODELS if m != primary]
@@ -143,5 +151,7 @@ def provider(cfg):
     if akey and akey != "FAKE":
         return "Claude " + (cfg.get("anthropic", {}).get("model")
                             or _ANT_MODELS[0])
-    return "Gemini " + str((cfg.get("gemini") or {}).get("model")
-                           or _GEM_MODELS[0])
+    if bool((cfg.get("llm") or {}).get("allow_gemini", False)):
+        return "Gemini " + str((cfg.get("gemini") or {}).get("model")
+                               or _GEM_MODELS[0])
+    return "YO'Q (ANTHROPIC_API_KEY kerak)"

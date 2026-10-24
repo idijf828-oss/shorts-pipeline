@@ -26,31 +26,6 @@ FIT_MIN = style.CAPTION_FIT_MIN    # 80 (kam holatda)
 # v10.1h: PIL o'lchovi vs libass renderi farqi (~7%) + kontur 2x11px
 # uchun himoya byudjeti. Barcha fit qarorlari shu boyda.
 SAFE_BUDGET = SAFE_W - 64
-
-
-def _hyphen_break(word, size=FONT_SIZE, max_w=None):
-    """Mega-so'zni chiziq bo'ylab bo'ladi -> (pos | None).
-
-    Avval defisdan, bo'lmasa ortadan (min 12 harf). Har ikkala bo'lak
-    max_w ga sig'sa pozitsiya qaytadi; aks holda None.
-    """
-    max_w = max_w or SAFE_BUDGET
-    if len(word) < 8:
-        return None
-    cands = []
-    if "-" in word[:-1]:
-        i = word.rfind("-", 0, len(word) - 1)
-        cands.append(i + 1)
-    if len(word) >= 12:
-        cands.append(len(word) // 2)
-    for pos in cands:
-        a = word[:pos] + "-" if not word[:pos].endswith("-") else word[:pos]
-        b = word[pos:]
-        if text_width(a, size) <= max_w and text_width(b, size) <= max_w:
-            return pos
-    return None
-YELLOW = style.YELLOW
-
 _FONT_FILES = [
     "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf",
     "/usr/share/fonts/truetype/montserrat/Montserrat-Bold.ttf",
@@ -77,29 +52,27 @@ def text_width(text, size):
     return max(len(l) for l in text.split("\n")) * size * 0.62
 
 
-def fit_font(text, base=FONT_SIZE, max_w=SAFE_W):
-    """v10.1 (user): 100 doimiy; faqat YAGONA mega-so'z 88'ga tushadi."""
-    if text_width(text, base) <= max_w:
-        return base
-    if text_width(text, FIT_MIN) <= max_w:
-        return FIT_MIN
-    return FIT_MIN          # extreme: yagona so'z hali ham keng (kamdan-kam)
+def fit_font(text, base=FONT_SIZE, max_w=None):
+    """v10.2 (user): so'z ichida uzilish YO'Q — yagona so'z sig'masa
+    narvon 100 -> 88 -> 80 -> 72 (72 qat'iy pastki chegara)."""
+    max_w = max_w or SAFE_BUDGET
+    for size in sorted({base, 88, 80, 72}, reverse=True):
+        if size <= base and text_width(text, size) <= max_w:
+            return size
+    return FIT_MIN
 
 
 def _split2(ch, size):
-    """chunkni 1-2 qatorga joylaydi (user: shrift doim 100).
-    -> (split_index | None, font_size, brk | None)
-    brk = (word_index, pos): mega-so'z ichiga \\N qo'yish pozitsiyasi."""
+    """chunkni 1-2 qatorga joylaydi. QAT'IY (user, 2026-10-24): so'z
+    ichida uzilish YO'Q — qator faqat probeldan keyin sinadi. Yagona so'z sig'masa
+    -> fit_font narvoni (100/88/80/72).
+    -> (split_index | None, font_size)"""
     words = [str(x[0]).upper() for x in ch]
     plain = " ".join(words)
     if _line_w(words, size, active=True) <= SAFE_BUDGET:
-        return None, size, None
+        return None, size
     if len(ch) < 2:
-        # v10.1h: mega-so'z — defis/ortadan 2 qator @100 (timing saqlanadi)
-        pos = _hyphen_break(words[0], size)
-        if pos:
-            return None, size, (0, pos)
-        return None, fit_font(plain, size), None
+        return None, fit_font(plain, size)
     best_k, bw = None, None
     for k in range(1, len(ch)):
         w = max(_line_w(words[:k], size, active=True),
@@ -107,9 +80,9 @@ def _split2(ch, size):
         if bw is None or w < bw:
             best_k, bw = k, w
     if best_k is not None:
-        # v10.1 (user): ko'p so'zli qator HECH QACHON kichraymaydi
-        return best_k, size, None
-    return None, fit_font(plain, size), None
+        # ko'p so'zli qator HECH kichraymaydi; bo'lish faqat probelda
+        return best_k, size
+    return None, fit_font(plain, size)
 
 
 def _t(s):
@@ -240,14 +213,12 @@ def build_scene_ass(cfg, scene, words, dur, path):
             if e <= s:
                 e = s + 0.12
             chunk_ts.append(round(s, 3))
-            split, base, brk = _split2(ch, size)
+            split, base = _split2(ch, size)
             parts = []
-            for wi, (wtxt, _ws, _we) in enumerate(ch):
+            for (wtxt, _ws, _we) in ch:
                 nw = _norm(wtxt)
                 color = highlights.get(nw)
                 txt = _clean(wtxt).upper()
-                if brk and wi == brk[0]:
-                    txt = txt[:brk[1]] + "\\N" + txt[brk[1]:]
                 # v10.1 (user): o'lcham HAMMA so'zda BIR XIL (100px);
                 # faqat kalit so'z RANGI cyan — kattalik o'zgarmaydi
                 if color:
@@ -276,11 +247,8 @@ def build_scene_ass(cfg, scene, words, dur, path):
             if text_width(txt, FONT_SIZE) > SAFE_BUDGET:
                 ws = txt.split()
                 if len(ws) == 1:
-                    pos = _hyphen_break(ws[0], FONT_SIZE)
-                    if pos:
-                        shown = ws[0][:pos] + "\\N" + ws[0][pos:]
-                    else:
-                        size = FIT_MIN
+                    # v10.2: so'z bo'linmaydi — narvon
+                    size = fit_font(ws[0], FONT_SIZE)
                 else:
                     best, bw = txt, text_width(txt, FONT_SIZE)
                     for k in range(1, len(ws)):

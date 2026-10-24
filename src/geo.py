@@ -301,21 +301,26 @@ def compose_map(cam, iso_codes, work_dir):
     lat = max(-84.0, min(84.0, float(cam.get("lat", 0))))
     lon = float(cam.get("lon", 0))
     wd, hd = _window(z)
-    win = (lon - wd / 2, lat + hd / 2, wd, hd)
+    # v10.2 (user #3): bias — fokus nuqta kadrda 0.35H'da tursin (subtitr
+    # ustida markazda emas). Oyna markazi janubga suriladi; to_px o'sha
+    # oynadan -> pin/label ham fokus bilan birga ko'tariladi.
+    bias = max(0.0, min(0.4, float(cam.get("bias") or 0.0)))
+    lat_c = lat - bias * hd
+    win = (lon - wd / 2, lat_c + hd / 2, wd, hd)
     os.makedirs(work_dir, exist_ok=True)
 
     # v10.1: haqiqiy satellite (Esri) — HAR zoom'da, mercator proyeksiya.
     # Tarmoq yo'q -> NE2 raster (davlat darajasi) -> vektor (navy).
-    esri = _esri_base(lon, lat, wd, hd)
+    esri = _esri_base(lon, lat_c, wd, hd)
     mode = "esri" if esri is not None else None
     if esri is not None:
         base, to_px = esri
         use_raster = True
-        print(f"[geo] xarita z={z} (esri satellite)")
+        print(f"[geo] xarita z={z} (esri satellite, bias={bias})")
     else:
         to_px = _proj(win)
         use_raster = (wd * PX_DEG) >= W / 2.0        # upscale <= 2x
-        base = _raster_crop(lon, lat, wd, hd) if use_raster else None
+        base = _raster_crop(lon, lat_c, wd, hd) if use_raster else None
     if esri is None and not use_raster:
         base = Image.new("RGB", (W, H), NAVY)
         d = ImageDraw.Draw(base, "RGBA")
@@ -522,6 +527,26 @@ def label_png(name, work_dir):
         return out
     except Exception:
         return None
+
+
+def point_on_land(lon, lat):
+    """(lon, lat) QAYSI DIR davlatda bo'lsa ham — quruqlikda.
+    Chevron: chegara bo'yidagi exclave (Büsingen kabi) NE geometriyasida
+    yo'qolishi mumkin; 'target davlatda emas' -> centroid qaytarish
+    noto'g'ri. Faqat OKEAN bo'lsa demote qilamiz."""
+    for (_iso3, _nm, rings, _c) in _countries():
+        for r in rings:
+            inside = False
+            n = len(r)
+            for i in range(n):
+                (x1, y1), (x2, y2) = r[i], r[(i + 1) % n]
+                if (y1 > lat) != (y2 > lat):
+                    xint = x1 + (lat - y1) * (x2 - x1) / (y2 - y1)
+                    if lon < xint:
+                        inside = not inside
+            if inside:
+                return True
+    return False
 
 
 def point_in_country(iso_target, lon, lat):

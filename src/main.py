@@ -204,6 +204,7 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
     print("== 5/7: Vizual: xarita + bayroq-fill + events / stock ==")
     used_ids = set(history.clip_ids())
     shift = 0.15 if gtts else 0.0                   # doc B3: gTTS -> -0.15s
+    _sticky_flags = []
     for i, it in enumerate(items):
         sc = segs[i]
         layers, punches, vis = [], [], None
@@ -227,8 +228,32 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 print(f"   sahna {i + 1}: stock xatosi ({e}) -> xarita")
         if vis is None:
             try:
-                ctx = geo.compose_map(sc["map"], sc.get("country_iso_codes"),
-                                      work)
+                # v10.2 (user #3): pin/label kamera markazida bo'lsa — bias:
+                # fokus nuqta kadrda pastroqda (0.35H) tursin, subtitr
+                # ustiga tushmasin. (diapazon: zoom oynasining 30%.)
+                _m = dict(sc.get("map") or {})
+                if "bias" not in _m:
+                    _pin_ev = [e for e in (sc.get("events") or [])
+                               if str(e.get("type")) in ("pin", "label")
+                               and e.get("lat") is not None]
+                    if _pin_ev:
+                        try:
+                            _wd, _hd = geo._window(max(3, min(
+                                12, int(_m.get("zoom_level", 5)))))
+                            _dlat = abs(float(_pin_ev[0]["lat"])
+                                        - float(_m.get("lat", 1e9)))
+                            _dlon = abs(float(_pin_ev[0]["lon"])
+                                        - float(_m.get("lon", 1e9)))
+                            if (_dlat <= 0.30 * _hd and _dlon <= 0.30 * _wd):
+                                # 0.22: nuqta canvas 0.28H'ga chiqadi
+                                # (subtitr bandasi [0.31H,0.50H])
+                                _m["bias"] = 0.22
+                        except Exception:
+                            pass
+                ctx = geo.compose_map(_m, sc.get("country_iso_codes"), work)
+                # v10.2 (user #3): bayroq doimiyligi — oldingi sahna
+                # flaglari (hali kadrda ko'rinsa) t=0 qatlam sifatida.
+                ctx["sticky_fills"] = list(_sticky_flags)
             except Exception as e:
                 from src import maps
                 img = os.path.join(work, f"m_{i:02d}.png")
@@ -238,6 +263,9 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 print(f"   sahna {i + 1}: geo yiqildi ({e}) -> vektor zaxira")
             layers, punches = events.build(cfg, sc, ctx, it["words"],
                                            work, i, dur=it["dur"])
+            # v10.2: keyingi sahna uchun — bu sahna ko'rsatgan flaglar
+            _sticky_flags = sorted({str(l["iso"]) for l in layers
+                                    if l.get("kind") == "flag_fill"})
             if shift:
                 for ly in layers:
                     ly["t"] = max(0.05, ly["t"] - shift)

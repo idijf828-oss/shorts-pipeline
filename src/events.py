@@ -122,9 +122,11 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                 try:
                     lo, la = float(ev["lon"]), float(ev["lat"])
                     pos = ctx["to_px"](lo, la)
-                    # run 23: Pin okean/noto'g'ri joyga tushgan. Nuqta
-                    # davlat quruqligida emas -> centroid'ga qaytaramiz
-                    if want and geo.point_in_country(iso_t, lo, la) is False:
+                    # run 23: pin OKEANGA tushgan. Faqat hech qaysi
+                    # davlatda bo'lmasa (suv) centroid'ga qaytaramiz —
+                    # chegaradagi kichik exclave NE'da yo'q bo'lsa ham
+                    # aniq koordinata saqlanadi (v10.2, user #3).
+                    if geo.point_on_land(lo, la) is False:
                         print(f"[events] pin {iso_t}: ({la:.2f},{lo:.2f}) "
                               f"quruqlikda emas -> centroid")
                         pos = None
@@ -164,12 +166,42 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                 layers.append({"path": png, "t": t, "full": False, "pos": pos,
                                "sfx": None, "kind": "label", "word_t": t})
         elif k == "arrow":
-            png = icons.get_icon(
-                {"emoji": f"arrow_{str(ev.get('dir', 'right')).lower()}"}, work)
+            # v10.2 (user #3): strelka FAQAT haqiqiy manzilga. Pozitsiya va
+            # yo'nalish koordinatadan: ko'rinish markazi -> manzil vektori.
+            # Manzil yo'q -> strelka tashlanadi (tasodifiy yo'nalish YO'Q).
+            apos = None
+            if ev.get("lat") is not None and ev.get("lon") is not None:
+                try:
+                    apos = ctx["to_px"](float(ev["lon"]), float(ev["lat"]))
+                except Exception:
+                    apos = None
+            if apos is None:
+                t_iso = str(target or "").strip()[:2].upper()
+                if geo.resolve(t_iso):
+                    c = (ctx.get("centroids") or {}).get(t_iso)
+                    if c:
+                        apos = c
+            if apos is None:
+                print(f"[events] arrow '{target}': manzil topilmadi "
+                      "-> olib tashlandi")
+                continue
+            import math
+            dx = apos[0] - W_CENTER
+            dy = apos[1] - 1280.0
+            if abs(dx) < 1 and abs(dy) < 1:
+                continue
+            ang = math.atan2(dy, dx)
+            off = 340.0                      # manzil oldida turadi
+            pos = (apos[0] - math.cos(ang) * off,
+                   apos[1] - math.sin(ang) * off)
+            d = "right" if abs(dx) >= abs(dy) and dx > 0 else \
+                "left" if abs(dx) >= abs(dy) else \
+                "down" if dy > 0 else "up"
+            png = icons.get_icon({"emoji": f"arrow_{d}"}, work)
             if png:
                 layers.append({"path": png, "t": t, "full": False,
-                               "pos": ev.get("pos") or (0.5, 0.42),
-                               "sfx": "swish", "kind": "arrow", "word_t": t})
+                               "pos": pos, "sfx": "swish", "kind": "arrow",
+                               "word_t": t})
         elif k == "icon":
             png = icons.get_icon({"emoji": ev.get("emoji", "")}, work)
             if png:
@@ -224,4 +256,14 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                 punches.append(max(2, int(mid * 30)))
                 changed = True
                 break
+    # v10.2 (user #3): bayroq doimiyligi — oldingi sahna flaglari yangi
+    # sahnada t=0 da ham chizilsin (kadrda ko'rinsa). Miltillash yo'q.
+    if (ctx.get("sticky_fills") or []) and (ctx.get("fills") or {}):
+        have = {str(l.get("iso")) for l in layers if l.get("kind") == "flag_fill"}
+        for iso2 in ctx["sticky_fills"]:
+            png = ctx["fills"].get(iso2)
+            if png and iso2 not in have and _visible(iso2):
+                layers.append({"path": png, "t": 0.0, "full": True,
+                               "pos": None, "sfx": None, "kind": "flag_fill",
+                               "iso": iso2, "word_t": 0.0, "sticky": True})
     return layers, punches

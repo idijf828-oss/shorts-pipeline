@@ -8,6 +8,7 @@ stock insert. So'zma-so'z markaz subtitr, kalit so'z cyan.
 import datetime
 import difflib
 import json
+import os
 import random
 import re
 import unicodedata
@@ -56,13 +57,21 @@ Write a 15-30 SECOND map-explainer short: 45-70 words total,
 6-8 scenes.
 
 NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
+- EVERY line MAX 10 words. Short, punchy, everyday American English
+  that a 7-8 year old fully understands — no legal, academic or
+  technical terms, no jargon. Explain like a friendly teacher.
+  BANNED words (never use, never even imply): jurisdiction, contiguous,
+  exclave, enclave, feudal, sovereignty, sovereign, demarcation,
+  cession, irredentist, condominium, estoppel, pursuant, whereas.
+  Use plain equivalents: "control", "next to", "land inside another
+  country", "who rules it", "border line", "gave/sold land".
 - Scene 1 (HOOK, 6-9 words): a complete, natural, grammatical question
   that names the place — starting with Why/How/What/Where/Who.
   Examples: "Why isn't the US simply annexing Canada?"
             "Why does this town sit in two countries?"
-- Scenes 2-6 (REASONS, 7-12 words each): one reason per beat. Concrete
+- Scenes 2-6 (REASONS, 7-10 words each): one reason per beat. Concrete
   facts, real numbers, real names. Natural flow or "First / Second".
-  The strongest reason LAST.
+  The strongest reason LAST. Everyday facts a kid knows.
 - Final scene (CLOSE + CTA, 6-10 words): one-line answer summary, then
   a short question that invites the next video, ending with "?".
 - Active voice. Every line adds NEW information. NEVER "did you know",
@@ -72,6 +81,11 @@ NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
 VISUALS — SATELLITE MAP is the star (guide style):
 - Most scenes are map scenes: "mode": "map" with focus/lat/lon and
   zoom_level (3=continent, 5=whole country, 7=region, 9=city).
+  CAMERA STORY (required): every next map scene zooms CLOSER —
+  zoom_level increases scene by scene (3 or 4 first — continent wide;
+  middle scenes 5-7; last map scene 9-11 right on the exact place).
+  The final map scene must sit on the exact place with REAL city-level
+  lat/lon and carry a "pin" event pointing at it.
   Use AT LEAST 3 DIFFERENT map views across the video (different
   places, countries or zoom levels — never the same view twice in a
   row). Vary "motion": "zoom_in", "zoom_out", "pan_left", "pan_right".
@@ -84,7 +98,9 @@ VISUALS — SATELLITE MAP is the star (guide style):
   "highlight" target ISO2 — cyan ally/ bloc fill;
   "arrow" dir up/down/left/right — big yellow arrow (pressure, movement);
   "icon" emoji — one sticker per event: handshake, siren, money bag, rocket, warning sign, checkered flag (use the actual emoji characters);
-  "label" target — a small black name tag on the country (country name).
+  "label" target — a small black name tag on the country (country name);
+  "pin" target <place> lat/lon — red map pin + place name tag at the
+  EXACT point (final reveal scene; use the real coordinates).
 - EXACTLY 1-2 scenes are stock inserts: "mode": "stock" with a SHORT
   punch line of 3-6 words (the insert lasts <= 2 seconds) and
   visual_query = 3 hierarchical phrases (2-3 words each) about filmable
@@ -223,21 +239,29 @@ def _asciiize(s):
     return "".join(out)
 
 
+PLACE_KEYS = ("place", "country", "focus", "target")
+
+
 def _asciiize_tree(o, ctr=None):
-    """Parsed JSON'dagi BARCHA stringlarni (JSON escape orqali kelgan
-    diakritikalarni ham) rekursiv transliteratsiya qiladi."""
-    if ctr is None:
-        ctr = [0]
-    if isinstance(o, str):
-        y = _asciiize(o)
-        if y != o:
-            ctr[0] += 1
-        return y
-    if isinstance(o, list):
-        return [_asciiize_tree(x, ctr) for x in o]
+    """Recursiv translit — LEKIN joy nomlari (place/country/focus/target)
+    saqlanadi: 'Büsingen' label'da Ü bilan chiqadi (fontda bor).
+    Voice/mid_text esa baribir OCR uchun ASCII."""
     if isinstance(o, dict):
-        return {_asciiize_tree(k, ctr): _asciiize_tree(v, ctr)
-                for k, v in o.items()}
+        r = {}
+        for k, v in o.items():
+            if str(k) in PLACE_KEYS or any(str(k).endswith("_" + p)
+                                           for p in PLACE_KEYS):
+                r[_asciiize_tree(k, ctr)] = v
+            else:
+                r[_asciiize_tree(k, ctr)] = _asciiize_tree(v, ctr)
+        return r
+    if isinstance(o, list):
+        return [_asciiize_tree(v, ctr) for v in o]
+    if isinstance(o, str):
+        a = _asciiize(o)
+        if a != o:
+            ctr[0] += 1
+        return a
     return o
 
 
@@ -478,6 +502,153 @@ def _parse_relaxed(raw):
         _WORD_LO, _WORD_HI = 45, 70
 
 
+
+# --- v10.2 (user #3/#4): haqiqiy zoom + aniq joy + oddiy til ---------------
+
+_GEO_RADIUS = {3: 2600, 4: 1600, 5: 900, 6: 450, 7: 200, 8: 90,
+               9: 45, 10: 25, 11: 15, 12: 10}          # km, zoom bo'yicha
+_PIN_TYPES = ("city", "town", "village", "hamlet", "suburb", "borough",
+              "administrative")
+BLACKLIST = ("jurisdiction", "contiguous", "exclave", "enclave",
+             "feudal", "sovereignty", "sovereign", "demarcation",
+             "cession", "irredentist", "condominium", "estoppel",
+             "pursuant", "whereas")
+
+
+def _geocode(place, cfg):
+    """Nominatim geokodlash + disk kechi. -> (lat, lon, type) | None."""
+    place = str(place or "").strip()
+    if not place:
+        return None
+    work = (cfg.get("_paths") or {}).get("work") or "."
+    cache_p = os.path.join(work, "geocode_cache.json")
+    cache = {}
+    try:
+        with open(cache_p, encoding="utf-8") as f:
+            cache = json.load(f)
+    except Exception:
+        pass
+    if place in cache:
+        return cache[place]
+    import urllib.parse
+    import urllib.request
+    url = ("https://nominatim.openstreetmap.org/search?q="
+           + urllib.parse.quote(place) + "&format=json&limit=1")
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "shorts-pipeline/1.0 (explainer videos)"})
+    res = None
+    try:
+        with urllib.request.urlopen(req, timeout=12) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        if data:
+            d0 = data[0]
+            res = (float(d0["lat"]), float(d0["lon"]),
+                   str(d0.get("type") or d0.get("class") or ""))
+    except Exception as e:
+        print(f"[geocode] {place}: {e}")
+    cache[place] = res
+    try:
+        os.makedirs(work, exist_ok=True)
+        with open(cache_p, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=1)
+    except Exception:
+        pass
+    return res
+
+
+def _geo_check(data, cfg):
+    """User #3 lint. -> xatolik ro'yxati (bo'sh = OK)."""
+    errs = []
+    place = str(data.get("place") or "").strip()
+    g = _geocode(place, cfg) if place else None
+    if g:
+        plat, plon, ptype = g
+        data["_place_geo"] = {"lat": plat, "lon": plon}
+        import math
+
+        def dist_km(la, lo):
+            p1, p2 = math.radians(la), math.radians(plat)
+            a = (math.sin((p2 - p1) / 2) ** 2
+                 + math.cos(p1) * math.cos(p2)
+                 * math.sin(math.radians(lo - plon) / 2) ** 2)
+            return 2 * 6371.0 * math.asin(math.sqrt(a))
+
+        maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
+        for j, sc in enumerate(maps):
+            m = sc["map"]
+            d = dist_km(m["lat"], m["lon"])
+            r = _GEO_RADIUS.get(int(m["zoom_level"]), 200)
+            if d > r:
+                errs.append(
+                    f"sahna {j}: kamera {place} dan {d:.0f}km uzoqda "
+                    f"(z{m['zoom_level']} uchun <= {r}km kerak)")
+        need_z = 9 if ptype in _PIN_TYPES else 6
+        if not any(int(sc["map"]["zoom_level"]) >= need_z
+                   and dist_km(sc["map"]["lat"], sc["map"]["lon"]) <= 60.0
+                   for sc in maps):
+            errs.append(
+                f"aniq nuqta (reveal) sahna yo'q: {place} z>={need_z} "
+                "va joydan <=60km kamera kerak")
+    maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
+    if maps and int(maps[0]["map"]["zoom_level"]) > 5:
+        errs.append("birinchi xarita sahna z<=5 kerak (joriy z"
+                    + str(maps[0]["map"]["zoom_level"]) + ")")
+    zs = [int(sc["map"]["zoom_level"]) for sc in maps]
+    dip = [j for j, (a, b) in enumerate(zip(zs, zs[1:])) if b < a]
+    if dip:
+        errs.append("zoom har sahnada o'sishi kerak (tushish: "
+                    + ",".join(str(j) for j in dip) + ")")
+    keys = [(round(sc["map"]["lat"], 1), round(sc["map"]["lon"], 1),
+             int(sc["map"]["zoom_level"])) for sc in maps]
+    for j in range(2, len(keys)):
+        if keys[j] == keys[j - 1] == keys[j - 2]:
+            errs.append("bir xil kadr 3+ sahnada takrorlanadi")
+            break
+    return errs
+
+
+def _simple_check(data):
+    """User #4: 7-8 yosh tili — qiyin so'z yo'q, gap <=10 so'z."""
+    errs = []
+    for j, sc in enumerate(data.get("scenes") or []):
+        for fld in ("voice", "mid_text"):
+            txt = str(sc.get(fld) or "")
+            low = " " + re.sub(r"[^a-z]+", " ", txt.lower()) + " "
+            for b in BLACKLIST:
+                if f" {b} " in low or f" {b}s " in low:
+                    errs.append(f"sahna {j+1} '{fld}': qiyin so'z '{b}'")
+            n = len(txt.split())
+            if n > 10:
+                errs.append(f"sahna {j+1} '{fld}': {n} so'z (>10)")
+    t = str(data.get("title") or "").lower()
+    for b in BLACKLIST:
+        if b in t:
+            errs.append(f"title: qiyin so'z '{b}'")
+    return errs
+
+
+def _auto_pin(data, cfg):
+    """Aniq nuqta sahnasiga (eng baland zoom) pin: geokodlangan
+    koordinata + place label. LLM pin bo'lsa koordinatasi to'g'rilanadi."""
+    pg = data.get("_place_geo")
+    place = str(data.get("place") or "").strip()
+    maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
+    if not pg or not maps:
+        return
+    best = max(maps, key=lambda sc: int(sc["map"]["zoom_level"]))
+    evs = best.setdefault("events", [])
+    pins = [e for e in evs if str(e.get("type")) == "pin"]
+    if pins:
+        pins[0]["lat"] = pg["lat"]
+        pins[0]["lon"] = pg["lon"]
+        pins[0]["target"] = pins[0].get("target") or place
+    else:
+        words = str(best.get("voice") or "").split()
+        at = words[0].lower().strip(".,!?") if words else ""
+        evs.append({"type": "pin", "target": place,
+                    "lat": pg["lat"], "lon": pg["lon"], "at_word": at})
+
+
 def write_script(cfg, trends, history_kws, avoid_title=""):
     prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
     print(f"   tema: {cands} [{llm.provider(cfg)}]")
@@ -490,8 +661,17 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
             raise RuntimeError(f"Skript yozib bo'lmadi: {e}")
         try:
             data = _parse(raw, strict_insert=(attempt < 2))
+            # v10.2 (user #3/#4): geo va oddiylik lintlari — feedback
+            # bilan qayta urinishga tushadi (aks holda run o'limi yo'q).
+            gerrs = _geo_check(data, cfg)
+            if gerrs:
+                raise ValueError("; ".join(gerrs[:2]))
+            serrs = _simple_check(data)
+            if serrs:
+                raise ValueError("; ".join(serrs[:2]))
             data["_topic"] = data.get("place") or data.get("country") \
                 or cands
+            _auto_pin(data, cfg)
             return data
         except Exception as e:
             last_err, last_raw = e, raw
@@ -507,6 +687,12 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
             data = _parse_relaxed(last_raw)
             data["_topic"] = data.get("place") or data.get("country") \
                 or cands
+            gerrs = _geo_check(data, cfg)
+            serrs = _simple_check(data)
+            if gerrs or serrs:
+                print("[script] OGOHLANTIRISH (relaxed): "
+                      + "; ".join((gerrs + serrs)[:3]))
+            _auto_pin(data, cfg)
             print("[script] zaxira oyna (150-190 so'z) bilan qabul qilindi")
             return data
         except Exception:
