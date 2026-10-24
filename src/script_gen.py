@@ -10,6 +10,7 @@ import difflib
 import json
 import random
 import re
+import unicodedata
 
 from src import llm
 
@@ -168,6 +169,77 @@ _EV_TYPES = ("pin", "line", "arrow", "highlight", "flag_fill", "zoom",
 # ASCII + imzo belgilaridan boshqa belgi bo'lmasin (ideal yozuvlar)
 _OK_EXTRA = set("\u2019\u2018\u201c\u201d\u2013\u2014\u2026%")
 
+# v10.1e (run 26): LLM ba'zan diakritik qoldiradi (ü, ö, ç, ñ...) — Baarle
+# temasi 3 urinishda ham 'ü' da yiqildi. Endi avtomatik transliteratsiya.
+_TRANSLIT = {
+    "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a", "ā": "a",
+    "ă": "a", "ą": "a",
+    "À": "A", "Á": "A", "Â": "A", "Ã": "A", "Ä": "A", "Å": "A", "Ā": "A",
+    "Ă": "A", "Ą": "A",
+    "è": "e", "é": "e", "ê": "e", "ë": "e", "ē": "e", "ę": "e", "ě": "e",
+    "ė": "e",
+    "È": "E", "É": "E", "Ê": "E", "Ë": "E", "Ē": "E", "Ę": "E", "Ě": "E",
+    "Ė": "E",
+    "ì": "i", "í": "i", "î": "i", "ï": "i", "ī": "i", "ı": "i",
+    "Ì": "I", "Í": "I", "Î": "I", "Ï": "I", "Ī": "I", "İ": "I",
+    "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o", "ø": "o", "ō": "o",
+    "ő": "o",
+    "Ò": "O", "Ó": "O", "Ô": "O", "Õ": "O", "Ö": "O", "Ø": "O", "Ō": "O",
+    "Ő": "O",
+    "ù": "u", "ú": "u", "û": "u", "ü": "u", "ū": "u", "ů": "u", "ű": "u",
+    "Ù": "U", "Ú": "U", "Û": "U", "Ü": "U", "Ū": "U", "Ů": "U", "Ű": "U",
+    "ý": "y", "ÿ": "y", "Ý": "Y", "Ÿ": "Y",
+    "ñ": "n", "ń": "n", "ņ": "n", "ň": "n", "Ñ": "N", "Ń": "N", "Ň": "N",
+    "ç": "c", "ć": "c", "č": "c", "Ç": "C", "Ć": "C", "Č": "C",
+    "ş": "s", "ś": "s", "š": "s", "ș": "s", "Ş": "S", "Š": "S", "Ș": "S",
+    "ğ": "g", "Ğ": "G",
+    "ż": "z", "ź": "z", "ž": "z", "Ż": "Z", "Ź": "Z", "Ž": "Z",
+    "đ": "d", "ď": "d", "Đ": "D", "Ď": "D",
+    "ť": "t", "ț": "t", "Ť": "T", "Ț": "T",
+    "ľ": "l", "ł": "l", "Ľ": "L", "Ł": "L",
+    "ŕ": "r", "ř": "r", "Ŕ": "R", "Ř": "R",
+    "æ": "ae", "Æ": "Ae", "œ": "oe", "Œ": "Oe", "ß": "ss",
+    "ð": "d", "Ð": "D", "þ": "th", "Þ": "Th",
+}
+
+
+def _asciiize(s):
+    """Lotin diakritiklarini ASCII'ga almashtiradi.
+
+    Kirill/CJK kabi haqiqiy xorijiy skriptlar o'z holida qoladi —
+    ularni _lint_voice ushlaydi (ingliz skripti talabi buzilmaydi).
+    """
+    out = []
+    for ch in s:
+        if ord(ch) < 128 or ch in _OK_EXTRA:
+            out.append(ch)
+            continue
+        if ch in _TRANSLIT:
+            out.append(_TRANSLIT[ch])
+            continue
+        base = "".join(c for c in unicodedata.normalize("NFKD", ch)
+                       if not unicodedata.combining(c))
+        out.append(base if base and base.isascii() else ch)
+    return "".join(out)
+
+
+def _asciiize_tree(o, ctr=None):
+    """Parsed JSON'dagi BARCHA stringlarni (JSON escape orqali kelgan
+    diakritikalarni ham) rekursiv transliteratsiya qiladi."""
+    if ctr is None:
+        ctr = [0]
+    if isinstance(o, str):
+        y = _asciiize(o)
+        if y != o:
+            ctr[0] += 1
+        return y
+    if isinstance(o, list):
+        return [_asciiize_tree(x, ctr) for x in o]
+    if isinstance(o, dict):
+        return {_asciiize_tree(k, ctr): _asciiize_tree(v, ctr)
+                for k, v in o.items()}
+    return o
+
 
 def _lint_voice(v, i):
     """Ideal matn mezoni: har qoidabuzarlik urinishni yiqitadi."""
@@ -198,6 +270,11 @@ def _parse(raw):
     txt = re.sub(r",\s*([\]}])", r"\1", txt)
     txt = re.sub(r"(?<=\d)\s+(?=\d)", "", txt)   # "5\n  million" emas
     data = json.loads(txt)
+    _ctr = [0]
+    data = _asciiize_tree(data, _ctr)
+    if _ctr[0]:
+        print(f"[script] transliteratsiya: {_ctr[0]} maydonda diakritika "
+              "ASCII'ga o'tdi (ü->u kabi)")
 
     segs = data.get("scenes") or data.get("segments") or []
     if not (5 <= len(segs) <= 9):
@@ -326,6 +403,16 @@ def _parse(raw):
     country = str(data.get("country") or "").strip()
     data["question"] = str(data.get("question")
                            or data.get("title") or "").strip()[:150]
+    # v10.1e (analitika 2026-10-24): savol-titullarda AVD 21s/26s, oddiy
+    # titulda 14s — title doim SAVOL. Mos kelmasa hook'dan yasaladi.
+    ttl = str(data.get("title") or "").strip()
+    if not (re.match(r"^(Why|How|What|Where|Who|When|Which|Is|Are|Do|Does"
+                     r"|Did|Can|Could|Would|Will)\b", ttl) and ttl.endswith("?")):
+        new_t = segs[0]["voice"].strip()
+        if "?" in new_t:
+            new_t = new_t.split("?")[0].strip()[:88] + "?"
+        data["title"] = new_t
+        print(f"[script] title savolga aylantirildi: {new_t[:70]}")
     data["title"] = str(data.get("title", "A strange place"))[:100]
     if place and place.lower() not in data["title"].lower() \
             and len(data["title"]) < 58:
