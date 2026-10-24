@@ -1,0 +1,141 @@
+{
+  "question": "Why is this American town cut off?",
+  "place": "Point Roberts",
+  "country": "US",
+  "title": "Why Is This American Town Cut Off?",
+  "description": "Point Roberts, Washington hangs below the 49th parallel. A straight treaty line from 1846 left this little American peninsula cut off from the rest of the country. Its only road passes through Canada.",
+  "pinned_comment": "Which strange border should I explain next?",
+  "keywords": ["Point Roberts", "US Canada border", "49th parallel", "cut off town", "strange borders"],
+  "hashtags": ["#geography", "#maps", "#shorts", "#borders"],
+  "scenes": [
+    {
+      "id": 1,
+      "mode": "map",
+      "voice": "Why is this American town cut off?",
+      "map": {"focus": "North America", "lat": 48.0, "lon": -112.0, "zoom_level": 4, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "flag_fill", "target": "US", "at_word": "american"},
+        {"type": "flag_fill", "target": "CA", "at_word": "american"},
+        {"type": "label", "target": "United States", "at_word": "town"}
+      ],
+      "highlights": [{"word": "cut", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Point Roberts, WA — United States Census Bureau",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "A CUT OFF TOWN",
+      "mid_text": "CUT OFF"
+    },
+    {
+      "id": 2,
+      "mode": "map",
+      "voice": "In 1846, America and Canada drew one straight border.",
+      "map": {"focus": "49th parallel", "lat": 49.0, "lon": -120.0, "zoom_level": 5, "motion": "pan_left"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "flag_fill", "target": "US", "at_word": "1846"},
+        {"type": "icon", "emoji": "\u2702\ufe0f", "at_word": "straight"}
+      ],
+      "highlights": [{"word": "straight", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Treaty of Oregon, 1846 — US Department of State",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "ONE STRAIGHT LINE",
+      "mid_text": ""
+    },
+    {
+      "id": 3,
+      "mode": "map",
+      "voice": "The line sits at exactly 49 degrees north.",
+      "map": {"focus": "Strait of Georgia", "lat": 49.0, "lon": -123.5, "zoom_level": 6, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "flag_fill", "target": "CA", "at_word": "north"},
+        {"type": "arrow", "target": "CA", "at_word": "line"}
+      ],
+      "highlights": [{"word": "exactly", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "49th parallel — Encyclopaedia Britannica",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "49TH PARALLEL",
+      "mid_text": "THE LINE"
+    },
+    {
+      "id": 4,
+      "mode": "map",
+      "voice": "This little peninsula hangs just below it.",
+      "map": {"focus": "Point Roberts", "lat": 49.0, "lon": -123.2, "zoom_level": 7, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "arrow", "target": "Point Roberts", "lat": 48.9881, "lon": -123.0652, "at_word": "peninsula"},
+        {"type": "icon", "emoji": "\ud83e\udded", "at_word": "below"}
+      ],
+      "highlights": [{"word": "below", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Point Roberts peninsula — USGS topographic maps",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "BELOW THE LINE",
+      "mid_text": ""
+    },
+    {
+      "id": 5,
+      "mode": "map",
+      "voice": "Its only road passes through Canada.",
+      "map": {"focus": "Point Roberts", "lat": 48.99, "lon": -123.075, "zoom_level": 8, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "pin", "target": "Point Roberts", "lat": 48.9881, "lon": -123.0652, "at_word": "road"}
+      ],
+      "highlights": [{"word": "Canada", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Point Roberts road access — Washington State DOT",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "ONE ROAD IN",
+      "mid_text": "ONE ROAD"
+    },
+    {
+      "id": 6,
+      "mode": "stock",
+      "voice": "School buses cross Canada twice daily.",
+      "map": {"focus": "Point Roberts", "lat": 48.9881, "lon": -123.0652, "zoom_level": 8, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [{"type": "icon", "emoji": "\ud83d\ude8c", "at_word": "buses"}],
+      "highlights": [{"word": "twice", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Point Roberts school commute — KUOW / Public News Service",
+      "visual_query": ["yellow school bus road", "border checkpoint cars", "small coastal town street"],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "THROUGH CANADA",
+      "mid_text": ""
+    },
+    {
+      "id": 7,
+      "mode": "map",
+      "voice": "Which strange border town should I explain next?",
+      "map": {"focus": "Point Roberts", "lat": 48.9881, "lon": -123.0652, "zoom_level": 9, "motion": "zoom_in"},
+      "country_iso_codes": ["US", "CA"],
+      "events": [
+        {"type": "pin", "target": "Point Roberts", "lat": 48.9881, "lon": -123.0652, "at_word": "next"}
+      ],
+      "highlights": [{"word": "strange", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Point Roberts — Encyclopaedia Britannica",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": [],
+      "on_screen": "STILL AMERICA",
+      "mid_text": "STILL AMERICA"
+    }
+  ]
+}

@@ -57,6 +57,12 @@ jobs:
           if [ -f trends_cache.json ]; then
             git add -f trends_cache.json
           fi
+          if [ -e script_pending.json ] || git ls-files --error-unmatch script_pending.json >/dev/null 2>&1; then
+            git add -A -- script_pending.json
+          fi
+          if [ -d script_used ]; then
+            git add script_used
+          fi
           if ! git diff --cached --quiet; then
             git commit -m "Update shorts history"
             git pull --rebase

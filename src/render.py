@@ -386,9 +386,10 @@ def render(cfg, script, items, work):
         from .captions import caption_y
         sub_y = caption_y(cfg, mode)
         mid_y = 1080 if str(scene.get("mid_text") or "").strip() else None
+        seg_t0 = seg_start - dur          # segment boshi (seg_start allaqachon ++)
         sin, fc, last, scr_boxes = _screen_fc(screens, dur, sub_y, mid_y)
         for ly, (bx, by, bs) in zip(screens[:4], scr_boxes):
-            ev_log.append({"t": round(seg_start + float(ly.get("t", 0.2)), 3),
+            ev_log.append({"t": round(seg_t0 + float(ly.get("t", 0.2)), 3),
                            "type": str(ly.get("kind") or "screen"), "seg": i,
                            "x": bx, "y": by, "s": bs})
         a_idx = len(screens) + 1

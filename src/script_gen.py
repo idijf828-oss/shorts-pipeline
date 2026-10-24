@@ -639,8 +639,25 @@ def _auto_pin(data, cfg):
     evs = best.setdefault("events", [])
     pins = [e for e in evs if str(e.get("type")) == "pin"]
     if pins:
-        pins[0]["lat"] = pg["lat"]
-        pins[0]["lon"] = pg["lon"]
+        # Kuchli model koordinatasi geocode nuqtasiga yaqin (<3km) bo'lsa
+        # uni ishonamiz (markaz nuqta aniqroq bo'lishi mumkin); uzoq
+        # bo'lsa (xato koordinata) geocode qiymati bosib yoziladi.
+        import math
+        try:
+            p0 = (float(pins[0].get("lat")), float(pins[0].get("lon")))
+            d = (2 * 6371.0 * math.asin(math.sqrt(
+                math.sin(math.radians(pg["lat"] - p0[0]) / 2) ** 2
+                + math.cos(math.radians(p0[0]))
+                * math.cos(math.radians(pg["lat"]))
+                * math.sin(math.radians(pg["lon"] - p0[1]) / 2) ** 2)))
+        except Exception:
+            d = 1e9
+        if d > 3.0:
+            pins[0]["lat"] = pg["lat"]
+            pins[0]["lon"] = pg["lon"]
+        else:
+            print(f"[script] pin seed koordinatasi saqlandi "
+                  f"(geocode'dan {d:.2f}km)")
         pins[0]["target"] = pins[0].get("target") or place
     else:
         words = str(best.get("voice") or "").split()
@@ -649,7 +666,49 @@ def _auto_pin(data, cfg):
                     "lat": pg["lat"], "lon": pg["lon"], "at_word": at})
 
 
+def _use_pending_script(cfg):
+    """v10.2 (user: 'hozir eng kuchli modeldan foydalan'): repo ildizidagi
+    script_pending.json — kuchli model/agent tayyorlagan skript SEED'i.
+    Mexanizm UMUMIY (mavzuga bog'liq emas): seed bir xil qat'iy
+    _parse + _geo_check + _simple_check lintlaridan o'tishi shart,
+    aks holda rad etiladi. Bir marta ishlatiladi (script_used/ ga
+    ko'chadi) — LLM kaliti paydo bo'lganda oddiy yo'l davom etadi."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    p = os.path.join(root, "script_pending.json")
+    if not os.path.isfile(p):
+        return None
+    print("== 2/7: SKRIPT SEED (script_pending.json — kuchli model) ==")
+    try:
+        with open(p, encoding="utf-8") as f:
+            raw = f.read()
+        data = _parse(raw)
+        gerrs = _geo_check(data, cfg)
+        serrs = _simple_check(data)
+        if gerrs or serrs:
+            print(f"[script] SEED RAD ETILDI: {'; '.join((gerrs + serrs)[:3])}")
+            return None
+        _auto_pin(data, cfg)
+    except Exception as e:
+        print(f"[script] SEED RAD ETILDI (parse): {str(e)[:160]}")
+        return None
+    data["_topic"] = data.get("place") or data.get("country") or "seed"
+    data["_seed"] = True
+    try:
+        used_dir = os.path.join(root, "script_used")
+        os.makedirs(used_dir, exist_ok=True)
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.replace(p, os.path.join(used_dir, f"script_{ts}.json"))
+    except Exception as e:
+        print(f"[script] seed consume xatosi: {e}")
+    print(f"[script] SEED qabul qilindi: {data['title'][:60]} "
+          f"({len(data['scenes'])} sahna) — barcha lintlar PASS")
+    return data
+
+
 def write_script(cfg, trends, history_kws, avoid_title=""):
+    seed = _use_pending_script(cfg)
+    if seed is not None:
+        return seed
     prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
     print(f"   tema: {cands} [{llm.provider(cfg)}]")
     last_err, last_raw = None, None

@@ -150,7 +150,8 @@ def run_checks(path, cfg=None, work=None):
     # --- events.json (doc P4) ---
     evs = ev.get("events") or []
     if evs:
-        ts = sorted(float(e["t"]) for e in evs)
+        # v10.2: video tugashidan keyingi "fantom" hodisalar hisobga kirsin emas
+        ts = sorted(float(e["t"]) for e in evs if float(e["t"]) <= dur + 0.05)
         max_gap = max([b - a for a, b in zip([0.0] + ts, ts + [dur])],
                       default=dur)
         checks.append(("har <=2.2s da vizual o'zgarish (qo'llanma)",

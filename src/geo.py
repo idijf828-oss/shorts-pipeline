@@ -529,6 +529,24 @@ def label_png(name, work_dir):
         return None
 
 
+def snap_to_land(lon, lat, max_deg=0.032, step=0.004):
+    """Suvga tushgan nuqtani ENG YAQIN quruqlikka suradi (halqa qidiruv,
+    ~400m qadam, ~3km gacha). Kichik yarimorollar NE 110m'da yo'q bo'lsa
+    yordam beradi. -> (lon, lat) | None."""
+    if point_on_land(lon, lat):
+        return lon, lat
+    n_rings = int(max_deg / step)
+    for r in range(1, n_rings + 1):
+        d = r * step
+        for k in range(8 * r):
+            ang = 2 * math.pi * k / (8 * r)
+            lo2 = lon + d * math.cos(ang) / max(0.2, math.cos(math.radians(lat)))
+            la2 = lat + d * math.sin(ang)
+            if point_on_land(lo2, la2):
+                return lo2, la2
+    return None
+
+
 def point_on_land(lon, lat):
     """(lon, lat) QAYSI DIR davlatda bo'lsa ham — quruqlikda.
     Chevron: chegara bo'yidagi exclave (Büsingen kabi) NE geometriyasida

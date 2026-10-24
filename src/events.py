@@ -122,14 +122,27 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                 try:
                     lo, la = float(ev["lon"]), float(ev["lat"])
                     pos = ctx["to_px"](lo, la)
-                    # run 23: pin OKEANGA tushgan. Faqat hech qaysi
-                    # davlatda bo'lmasa (suv) centroid'ga qaytaramiz —
-                    # chegaradagi kichik exclave NE'da yo'q bo'lsa ham
-                    # aniq koordinata saqlanadi (v10.2, user #3).
+                    # run 23: pin OKEANGA tushgan. Zanjir (v10.2):
+                    # 1) eng yaqin quruqlikka snap (~3km, NE mayda
+                    #    yarimorollarni yo'qotadi — Point Roberts kabi);
+                    # 2) snap topmasa va kamera yaqin (z>=8) — joyida
+                    #    qoladi (centroid'ga uchish undan ham yomon);
+                    # 3) faqat keng kadrdagi aniq suv -> centroid.
                     if geo.point_on_land(lo, la) is False:
-                        print(f"[events] pin {iso_t}: ({la:.2f},{lo:.2f}) "
-                              f"quruqlikda emas -> centroid")
-                        pos = None
+                        sn = geo.snap_to_land(lo, la)
+                        if sn:
+                            lo, la = sn
+                            pos = ctx["to_px"](lo, la)
+                            print(f"[events] pin {iso_t}: suv -> snap "
+                                  f"({la:.4f},{lo:.4f})")
+                        elif int((scene.get("map") or {}).get("zoom_level", 5)) >= 8:
+                            print(f"[events] pin {iso_t}: quruqlik "
+                                  f"poligoni topilmadi (z>=8) — joyida "
+                                  f"qoldi ({la:.4f},{lo:.4f})")
+                        else:
+                            print(f"[events] pin {iso_t}: ({la:.2f},"
+                                  f"{lo:.2f}) suvda -> centroid")
+                            pos = None
                 except Exception:
                     pos = None
             if pos is None:
