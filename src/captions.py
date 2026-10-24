@@ -51,21 +51,13 @@ def text_width(text, size):
     return max(len(l) for l in text.split("\n")) * size * 0.62
 
 
-def _ladder(base):
-    """100 -> 88 -> 80 -> ... (QC ro'yxati: {100, 88, 80})."""
-    vals, s = [], base
-    while s >= FIT_MIN:
-        vals.append(s)
-        s -= 12 if len(vals) == 1 else 8
-    return vals or [FIT_MIN]
-
-
 def fit_font(text, base=FONT_SIZE, max_w=SAFE_W):
-    """Doc P1: katta shrift doimiy; keng bo'lsa narvon bo'yicha kichrayadi."""
-    for s in _ladder(base):
-        if text_width(text, s) <= max_w:
-            return s
-    return FIT_MIN
+    """v10.1 (user): 100 doimiy; faqat YAGONA mega-so'z 88'ga tushadi."""
+    if text_width(text, base) <= max_w:
+        return base
+    if text_width(text, FIT_MIN) <= max_w:
+        return FIT_MIN
+    return FIT_MIN          # extreme: yagona so'z hali ham keng (kamdan-kam)
 
 
 def _split2(ch, size):
@@ -86,13 +78,9 @@ def _split2(ch, size):
     if bw is not None and bw <= SAFE_W:
         return best_k, size
     if best_k is not None:
-        # v10: bir qator sig'madi -> 2 qator + narvon shrifti MAJBUR
-        # (aks holda "UNDEFENDED BORDER." 80px bir qator deb toshib ketardi)
-        for s2 in _ladder(size):
-            if max(_line_w(words[:best_k], s2, active=True),
-                   _line_w(words[best_k:], s2)) <= SAFE_W:
-                return best_k, s2
-        return best_k, FIT_MIN
+        # v10.1 (user): ko'p so'zli qator HECH QACHON kichraymaydi —
+        # 2 qator@100 eng yaxshi bo'linish; kengroq bo'lsa ham 100 qoladi
+        return best_k, size
     return None, fit_font(plain, size)
 
 
@@ -251,28 +239,25 @@ def build_scene_ass(cfg, scene, words, dur, path):
         # v9: mid ham kesishdan 0.35s oldin yo'qoladi (ustma-ust yo'q)
         m1 = min(dur - 0.35, m0 + 1.5)
         if m1 > m0 + 0.2:
-            # v9: kenglik fit ("WORST BORDERS ON EARTH" kesilmasin):
-            # 132 -> 116 -> 100 -> 88; hali keng bo'lsa 2 qator \N
+            # v10.1 (user): skalalash/pop TAQIQLANGAN -> oddiy fade;
+            # o'lcham 100 (88 faqat sig'masa), 2 qator \N
             txt = _clean(mid).upper()
-            shown, size = txt, 132
-            for size in (132, 116, 100, 88):
-                if text_width(txt, size) <= 880:
-                    break
-            else:
-                size = 88
+            shown, size = txt, FONT_SIZE
+            if text_width(txt, FONT_SIZE) > 880:
                 ws = txt.split()
-                best, bw = txt, text_width(txt, size)
+                best, bw = txt, text_width(txt, FONT_SIZE)
                 for k in range(1, len(ws)):
                     l1 = "\\N".join([" ".join(ws[:k]), " ".join(ws[k:])])
-                    w1 = max(text_width(p, size) for p in l1.split("\\N"))
+                    w1 = max(text_width(p, FONT_SIZE)
+                             for p in l1.split("\\N"))
                     if w1 < bw:
                         best, bw = l1, w1
                 shown = best
+                if bw > 880:
+                    size = FIT_MIN
             ev.append(f"Dialogue: 1,{_t(m0)},{_t(m1)},Mid,,0,0,0,,"
                       r"{\an5\pos(540," + str(MID_Y) + r")"
-                      r"\fscx60\fscy60\t(0,120,\fscx100\fscy100)"
-                      r"\t(120,320,\fscx104\fscy104)"
-                      r"\t(320,520,\fscx100\fscy100)"
+                      r"\fad(120,80)"
                       r"\fs" + str(size) + "}"
                       + shown)
     # v9: bir xil Style'da dialoglar ustma-ust tushmasin —

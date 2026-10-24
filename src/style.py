@@ -19,8 +19,8 @@ PALETTE = {"cyan": CYAN, "red": RED, "yellow": YELLOW, "white": WHITE}
 # --- shrift ---
 FONT_FAMILY = "Montserrat ExtraBold"
 FONT_FILE = "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf"
-CAPTION_SIZE = 96           # doim bir xil (doc P1); 2 qator -> \N
-CAPTION_FIT_MIN = 80        # faqat kam holatda (doc P1)
+CAPTION_SIZE = 100          # v10.1 (user): doim bir xil 100px; 2 qator -> \N
+CAPTION_FIT_MIN = 88        # v10.1: 80 butunlay yo'q; faqat mega-so'z
 ONSCREEN_SIZE = 84          # tepa yorliq: yo'q yoki >=72px (doc P1/P4b)
 ONSCREEN_MAX_DUR = 2.6      # v7 immersive: yorliq ~2.6s ko'rinadi (referens)
 MID_SIZE = 132              # v7: o'rtadagi katta "reveal" so'zi (IN FRANCE)
