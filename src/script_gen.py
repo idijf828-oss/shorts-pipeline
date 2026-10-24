@@ -260,7 +260,7 @@ def _lint_voice(v, i):
     return None
 
 
-def _parse(raw):
+def _parse(raw, strict_insert=True):
     txt = raw.strip()
     txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.S)
     a, b = txt.find("{"), txt.rfind("}")
@@ -374,12 +374,30 @@ def _parse(raw):
 
     # v10 map-explainer: xarita ASOSIY, 1-2 ta qisqa stock insert
     n = len(segs)
+    # v10.1f (run 27): 1-2 urinishda insert >8 so'z QAT'IY rad etiladi
+    # (feedback LLM'ga aniq muammoni tuzatishga imkon beradi); faqat
+    # oxirgi urinishda xaritaga degradatsiya — run o'limi yo'q.
+    long_ins = [s for s in segs if s["mode"] == "stock"
+                and len(s["voice"].split()) > 8]
+    if long_ins and strict_insert:
+        raise ValueError("insert gapi 3-6 so'z (<=8) bo'lishi kerak")
+    for s in long_ins:
+        print(f"[script] insert {len(s['voice'].split())} so'z — "
+              "xarita rejimiga o'tkazildi")
+        s["mode"] = "map"
     n_stock = sum(1 for s in segs if s["mode"] == "stock")
-    if not (1 <= n_stock <= 2):
-        raise ValueError(f"stock insert 1-2 ta bo'lishi kerak: {n_stock}/{n}")
-    for s in segs:
-        if s["mode"] == "stock" and len(s["voice"].split()) > 8:
-            raise ValueError("insert gapi 3-6 so'z (<=8) bo'lishi kerak")
+    if n_stock > 2:
+        if strict_insert:
+            raise ValueError(f"stock insert 1-2 ta bo'lishi kerak: "
+                             f"{n_stock}/{n}")
+        # v10.1f: oxirgi himoya — ortiqchalar xaritaga, birinchi 2 si qoladi
+        for s in [x for x in segs if x["mode"] == "stock"][2:]:
+            print("[script] ortiqcha stock insert — xaritaga o'tkazildi")
+            s["mode"] = "map"
+        n_stock = 2
+    if n_stock == 0:
+        print("[script] ogohlantirish: yaroqli stock insert yo'q — "
+              "to'liq xarita video")
     # v10.1 (user): hook to'liq, grammatik savol bo'lishi shart
     if "?" not in segs[0]["voice"]:
         raise ValueError("1-sahna (hook) savol bo'lishi kerak ('?')")
@@ -455,7 +473,7 @@ def _parse_relaxed(raw):
     global _WORD_LO, _WORD_HI
     _WORD_LO, _WORD_HI = 40, 78
     try:
-        return _parse(raw)
+        return _parse(raw, strict_insert=False)
     finally:
         _WORD_LO, _WORD_HI = 45, 70
 
@@ -464,19 +482,25 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
     prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
     print(f"   tema: {cands} [{llm.provider(cfg)}]")
     last_err, last_raw = None, None
+    p = prompt
     for attempt in range(3):
         try:
-            raw = llm.chat(cfg, SYSTEM, prompt, json_mode=True, timeout=150)
+            raw = llm.chat(cfg, SYSTEM, p, json_mode=True, timeout=150)
         except Exception as e:
             raise RuntimeError(f"Skript yozib bo'lmadi: {e}")
         try:
-            data = _parse(raw)
+            data = _parse(raw, strict_insert=(attempt < 2))
             data["_topic"] = data.get("place") or data.get("country") \
                 or cands
             return data
         except Exception as e:
             last_err, last_raw = e, raw
             print(f"[script] urinish {attempt + 1}: {str(e)[:140]}")
+            # v10.1f: keyingi urinishga ANIQ xato feedback (run 26/27:
+            # bir xil prompt bilan LLM xatosini tuzatmaydi)
+            p = (prompt + "\n\nIMPORTANT: your previous JSON was rejected: "
+                 f"{e}. Rewrite the full JSON fixing exactly this issue "
+                 "and keep every other requirement above.")
     # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz
     if last_raw:
         try:
