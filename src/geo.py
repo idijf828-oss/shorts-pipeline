@@ -120,6 +120,35 @@ def resolve(target):
     return out
 
 
+# V2-2: light rejim uchun davlat ranglari (iso3 -> RGB)
+_FLAG_TINT = {
+    "USA": (90, 120, 180), "CAN": (200, 60, 60), "MEX": (70, 130, 90),
+    "DEU": (200, 170, 80), "CHE": (200, 60, 60), "AUT": (200, 200, 210),
+    "FRA": (90, 110, 180), "GBR": (140, 150, 180), "ESP": (200, 130, 70),
+    "ITA": (110, 170, 110), "RUS": (140, 150, 180), "CHN": (200, 80, 80),
+    "JPN": (225, 225, 230), "IND": (200, 130, 90), "BRA": (130, 180, 110),
+    "AUS": (110, 150, 200), "NLD": (200, 140, 90), "BEL": (200, 200, 90),
+    "LIE": (200, 90, 90), "ZAF": (130, 170, 110), "EGY": (200, 170, 90),
+    "MAR": (200, 90, 90), "DZA": (130, 160, 110), "NAM": (150, 170, 130),
+    "KAZ": (120, 180, 200), "UZB": (110, 180, 200), "KGZ": (200, 130, 90),
+    "TJK": (150, 150, 170), "TKM": (200, 140, 90), "AFG": (160, 170, 130),
+    "PAK": (130, 160, 110), "IRN": (130, 160, 110), "TUR": (200, 90, 90),
+    "GRC": (110, 170, 200), "PRT": (130, 160, 110), "POL": (200, 200, 90),
+    "CZE": (110, 170, 200), "SVK": (200, 200, 90), "HUN": (200, 200, 90),
+    "ROU": (200, 140, 90), "BGR": (200, 140, 90), "SRB": (200, 90, 90),
+    "HRV": (200, 200, 90), "SVN": (110, 170, 200), "MNE": (200, 90, 90),
+    "MKD": (200, 90, 90), "ALB": (200, 90, 90), "BIH": (110, 170, 200),
+    "LUX": (110, 170, 200), "DNK": (200, 90, 90), "SWE": (90, 130, 200),
+    "NOR": (90, 130, 200), "FIN": (110, 170, 200), "ISL": (90, 130, 200),
+    "IRL": (130, 170, 110), "EST": (110, 170, 200), "LVA": (200, 200, 90),
+    "LTU": (150, 170, 130), "BLR": (150, 170, 130), "UKR": (200, 140, 90),
+    "MDA": (150, 170, 130), "ARM": (200, 140, 90), "AZE": (110, 170, 200),
+    "GEO": (200, 200, 90), "CYP": (200, 170, 80), "MLT": (200, 200, 90),
+    "SMR": (110, 170, 200), "VAT": (200, 170, 80), "MCO": (200, 170, 80),
+    "AND": (110, 170, 200),
+}
+
+
 def _flag_png(iso3, work_dir, w=760):
     """ISO3 -> bayroq PNG (assets/flags/<iso2>.svg, rsvg-convert)."""
     iso2 = next((k for k, v in ISO2_TO_ISO3.items() if v == iso3), None)
@@ -361,7 +390,7 @@ def compose_map(cam, iso_codes, work_dir):
     base.save(out_base)
 
     # bayroq-fill qatlamlari (har biri ALOHIDA RGBA — so'z vaqtida reveal)
-    fills, centroids = {}, {}
+    fills, centroids, fills_area, fills_light = {}, {}, {}, set()
     for iso2 in (iso_codes or [])[:2]:
         iso3s = resolve(iso2)
         if not iso3s:
@@ -372,6 +401,61 @@ def compose_map(cam, iso_codes, work_dir):
         flag = Image.open(fp).convert("RGBA") if fp else None
         layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         dl = ImageDraw.Draw(layer)
+        # v11 (V2-2): davlatning oynadagi poligon maydoni — >35% yoki
+        # <2% bo'lsa bayroq o'rniga yupqa kontur + yengil to'ldirish.
+        # (V2: bayroq >35% ekran bo'lmasin; kichik joyda bayroq
+        # o'qilmaydi — davlat rangi bilan ajralib turadi.)
+        def _clip_rect(pts):
+            # Sutherland-Hodgman: poligonni canvas rect'ga klip (dunyo
+            # bo'ylab cho'zilgan davlatlar maydoni 1204% chiqmasin)
+            def clip_edge(poly, keep, inter):
+                out = []
+                if not poly:
+                    return out
+                for k in range(len(poly)):
+                    cur, prev = poly[k], poly[k - 1]
+                    kc, kp = keep(cur), keep(prev)
+                    if kc:
+                        if not kp:
+                            out.append(inter(prev, cur))
+                        out.append(cur)
+                    elif kp:
+                        out.append(inter(prev, cur))
+                return out
+            X0, Y0, X1, Y1 = -160.0, -160.0, W + 160.0, H + 160.0
+            p = pts
+            p = clip_edge(p, lambda q: q[0] >= X0,
+                          lambda a, b: (X0, a[1] + (b[1] - a[1])
+                                        * (X0 - a[0]) / (b[0] - a[0])))
+            p = clip_edge(p, lambda q: q[0] <= X1,
+                          lambda a, b: (X1, a[1] + (b[1] - a[1])
+                                        * (X1 - a[0]) / (b[0] - a[0])))
+            p = clip_edge(p, lambda q: q[1] >= Y0,
+                          lambda a, b: (a[0] + (b[0] - a[0]) * (Y0 - a[1])
+                                        / (b[1] - a[1]), Y0))
+            p = clip_edge(p, lambda q: q[1] <= Y1,
+                          lambda a, b: (a[0] + (b[0] - a[0]) * (Y1 - a[1])
+                                        / (b[1] - a[1]), Y1))
+            return p
+
+        _area = 0.0
+        for (c_a3, _n2, r_a, _c2) in _countries():
+            if c_a3 != iso3:
+                continue
+            for rr in r_a:
+                _pts = _clip_rect([to_px(x, y) for (x, y) in rr])
+                if len(_pts) >= 3:
+                    _s2 = 0.0
+                    for _i2 in range(len(_pts)):
+                        _x1, _y1 = _pts[_i2]
+                        _x2, _y2 = _pts[(_i2 + 1) % len(_pts)]
+                        _s2 += _x1 * _y2 - _x2 * _y1
+                    _area += abs(_s2) / 2.0
+        area_ratio = _area / float(W * H)
+        light_mode = area_ratio > 0.35 or area_ratio < 0.02
+        fills_area[iso2] = round(area_ratio, 3)
+        if light_mode:
+            fills_light.add(iso2)
         for (c_iso3, _nm, rings, cen) in _countries():
             if c_iso3 != iso3 or not _in_window(rings, win):
                 continue
@@ -405,12 +489,24 @@ def compose_map(cam, iso_codes, work_dir):
                         fvis = f.crop((ox, oy, ox + ow, oy + oh))
                         mask = Image.new("L", layer.size, 0)
                         ImageDraw.Draw(mask).polygon(pts, fill=255)
-                        alpha = fvis.split()[3].point(lambda a: int(a * 0.58))
+                        a0 = 0.30 if light_mode else 0.75
+                        alpha = fvis.split()[3].point(
+                            lambda a: int(a * a0))
                         fvis.putalpha(alpha)
                         layer.paste(
                             fvis, (int(vx0), int(vy0)),
                             mask.crop((int(vx0), int(vy0),
                                        int(vx0) + ow, int(vy0) + oh)))
+            if light_mode:
+                # V2-2: kichik joy / juda katta davlat — davlat rangi
+                # yengil to'ldirish + qalin oq kontur (bayroq emas)
+                fill_c = _FLAG_TINT.get(iso3, (120, 170, 255))
+                mask2 = Image.new("L", layer.size, 0)
+                ImageDraw.Draw(mask2).polygon(pts, fill=70)
+                layer.paste(Image.new("RGBA", layer.size,
+                                      fill_c + (255,)), (0, 0), mask2)
+                dl.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=6)
+            else:
                 dl.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=3)
             centroids[iso2] = to_px(cen[0], cen[1])
         if centroids.get(iso2):
@@ -424,6 +520,8 @@ def compose_map(cam, iso_codes, work_dir):
           f"{len(fills)} bayroq-qatlam, {os.path.basename(out_base)}")
     return {"base": out_base, "fills": fills, "zs": zs, "ze": ze,
             "to_px": to_px, "centroids": centroids, "win": win,
+            "fills_area": fills_area,
+            "fills_light": fills_light,
             "mode": mode or ("raster" if use_raster else "vector")}
 
 
