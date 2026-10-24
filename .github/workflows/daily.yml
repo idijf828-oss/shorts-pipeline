@@ -36,6 +36,7 @@ jobs:
       - name: Run pipeline
         env:
           PYTHONUNBUFFERED: "1"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
