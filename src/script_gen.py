@@ -55,8 +55,10 @@ Write a 15-30 SECOND map-explainer short: 45-70 words total,
 6-8 scenes.
 
 NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
-- Scene 1 (HOOK, 5-8 words): the question itself, ending with "?".
-  Example: "Why isn't the US simply annexing Canada?"
+- Scene 1 (HOOK, 6-9 words): a complete, natural, grammatical question
+  that names the place — starting with Why/How/What/Where/Who.
+  Examples: "Why isn't the US simply annexing Canada?"
+            "Why does this town sit in two countries?"
 - Scenes 2-6 (REASONS, 7-12 words each): one reason per beat. Concrete
   facts, real numbers, real names. Natural flow or "First / Second".
   The strongest reason LAST.
@@ -69,7 +71,12 @@ NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
 VISUALS — SATELLITE MAP is the star (guide style):
 - Most scenes are map scenes: "mode": "map" with focus/lat/lon and
   zoom_level (3=continent, 5=whole country, 7=region, 9=city).
-  The camera slowly zooms; the topic change is a hard cut.
+  Use AT LEAST 3 DIFFERENT map views across the video (different
+  places, countries or zoom levels — never the same view twice in a
+  row). Vary "motion": "zoom_in", "zoom_out", "pan_left", "pan_right".
+  The camera moves slowly the whole time; topic change = hard cut.
+- Scenes with "flag_fill" use zoom_level 4-7 so the country polygon
+  stays inside the frame (max ~40% of screen).
 - Give each map scene 1-3 "events" from:
   "flag_fill" target ISO2 — fills the country with its flag texture
   (use for the 1-2 main countries);
@@ -77,10 +84,11 @@ VISUALS — SATELLITE MAP is the star (guide style):
   "arrow" dir up/down/left/right — big yellow arrow (pressure, movement);
   "icon" emoji — one sticker per event: handshake, siren, money bag, rocket, warning sign, checkered flag (use the actual emoji characters);
   "label" target — a small black name tag on the country (country name).
-- EXACTLY 2 scenes are stock inserts: "mode": "stock" with
+- EXACTLY 1-2 scenes are stock inserts: "mode": "stock" with a SHORT
+  punch line of 3-6 words (the insert lasts <= 2 seconds) and
   visual_query = 3 hierarchical phrases (2-3 words each) about filmable
   real-world b-roll (e.g. ["protest crowd street", "angry crowd signs",
-  "demonstration city"]). Inserts are 1-2 seconds, subtitles continue.
+  "demonstration city"]). Subtitles continue over inserts.
 - "highlights": at most 1 keyword per scene, color "#22D3EE" — the
   word shown BIG and cyan in the subtitles. Pick the punch words.
 
@@ -287,16 +295,32 @@ def _parse(raw):
               if w.strip(".,!?-_").upper() not in _BAN]
         sc["mid_text"] = " ".join(mw)[:24].upper()
 
-    # v10 map-explainer: xarita ASOSIY, 1-3 ta qisqa stock insert
+    # v10 map-explainer: xarita ASOSIY, 1-2 ta qisqa stock insert
     n = len(segs)
     n_stock = sum(1 for s in segs if s["mode"] == "stock")
-    if not (1 <= n_stock <= 3):
-        raise ValueError(f"stock insert 1-3 ta bo'lishi kerak: {n_stock}/{n}")
-    # v10: hook SAVOL, yakuniy gap CTA savol bilan tugashi shart
+    if not (1 <= n_stock <= 2):
+        raise ValueError(f"stock insert 1-2 ta bo'lishi kerak: {n_stock}/{n}")
+    for s in segs:
+        if s["mode"] == "stock" and len(s["voice"].split()) > 8:
+            raise ValueError("insert gapi 3-6 so'z (<=8) bo'lishi kerak")
+    # v10.1 (user): hook to'liq, grammatik savol bo'lishi shart
     if "?" not in segs[0]["voice"]:
         raise ValueError("1-sahna (hook) savol bo'lishi kerak ('?')")
+    if not re.match(r"^(Why|How|What|Where|Who|When|Which|Is|Are|Do|Does|Did"
+                    r"|Can|Could|Would|Will)\b", segs[0]["voice"].strip()):
+        raise ValueError("hook Why/How/What/... bilan boshlanishi kerak")
     if "?" not in segs[-1]["voice"]:
         raise ValueError("oxirgi gap CTA savol bilan tugasin ('?')")
+    # v10.1 (user): kamida 3 XIL xarita ko'rinishi
+    views = {(round(s["map"]["lat"], 1), round(s["map"]["lon"], 1),
+              s["map"]["zoom_level"])
+             for s in segs if s["mode"] == "map"}
+    if len(views) < 3:
+        raise ValueError(f"kamida 3 xil xarita ko'rinishi kerak: {len(views)}")
+    # v10.1: flag_fill sahnada davlat poligoni kadrga sig'sin
+    for s in segs:
+        if any(e["type"] == "flag_fill" for e in s["events"]):
+            s["map"]["zoom_level"] = min(s["map"]["zoom_level"], 7)
 
     place = str(data.get("place") or "").strip()
     country = str(data.get("country") or "").strip()

@@ -40,12 +40,76 @@ def _run(cmd, timeout=900):
         raise RuntimeError(f"ffmpeg xato: {r.returncode}")
 
 
-def _zexpr(zs, ze, n_total, f0, punches):
-    """Global frame hisobidan zoom (+ punch gauss)."""
-    z = f"'{zs:.4f}+({ze:.4f}-{zs:.4f})*min({f0}+on,{n_total})/{n_total}'"
+def _zexpr(zs, ze, n_total, f0, punches, motion="zoom_in"):
+    """Global frame hisobidan zoom (+ punch gauss). v10.1: pan rejimlari."""
+    if motion == "zoom_out":
+        zs, ze = ze, zs
+    if motion in ("pan_left", "pan_right", "pan_up", "pan_down"):
+        zm = (zs + ze) / 2.0
+        z = f"'{zm:.4f}'"
+    else:
+        z = f"'{zs:.4f}+({ze:.4f}-{zs:.4f})*min({f0}+on,{n_total})/{n_total}'"
     for p in punches:
         z += f"+0.055*exp(-(on-{p}) * (on-{p})/45)"
     return z
+
+
+def _pan_xy(motion, n_total, f0):
+    """v10.1: pan uchun zoompan x/y ifodalari (view 4% siljiydi)."""
+    prog = f"min({f0}+on,{n_total})/{n_total}"
+    cx = "'iw/2-(iw/zoom/2)'"
+    cy = "'ih/2-(ih/zoom/2)'"
+    if motion == "pan_left":
+        return (f"'(iw/2-(iw/zoom/2))+({prog})*iw*0.04'", cy)
+    if motion == "pan_right":
+        return (f"'(iw/2-(iw/zoom/2))-({prog})*iw*0.04'", cy)
+    if motion == "pan_up":
+        return (cx, f"'(ih/2-(ih/zoom/2))+({prog})*ih*0.04'")
+    if motion == "pan_down":
+        return (cx, f"'(ih/2-(ih/zoom/2))-({prog})*ih*0.04'")
+    return cx, cy
+
+
+def _pers_coeffs(dst_quad, src_quad):
+    """PERSPECTIVE koeffitsientlari (dst -> src), 8x8 Gauss yechimi."""
+    A, b = [], []
+    for (X, Y), (x, y) in zip(dst_quad, src_quad):
+        A.append([X, Y, 1, 0, 0, 0, -x * X, -x * Y]); b.append(x)
+        A.append([0, 0, 0, X, Y, 1, -y * X, -y * Y]); b.append(y)
+    for i in range(8):                          # Gauss elim.
+        p = max(range(i, 8), key=lambda k: abs(A[k][i]))
+        A[i], A[p], b[i], b[p] = A[p], A[i], b[p], b[i]
+        if abs(A[i][i]) < 1e-12:
+            return None
+        for k in range(i + 1, 8):
+            f = A[k][i] / A[i][i]
+            A[k] = [a - f * c for a, c in zip(A[k], A[i])]
+            b[k] -= f * b[i]
+    c = [0.0] * 8
+    for i in range(7, -1, -1):
+        c[i] = (b[i] - sum(a * x for a, x in zip(A[i][i + 1:], c[i + 1:]))) / A[i][i]
+    return c
+
+
+def _tilt(img):
+    """v10.1: biroz egilgan 3D perspektiva (tepasi ~4% tor) — qo'llanma
+    uslubi. 8% overscan -> bo'sh burchak qolmaydi."""
+    try:
+        w, h = img.size
+        k = 0.04 * w
+        src = img.resize((int(w * 1.08), int(h * 1.08)), Image.LANCZOS)
+        sw, sh = src.size
+        sx0, sy0 = (sw - w) / 2, (sh - h) / 2
+        sx1, sy1 = sx0 + w, sy0 + h
+        co = _pers_coeffs([(0, 0), (w, 0), (w, h), (0, h)],
+                          [(sx0 + k, sy0), (sx1 - k, sy0),
+                           (sx1, sy1), (sx0, sy1)])
+        if co:
+            return src.transform((w, h), Image.PERSPECTIVE, co,
+                                 Image.BICUBIC)
+    except Exception:
+        pass
+    return img
 
 
 def _compose_state(base_png, layer_paths, work, tag):
@@ -60,7 +124,7 @@ def _compose_state(base_png, layer_paths, work, tag):
         except Exception as e:
             print(f"[render] qatlam kompozit xatosi ({p}): {e}")
     out = os.path.join(work, f"state_{tag}.png")
-    img.convert("RGB").save(out, quality=92)
+    _tilt(img).convert("RGB").save(out, quality=92)
     return out
 
 
@@ -82,7 +146,8 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
     times = sorted({min(N - 1, max(0, int(round(l["t"] * FPS))))
                     for l in fulls if l["t"] < dur - 0.05})
     bounds = [0] + [f for f in times if 0 < f < N] + [N]
-    parts = []
+    parts, part_frames = [], []
+    motion = str((vis.get("motion") or "zoom_in")).lower()
     for k in range(len(bounds) - 1):
         f0, f1 = bounds[k], bounds[k + 1]
         n = f1 - f0
@@ -91,11 +156,12 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
         active = [l["path"] for l in fulls if int(round(l["t"] * FPS)) <= f0]
         png = _compose_state(vis["base"], active, work, f"{i:02d}_{k}")
         sd = n / FPS
+        xexpr, yexpr = _pan_xy(motion, N, f0)
         vf = (
             "scale=2160:3840:force_original_aspect_ratio=increase,"
             "crop=2160:3840,"
-            f"zoompan=z={_zexpr(vis.get('zs', 1.05), vis.get('ze', 1.30), N, f0, [p for p in punches if f0 <= p < f1])}"
-            ":d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+            f"zoompan=z={_zexpr(vis.get('zs', 1.05), vis.get('ze', 1.30), N, f0, [p for p in punches if f0 <= p < f1], motion)}"
+            f":d=1:x={xexpr}:y={yexpr}"
             f":s={W}x{H}:fps={FPS},setsar=1"
         )
         vf += ",format=yuv420p"
@@ -108,16 +174,35 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
               "-c:v", "libx264", "-preset", "veryfast", "-crf", CRF,
               "-pix_fmt", "yuv420p", "-an", part])
         parts.append(part)
+        part_frames.append(n)
     segv = os.path.join(work, f"segvideo_{i:02d}.mp4")
-    lst = segv + ".txt"
-    with open(lst, "w") as f:
-        for p in parts:
-            f.write(f"file '{p}'\n")
     if len(parts) == 1:
         os.replace(parts[0], segv)
-    else:
+        return segv
+    # v10.1: holatlar orasida CROSSFADE — bayroq/label reveal yumshoq
+    X = 0.22
+    min_sd = min(part_frames) / FPS
+    if min_sd < 0.45:                       # juda qisqa part -> qattiq kesish
+        lst = segv + ".txt"
+        with open(lst, "w") as f:
+            for p in parts:
+                f.write(f"file '{p}'\n")
         _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", lst,
               "-c", "copy", segv])
+        return segv
+    inputs = []
+    for p in parts:
+        inputs += ["-i", p]
+    fc, prev, total = [], "[0:v]", part_frames[0] / FPS
+    for k in range(1, len(parts)):
+        off = total - X
+        fc.append(f"{prev}[{k}:v]xfade=transition=fade:"
+                  f"duration={X:.2f}:offset={off:.3f}[x{k}]")
+        prev = f"[x{k}]"
+        total += part_frames[k] / FPS - X
+    _run(["ffmpeg", "-y", *inputs, "-filter_complex", ";".join(fc),
+          "-map", prev, "-c:v", "libx264", "-preset", "veryfast", "-crf",
+          CRF, "-pix_fmt", "yuv420p", "-an", segv])
     return segv
 
 
@@ -167,15 +252,19 @@ def _screen_fc(screens, dur):
     for k, ly in enumerate(screens[:4]):
         t0 = float(ly.get("t", 0.2))
         px, py = ly.get("pos") or (0.5, 0.35)
+        # v10.1: label/sticker O'QILADIGAN (>=48px matn) — turlar bo'yicha
+        kind = str(ly.get("kind") or "")
+        S = 420 if kind == "label" else 380 if kind == "arrow" else 340
+        half = S // 2
         if isinstance(px, (int, float)) and px <= 1.0:     # nisbiy (0..1)
-            X = max(40, min(W - 300, int(px * W) - 130))
-            Y = max(120, min(H - 400, int(py * H) - 130))
+            X = max(20, min(W - S - 20, int(px * W) - half))
+            Y = max(90, min(H - S - 160, int(py * H) - half))
         else:                                              # geo canvas px
-            X = max(40, min(W - 300, int(px * W / 1440.0) - 130))
-            Y = max(120, min(H - 400, int(py * H / 2560.0) - 130))
+            X = max(20, min(W - S - 20, int(px * W / 1440.0) - half))
+            Y = max(90, min(H - S - 160, int(py * H / 2560.0) - half))
         inputs += ["-loop", "1", "-framerate", str(FPS),
                    "-t", f"{max(0.5, dur):.2f}", "-i", ly["path"]]
-        fc.append(f"[{k + 1}:v]scale=260:260,format=rgba,"
+        fc.append(f"[{k + 1}:v]scale={S}:{S},format=rgba,"
                   f"fade=t=in:st={t0:.2f}:d=0.15:alpha=1[ic{k}]")
         fc.append(f"{last}[ic{k}]overlay=x={X}:"
                   f"y='{Y} - (1 - min(1,(t-{t0:.2f})/0.20))*80':"
@@ -205,6 +294,13 @@ def render(cfg, script, items, work):
 
         ev_log.append({"t": round(seg_start, 3), "type": "cut",
                        "seg": i, "mode": mode})
+        if mode == "map":
+            _m = scene.get("map") or {}
+            ev_log.append({"t": round(seg_start, 3), "type": "map_view",
+                           "seg": i,
+                           "lat": round(float(_m.get("lat", 0)), 2),
+                           "lon": round(float(_m.get("lon", 0)), 2),
+                           "z": int(_m.get("zoom_level", 5))})
         if scene.get("on_screen"):
             osd_dur = min(style.ONSCREEN_MAX_DUR, max(0.8, dur - 0.35))
             ev_log.append({"t": round(seg_start, 3), "type": "on_screen",
@@ -349,8 +445,8 @@ def _mix_music(cfg, joined, out, mus_vol=None):
                 f"aformat=channel_layouts=stereo[m];"
                 # doc P2 voice zanjiri: HPF -> kompressor -> presence -> limiter
                 f"[0:a]highpass=f=80,"
-                f"acompressor=threshold=0.125:ratio=3:attack=5:release=80,"
-                f"equalizer=f=3500:t=q:w=1:g=2,alimiter=limit=0.95,"
+                f"acompressor=threshold=0.10:ratio=4:attack=4:release=70,"
+                f"equalizer=f=3500:t=q:w=1:g=3,alimiter=limit=0.95,"
                 f"asplit=2[v1][v2];"
                 f"[m][v2]sidechaincompress=threshold=0.03:ratio=8:"
                 f"attack=20:release=300[md];"
@@ -389,8 +485,8 @@ def _mix_music(cfg, joined, out, mus_vol=None):
         try:
             fc = (
                 f"[0:a]highpass=f=80,"
-                f"acompressor=threshold=0.125:ratio=3:attack=5:release=80,"
-                f"equalizer=f=3500:t=q:w=1:g=2,alimiter=limit=0.95,"
+                f"acompressor=threshold=0.10:ratio=4:attack=4:release=70,"
+                f"equalizer=f=3500:t=q:w=1:g=3,alimiter=limit=0.95,"
                 f"atrim=0:{max(0.1, d - TAIL):.3f}[mix]"
             )
             mixw = os.path.join(os.path.dirname(out) or ".", "mix_tmp.wav")

@@ -181,6 +181,107 @@ def _in_window(rings, win):
     return False
 
 
+ESRI_URL = ("https://server.arcgisonline.com/ArcGIS/rest/services/"
+            "World_Imagery/MapServer/tile/{z}/{y}/{x}")
+ESRI_CACHE = os.path.join(ASSETS, "esri_cache")
+
+
+def _esri_base(lon, lat, wd, hd):
+    """v10.1: haqiqiy SATELLITE fon (Esri World Imagery tiles).
+
+    -> (RGB Image WxH [atributsiya bilan], to_px) yoki None (tarmoq yo'q).
+    to_px WEB MERCATOR — davlat poligonlari satellite bilan aniq mos
+    tushadi. Region oldin hisoblanadi, tile'lar region bo'yicha olinadi
+    (markaz ANIQ canvas markazida). Tiles diskda keshlanadi."""
+    import math as _m
+    try:
+        import requests
+    except ImportError:
+        return None
+
+    def _tx(lo, n):
+        return (lo + 180.0) / 360.0 * n
+
+    def _ty(la, n):
+        l = _m.radians(max(-85.05, min(85.05, la)))
+        return (1.0 - _m.log(_m.tan(l) + 1.0 / _m.cos(l)) / _m.pi) / 2.0 * n
+
+    # tile zoom: region <= ~5x9 tile
+    z = 2
+    for cand in range(2, 14):
+        n = 2 ** cand
+        ls = _tx(lon + wd / 2, n) - _tx(lon - wd / 2, n)
+        ts = _ty(lat - hd / 2, n) - _ty(lat + hd / 2, n)
+        rwt = max(ls, ts * W / H)
+        if rwt <= 5.0 and rwt * H / W <= 9.0:
+            z = cand
+        else:
+            break
+    n = 2 ** z
+    # region: markaz atrofida, W:H nisbatda
+    cxt, cyt = _tx(lon, n), _ty(lat, n)
+    ls = _tx(lon + wd / 2, n) - _tx(lon - wd / 2, n)
+    ts = _ty(lat - hd / 2, n) - _ty(lat + hd / 2, n)
+    rwt = max(ls, ts * W / H)
+    rht = rwt * H / W
+    rw, rh = rwt * 256, rht * 256
+    ix0 = int(_m.floor(cxt - rwt / 2 - 0.02))
+    ix1 = int(_m.ceil(cxt + rwt / 2 + 0.02))
+    iy0 = int(_m.floor(cyt - rht / 2 - 0.02))
+    iy1 = int(_m.ceil(cyt + rht / 2 + 0.02))
+    ix0, ix1 = max(0, ix0), min(n, ix1)
+    iy0, iy1 = max(0, iy0), min(n, iy1)
+    if (ix1 - ix0) * (iy1 - iy0) > 60 or ix1 - ix0 < 1 or iy1 - iy0 < 1:
+        return None
+    try:
+        os.makedirs(ESRI_CACHE, exist_ok=True)
+        canvas = Image.new("RGB", ((ix1 - ix0) * 256, (iy1 - iy0) * 256),
+                           (10, 14, 24))
+        sess = requests.Session()
+        sess.headers["User-Agent"] = "shorts-pipeline/1.0"
+        for x in range(ix0, ix1):
+            for y in range(iy0, iy1):
+                f = os.path.join(ESRI_CACHE, f"{z}_{x}_{y}.jpg")
+                if not os.path.exists(f):
+                    r = sess.get(ESRI_URL.format(z=z, x=x, y=y), timeout=12)
+                    if r.status_code != 200 or len(r.content) < 400:
+                        return None
+                    with open(f, "wb") as fh:
+                        fh.write(r.content)
+                try:
+                    canvas.paste(Image.open(f).convert("RGB"),
+                                 ((x - ix0) * 256, (y - iy0) * 256))
+                except Exception:
+                    return None
+    except Exception:
+        return None
+
+    # aniq region kesish (markaz canvas markazida — kafolatlangan)
+    px0 = (cxt - rwt / 2 - ix0) * 256
+    py0 = (cyt - rht / 2 - iy0) * 256
+    img = canvas.crop((int(round(px0)), int(round(py0)),
+                       int(round(px0 + rw)), int(round(py0 + rh)))
+                      ).resize((W, H), Image.LANCZOS)
+
+    sx, sy = W / rw, H / rh
+
+    def to_px(lo, la):
+        return (((_tx(lo, n) - ix0) * 256 - px0) * sx,
+                ((_ty(la, n) - iy0) * 256 - py0) * sy)
+
+    # atributsiya (Esri litsenziyasi — O'CHIRILMASIN)
+    try:
+        from PIL import ImageFont
+        d = ImageDraw.Draw(img, "RGBA")
+        fnt = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
+        d.text((W - 30, H - 44), "Imagery \u00a9 Esri", font=fnt,
+               fill=(255, 255, 255, 130), anchor="rs")
+    except Exception:
+        pass
+    return img, to_px
+
+
 def _proj(win):
     lo0, hi1, wd, hd = win          # hi1 = shimoliy lat
     def to_px(lon, lat):
@@ -201,13 +302,21 @@ def compose_map(cam, iso_codes, work_dir):
     lon = float(cam.get("lon", 0))
     wd, hd = _window(z)
     win = (lon - wd / 2, lat + hd / 2, wd, hd)
-    to_px = _proj(win)
     os.makedirs(work_dir, exist_ok=True)
 
-    use_raster = (wd * PX_DEG) >= W / 2.0        # upscale <= 2x
-    if use_raster:
-        base = _raster_crop(lon, lat, wd, hd)
+    # v10.1: haqiqiy satellite (Esri) — HAR zoom'da, mercator proyeksiya.
+    # Tarmoq yo'q -> NE2 raster (davlat darajasi) -> vektor (navy).
+    esri = _esri_base(lon, lat, wd, hd)
+    mode = "esri" if esri is not None else None
+    if esri is not None:
+        base, to_px = esri
+        use_raster = True
+        print(f"[geo] xarita z={z} (esri satellite)")
     else:
+        to_px = _proj(win)
+        use_raster = (wd * PX_DEG) >= W / 2.0        # upscale <= 2x
+        base = _raster_crop(lon, lat, wd, hd) if use_raster else None
+    if esri is None and not use_raster:
         base = Image.new("RGB", (W, H), NAVY)
         d = ImageDraw.Draw(base, "RGBA")
         # graticule (5°/1°)
@@ -306,11 +415,11 @@ def compose_map(cam, iso_codes, work_dir):
 
     motion = cam.get("motion", "zoom_in")
     zs, ze = (1.42, 1.02) if motion == "zoom_out" else (1.02, 1.42)
-    print(f"[geo] xarita z={z} ({'raster' if use_raster else 'vektor'}), "
+    print(f"[geo] xarita z={z} ({mode or ('raster' if use_raster else 'vektor')}), "
           f"{len(fills)} bayroq-qatlam, {os.path.basename(out_base)}")
     return {"base": out_base, "fills": fills, "zs": zs, "ze": ze,
             "to_px": to_px, "centroids": centroids, "win": win,
-            "mode": "raster" if use_raster else "vector"}
+            "mode": mode or ("raster" if use_raster else "vector")}
 
 
 def country_layer(iso_target, style, work_dir, ctx, tag=""):
@@ -400,14 +509,14 @@ def label_png(name, work_dir):
         img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
         fnt = ImageFont.truetype(
-            "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", 46)
+            "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", 72)
         tw = int(d.textlength(txt.upper(), font=fnt))
-        w, h = min(460, tw + 52), 84
+        w, h = min(508, tw + 64), 118
         x0, y0 = (S - w) // 2, (S - h) // 2
-        d.rounded_rectangle([x0, y0, x0 + w - 1, y0 + h - 1], radius=16,
-                            fill=(10, 12, 18, 218),
-                            outline=(255, 255, 255, 70), width=2)
-        d.text((x0 + 26, y0 + 18), txt.upper(), font=fnt,
+        d.rounded_rectangle([x0, y0, x0 + w - 1, y0 + h - 1], radius=22,
+                            fill=(10, 12, 18, 222),
+                            outline=(255, 255, 255, 80), width=3)
+        d.text((x0 + 32, y0 + 22), txt.upper(), font=fnt,
                fill=(255, 255, 255, 255))
         img.save(out)
         return out

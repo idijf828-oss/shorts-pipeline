@@ -243,7 +243,8 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                     ly["t"] = max(0.05, ly["t"] - shift)
                 punches = [max(2, p - int(shift * 30)) for p in punches]
             vis = {"type": "map", "base": ctx["base"],
-                   "zs": ctx["zs"], "ze": ctx["ze"]}
+                   "zs": ctx["zs"], "ze": ctx["ze"],
+                   "motion": (sc.get("map") or {}).get("motion", "zoom_in")}
         it["visual"] = vis
         it["layers"] = layers
         it["punches"] = punches if vis["type"] == "map" else []

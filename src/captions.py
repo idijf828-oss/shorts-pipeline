@@ -145,7 +145,7 @@ def _line_w(txt_words, size, active=False):
     """Qator kengligi; active=True -> birinchi so'z 115% (doc B4 pop)."""
     if not txt_words:
         return 0.0
-    w = text_width(txt_words[0], size) * (1.20 if active else 1.0)
+    w = text_width(txt_words[0], size)        # v10.1: o'lcham bir xil
     if len(txt_words) > 1:
         w += text_width(" ".join(txt_words[1:]), size) \
             + text_width(" ", size) * (len(txt_words) - 1)
@@ -214,8 +214,6 @@ def build_scene_ass(cfg, scene, words, dur, path):
             pass
 
     head, size = _ass_head(cfg, y)
-    yellow = _ass_color(YELLOW)
-    cyan = _ass_color("#22D3EE")   # v10: kalit so'z cyan (qo'llanma)
     ev, chunk_ts = [], []
     sub_on = bool(cfg.get("captions", {}).get("enabled", True))
     if sub_on:
@@ -226,21 +224,15 @@ def build_scene_ass(cfg, scene, words, dur, path):
             if e <= s:
                 e = s + 0.12
             chunk_ts.append(round(s, 3))
-            active = _norm(ch[0][0])
             split, base = _split2(ch, size)
-            parts, seen_active = [], False
+            parts = []
             for (wtxt, _ws, _we) in ch:
                 nw = _norm(wtxt)
                 color = highlights.get(nw)
-                is_active = (nw == active) and not seen_active
-                if is_active:
-                    seen_active = True
                 txt = _clean(wtxt).upper()
-                if is_active:
-                    parts.append("{\\c" + (color or cyan)
-                                 + r"\fscx70\fscy70\t(0,110,\fscx118\fscy118)"
-                                 + "}" + txt + "{\\r}")
-                elif color:
+                # v10.1 (user): o'lcham HAMMA so'zda BIR XIL (100px);
+                # faqat kalit so'z RANGI cyan — kattalik o'zgarmaydi
+                if color:
                     parts.append("{\\c" + color + "}" + txt + "{\\r}")
                 else:
                     parts.append(txt)
@@ -250,7 +242,7 @@ def build_scene_ass(cfg, scene, words, dur, path):
                 line = " ".join(parts)
             ev.append(f"Dialogue: 0,{_t(s)},{_t(e)},Cap,,0,0,0,,"
                       r"{\an5\pos(540," + str(y) + r")\fs" + str(base)
-                      + r"\fscx84\fscy84\t(0,110,\fscx100\fscy100)}"
+                      + "}"
                       + line)
     # v7 immersive: o'rtadagi katta "reveal" so'zi (IN FRANCE uslubi)
     mid = str(scene.get("mid_text") or "").strip()

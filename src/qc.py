@@ -174,6 +174,11 @@ def run_checks(path, cfg=None, work=None):
             checks.append(("tepa yorliq yo'q yoki >=72px", True, "yo'q"))
         hook = min(ts) if ts else 9.9
         checks.append(("hook <=0.5s da harakat", hook <= 0.5, f"{hook:.2f}s"))
+        # v10.1 (user): kamida 3 xil xarita ko'rinishi
+        mv = {(e.get("lat"), e.get("lon"), e.get("z"))
+              for e in evs if e.get("type") == "map_view"}
+        checks.append((">=3 xil xarita ko'rinishi", len(mv) >= 3,
+                       f"{len(mv)} xil ko'rinish"))
     else:
         checks.append(("events.json mavjud", False, "yo'q"))
 
@@ -187,8 +192,8 @@ def run_checks(path, cfg=None, work=None):
                 sizes |= set(int(x) for x in re.findall(r"\\fs(\d+)", f.read()))
     if bool((cfg.get("captions") or {}).get("enabled", True)) and sizes:
         # doc P1: 96 doimiy; 80 faqat kam holatda (bitta uzun so'z)
-        checks.append(("subtitr shrift 100 (88/80 kam holat)",
-                       sizes <= {100, 88, 80},
+        checks.append(("subtitr shrift 100 (88 kam holat)",
+                       sizes <= {100, 88},
                        "/".join(str(x) for x in sorted(sizes)) + "px"))
 
     # --- safe-zone (doc P4c): subtitr x in [110,970] ---
