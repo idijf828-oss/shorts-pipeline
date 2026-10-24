@@ -24,7 +24,12 @@ CAPTION_FIT_MIN = 72        # v10.2 (user): yagona so'z narvoni pastki
 ONSCREEN_SIZE = 84          # tepa yorliq: yo'q yoki >=72px (doc P1/P4b)
 ONSCREEN_MAX_DUR = 2.6      # v7 immersive: yorliq ~2.6s ko'rinadi (referens)
 MID_SIZE = 132              # v7: o'rtadagi katta "reveal" so'zi (IN FRANCE)
-MID_Y = 1080                # ~56% balandlikda (referens: 625/1080)
+MID_Y = 1080                # (eski - v11'da MID ishlatilmaydi)
+# --- v11 (V2): qat'iy layout zonalalari (1080x1920) ---
+ZONE_A = (120, 320)          # statik sarlavha
+ZONE_B = (700, 860)          # so'zma-so'z subtitr
+ZONE_C = (1420, 1750)        # ikonka / sticker / strelka
+TITLE_MAX_W = 920            # sarlavha kenglik budjeti                # ~56% balandlikda (referens: 625/1080)
 MID_DUR = 1.5               # ~1.5s ko'rinadi
 
 # --- subtitr joyi ---
@@ -49,7 +54,8 @@ STATIC_MAX_S = 1.2          # statik kadr <= 1.2s (events.json bilan tekshirilad
 # --- SFX darajalar (doc P2 jadvali; ovozga nisbatan dB -> amplituda) ---
 # riser -8dB, impact -9, whoosh -12, flagpop -11, drop -12, swish -12,
 # zip -13, ding -12, pop -12, tick -12, boom -9, alarm -10
-SFX_DB = {"riser": -8, "impact": -9, "boom": -9, "alarm": -10,
+# v11 (V2-3): HAMMA SFX ovozdan 10-14dB past ([-14, -10] oralig'ida)
+SFX_DB = {"riser": -11, "impact": -12, "boom": -12, "alarm": -11,
           "whoosh": -12, "drop": -12, "swish": -12, "ding": -12,
           "pop": -12, "tick": -12, "flagpop": -11, "zip": -13}
 # v7 immersive (referens: musiqasiz, juda toza): faqat yumshoq whoosh

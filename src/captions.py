@@ -112,7 +112,9 @@ def _ass_color(hexcolor):
 
 def chunk(words, n=MAX_WORDS_LINE):
     """Kenglik-hisob chunking (doc P1): <=3 so'z VA 96px da sig'adi
-    (bir qator yoki 2 qator). Shrift kichraytirilmaydi."""
+    (bir qator yoki 2 qator). Shrift kichraytirilmaydi.
+    v11 (V2-1): 1-2 so'zlik BO'LAK subtitr yo'q — oxirgi kichik
+    chunk oldingisiga qo'shib yuboriladi (sig'sa)."""
     out, cur = [], []
     for w in words:
         trial = cur + [w]
@@ -127,6 +129,10 @@ def chunk(words, n=MAX_WORDS_LINE):
             cur = []
     if cur:
         out.append(cur)
+    # V2-1: >=3 so'z politikasi — kichik oxirgi bo'lakni qo'shish
+    while len(out) > 1 and len(out[-1]) < 3 and _fits(out[-2] + out[-1]):
+        out[-2] = out[-2] + out[-1]
+        out.pop()
     return out
 
 
@@ -206,7 +212,7 @@ def build_scene_ass(cfg, scene, words, dur, path):
     ev, chunk_ts = [], []
     sub_on = bool(cfg.get("captions", {}).get("enabled", True))
     if sub_on:
-        mw = max(1, int(cfg.get("captions", {}).get("max_words", 2)))
+        mw = max(3, int(cfg.get("captions", {}).get("max_words", 3)))
         for ch in chunk(words, n=mw):
             s = max(0.0, ch[0][1])
             e = min(dur, ch[-1][2] + 0.10)
@@ -234,40 +240,10 @@ def build_scene_ass(cfg, scene, words, dur, path):
                       + "}"
                       + line)
     # v7 immersive: o'rtadagi katta "reveal" so'zi (IN FRANCE uslubi)
-    mid = str(scene.get("mid_text") or "").strip()
-    if mid:
-        m0 = 0.30
-        # v9: mid ham kesishdan 0.35s oldin yo'qoladi (ustma-ust yo'q)
-        m1 = min(dur - 0.35, m0 + 1.5)
-        if m1 > m0 + 0.2:
-            # v10.1 (user): skalalash/pop TAQIQLANGAN -> oddiy fade;
-            # o'lcham 100 (88 faqat sig'masa), 2 qator \N
-            txt = _clean(mid).upper()
-            shown, size = txt, FONT_SIZE
-            if text_width(txt, FONT_SIZE) > SAFE_BUDGET:
-                ws = txt.split()
-                if len(ws) == 1:
-                    # v10.2: so'z bo'linmaydi — narvon
-                    size = fit_font(ws[0], FONT_SIZE)
-                else:
-                    best, bw = txt, text_width(txt, FONT_SIZE)
-                    for k in range(1, len(ws)):
-                        l1 = "\\N".join([" ".join(ws[:k]), " ".join(ws[k:])])
-                        w1 = max(text_width(p, FONT_SIZE)
-                                 for p in l1.split("\\N"))
-                        if w1 < bw:
-                            best, bw = l1, w1
-                    shown = best
-                    if bw > SAFE_BUDGET:
-                        size = FIT_MIN
-            ev.append(f"Dialogue: 1,{_t(m0)},{_t(m1)},Mid,,0,0,0,,"
-                      r"{\an5\pos(540," + str(MID_Y) + r")"
-                      r"\fad(120,80)"
-                      r"\fs" + str(size) + "}"
-                      + shown)
-    # v9: bir xil Style'da dialoglar ustma-ust tushmasin —
-    # yangi chiqqanda eskisi avval o'chadi
-    import re as _re
+    # v11 (V2-1): MID katta matn O'LDI - dublikat manbasi.
+    # Zona A'da bitta statik sarlavha (render'da).
+    mid = ""
+
 
     def _ts2s(x):
         h, m, s = x.split(":")
@@ -280,7 +256,7 @@ def build_scene_ass(cfg, scene, words, dur, path):
     _last = {}
     fixed = []
     for line in ev:
-        mm = _re.match(r"(Dialogue: \d+,)([\d:.]+),([\d:.]+),([^,]*)(,.*)$",
+        mm = re.match(r"(Dialogue: \d+,)([\d:.]+),([\d:.]+),([^,]*)(,.*)$",
                        line)
         if not mm:
             fixed.append(line)
