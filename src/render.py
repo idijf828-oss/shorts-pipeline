@@ -124,7 +124,9 @@ def _compose_state(base_png, layer_paths, work, tag):
         except Exception as e:
             print(f"[render] qatlam kompozit xatosi ({p}): {e}")
     out = os.path.join(work, f"state_{tag}.png")
-    _tilt(img).convert("RGB").save(out, quality=92)
+    # v10.1h (user): tilt O'CHIRILDI — trapetsiya + zoom kuchayishi
+    # "torilanib ketadi" ta'sir berdi. Xarita to'g'ri, to'liq kadr.
+    img.convert("RGB").save(out, quality=92)
     return out
 
 

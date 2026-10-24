@@ -23,6 +23,32 @@ MAX_WORDS_LINE = 3
 FONT = style.FONT_FAMILY
 FONT_SIZE = style.CAPTION_SIZE      # doc P1: 96px doimiy
 FIT_MIN = style.CAPTION_FIT_MIN    # 80 (kam holatda)
+# v10.1h: PIL o'lchovi vs libass renderi farqi (~7%) + kontur 2x11px
+# uchun himoya byudjeti. Barcha fit qarorlari shu boyda.
+SAFE_BUDGET = SAFE_W - 64
+
+
+def _hyphen_break(word, size=FONT_SIZE, max_w=None):
+    """Mega-so'zni chiziq bo'ylab bo'ladi -> (pos | None).
+
+    Avval defisdan, bo'lmasa ortadan (min 12 harf). Har ikkala bo'lak
+    max_w ga sig'sa pozitsiya qaytadi; aks holda None.
+    """
+    max_w = max_w or SAFE_BUDGET
+    if len(word) < 8:
+        return None
+    cands = []
+    if "-" in word[:-1]:
+        i = word.rfind("-", 0, len(word) - 1)
+        cands.append(i + 1)
+    if len(word) >= 12:
+        cands.append(len(word) // 2)
+    for pos in cands:
+        a = word[:pos] + "-" if not word[:pos].endswith("-") else word[:pos]
+        b = word[pos:]
+        if text_width(a, size) <= max_w and text_width(b, size) <= max_w:
+            return pos
+    return None
 YELLOW = style.YELLOW
 
 _FONT_FILES = [
@@ -61,27 +87,29 @@ def fit_font(text, base=FONT_SIZE, max_w=SAFE_W):
 
 
 def _split2(ch, size):
-    """chunk <=3 so'zni 2 qatorga bo'lish (doc P1: shriftni kichraytirma).
-    -> (split_index | None, font_size)"""
+    """chunkni 1-2 qatorga joylaydi (user: shrift doim 100).
+    -> (split_index | None, font_size, brk | None)
+    brk = (word_index, pos): mega-so'z ichiga \\N qo'yish pozitsiyasi."""
     words = [str(x[0]).upper() for x in ch]
     plain = " ".join(words)
-    if _line_w(words, size, active=True) <= SAFE_W:
-        return None, size
+    if _line_w(words, size, active=True) <= SAFE_BUDGET:
+        return None, size, None
     if len(ch) < 2:
-        return None, fit_font(plain, size)
+        # v10.1h: mega-so'z — defis/ortadan 2 qator @100 (timing saqlanadi)
+        pos = _hyphen_break(words[0], size)
+        if pos:
+            return None, size, (0, pos)
+        return None, fit_font(plain, size), None
     best_k, bw = None, None
     for k in range(1, len(ch)):
         w = max(_line_w(words[:k], size, active=True),
                 _line_w(words[k:], size))
         if bw is None or w < bw:
             best_k, bw = k, w
-    if bw is not None and bw <= SAFE_W:
-        return best_k, size
     if best_k is not None:
-        # v10.1 (user): ko'p so'zli qator HECH QACHON kichraymaydi —
-        # 2 qator@100 eng yaxshi bo'linish; kengroq bo'lsa ham 100 qoladi
-        return best_k, size
-    return None, fit_font(plain, size)
+        # v10.1 (user): ko'p so'zli qator HECH QACHON kichraymaydi
+        return best_k, size, None
+    return None, fit_font(plain, size), None
 
 
 def _t(s):
@@ -141,14 +169,14 @@ def _line_w(txt_words, size, active=False):
 
 
 def _fits(ch, size=FONT_SIZE):
-    """chunk 96px da sig'adimi (1 yoki 2 qator)? (render KATTA harfda!)"""
+    """chunk sig'adimi (1 yoki 2 qator)? (render KATTA harfda!)"""
     words = [str(x[0]).upper() for x in ch]
-    if _line_w(words, size, active=True) <= SAFE_W:
+    if _line_w(words, size, active=True) <= SAFE_BUDGET:
         return True
     if len(ch) >= 2:
         for k in range(1, len(ch)):
             if max(_line_w(words[:k], size, active=True),
-                   _line_w(words[k:], size)) <= SAFE_W:
+                   _line_w(words[k:], size)) <= SAFE_BUDGET:
                 return True
     return False
 
@@ -212,12 +240,14 @@ def build_scene_ass(cfg, scene, words, dur, path):
             if e <= s:
                 e = s + 0.12
             chunk_ts.append(round(s, 3))
-            split, base = _split2(ch, size)
+            split, base, brk = _split2(ch, size)
             parts = []
-            for (wtxt, _ws, _we) in ch:
+            for wi, (wtxt, _ws, _we) in enumerate(ch):
                 nw = _norm(wtxt)
                 color = highlights.get(nw)
                 txt = _clean(wtxt).upper()
+                if brk and wi == brk[0]:
+                    txt = txt[:brk[1]] + "\\N" + txt[brk[1]:]
                 # v10.1 (user): o'lcham HAMMA so'zda BIR XIL (100px);
                 # faqat kalit so'z RANGI cyan — kattalik o'zgarmaydi
                 if color:
@@ -243,18 +273,25 @@ def build_scene_ass(cfg, scene, words, dur, path):
             # o'lcham 100 (88 faqat sig'masa), 2 qator \N
             txt = _clean(mid).upper()
             shown, size = txt, FONT_SIZE
-            if text_width(txt, FONT_SIZE) > 880:
+            if text_width(txt, FONT_SIZE) > SAFE_BUDGET:
                 ws = txt.split()
-                best, bw = txt, text_width(txt, FONT_SIZE)
-                for k in range(1, len(ws)):
-                    l1 = "\\N".join([" ".join(ws[:k]), " ".join(ws[k:])])
-                    w1 = max(text_width(p, FONT_SIZE)
-                             for p in l1.split("\\N"))
-                    if w1 < bw:
-                        best, bw = l1, w1
-                shown = best
-                if bw > 880:
-                    size = FIT_MIN
+                if len(ws) == 1:
+                    pos = _hyphen_break(ws[0], FONT_SIZE)
+                    if pos:
+                        shown = ws[0][:pos] + "\\N" + ws[0][pos:]
+                    else:
+                        size = FIT_MIN
+                else:
+                    best, bw = txt, text_width(txt, FONT_SIZE)
+                    for k in range(1, len(ws)):
+                        l1 = "\\N".join([" ".join(ws[:k]), " ".join(ws[k:])])
+                        w1 = max(text_width(p, FONT_SIZE)
+                                 for p in l1.split("\\N"))
+                        if w1 < bw:
+                            best, bw = l1, w1
+                    shown = best
+                    if bw > SAFE_BUDGET:
+                        size = FIT_MIN
             ev.append(f"Dialogue: 1,{_t(m0)},{_t(m1)},Mid,,0,0,0,,"
                       r"{\an5\pos(540," + str(MID_Y) + r")"
                       r"\fad(120,80)"
