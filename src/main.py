@@ -14,6 +14,7 @@ import traceback
 
 from src.config import load
 from src import (trends, history, script_gen, tts, audio, sfx, geo, events,
+                 review,
                  icons, media, render, telegram, upload, qc, style)
 
 
@@ -94,6 +95,27 @@ def run(cfg):
         telegram.send_message(cfg, "⛔ QC 3 urinishda o'tmadi — video "
                                    "yuklanmadi.\n" + fails[:800])
         raise RuntimeError("QC darvozasi o'tmadi (3 urinish)")
+
+    # V2: YUKLANADIGAN faylning o'lchangan LUFS/TP + sha256 logi
+    # (user: oxirgi videolar TG'da -17.4 ko'ringan; endi faylning o'zi
+    # hujjatlashtiriladi — byte-moslik sha256 bilan isbotlanadi)
+    try:
+        import hashlib
+        from src.qc import _audio
+        _lufs, _tp, _s, _e = _audio(out)
+        _sha = hashlib.sha256(open(out, "rb").read()).hexdigest()[:16]
+        _rev = next((v for n, o, v in qc_tbl
+                     if n == "MUSTAQIL BAHOLASH"), "?")
+        _log = os.path.join(os.path.dirname(out), "upload_qc.log")
+        with open(_log, "a", encoding="utf-8") as f:
+            import datetime as _dt
+            f.write(f"{_dt.datetime.now().isoformat(timespec='seconds')} "
+                    f"sha256={_sha} LUFS={_lufs:.1f} TP={_tp:.1f} "
+                    f"dur={dur:.1f}s review={_rev} file={out}\n")
+        print(f"   [upload] sha256={_sha} LUFS={_lufs:.1f} TP={_tp:.1f} "
+              f"(log: {_log})")
+    except Exception as e:
+        print("   [upload] log xatosi:", e)
 
     print("== 7/7: Telegram tasdig'i va yuklash ==")
     cap = telegram.caption(cfg, tr, script, dur)
@@ -266,6 +288,13 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
             # v10.2: keyingi sahna uchun — bu sahna ko'rsatgan flaglar
             _sticky_flags = sorted({str(l["iso"]) for l in layers
                                     if l.get("kind") == "flag_fill"})
+            # v11 (V2-2): QC uchun — har bayroq-qatlamning ekran maydoni
+            _fa = ctx.get("fills_area") or {}
+            _fl = ctx.get("fills_light") or set()
+            for ly in layers:
+                if ly.get("kind") == "flag_fill":
+                    ly["area"] = _fa.get(str(ly.get("iso")))
+                    ly["light"] = str(ly.get("iso")) in _fl
             if shift:
                 for ly in layers:
                     ly["t"] = max(0.05, ly["t"] - shift)
@@ -357,6 +386,19 @@ def produce_with_qc(cfg, script):
     cache = {}
     out, dur, used_ids = produce(cfg, script, tts_cache=cache)
     ok, tbl = qc.run_checks(out, cfg, work)
+    # V2 (topshiriq #5): QC o'tsa — MUSTAQIL baholovchi (faqat final mp4).
+    # <8 ball -> xuddi QC FAIL kabi retry; 3 marta -> video yuklanmaydi.
+    if ok:
+        try:
+            rev_score, rev_tbl = review.evaluate(out)
+        except Exception as e:
+            rev_score, rev_tbl = 0.0, [("baholovchi", False, str(e))]
+        tbl = tbl + [("MUSTAQIL BAHOLASH", rev_score >= review.MIN_SCORE,
+                      f"{rev_score}/10")] + rev_tbl
+        if rev_score < review.MIN_SCORE:
+            ok = False
+            print(f"   baholovchi {rev_score}/10 < {review.MIN_SCORE} -> "
+                  f"qayta render")
     for attempt in (2, 3):
         if ok:
             break
@@ -381,6 +423,16 @@ def produce_with_qc(cfg, script):
             out, dur, used_ids = produce(cfg, script, no_stock=True,
                                          tts_cache=cache)
         ok, tbl = qc.run_checks(out, cfg, work)
+        if ok:
+            try:
+                rev_score, rev_tbl = review.evaluate(out)
+            except Exception as e:
+                rev_score, rev_tbl = 0.0, [("baholovchi", False, str(e))]
+            tbl = tbl + [("MUSTAQIL BAHOLASH",
+                          rev_score >= review.MIN_SCORE,
+                          f"{rev_score}/10")] + rev_tbl
+            if rev_score < review.MIN_SCORE:
+                ok = False
     return out, dur, used_ids, tbl, ok
 
 

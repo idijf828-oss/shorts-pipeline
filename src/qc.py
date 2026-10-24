@@ -16,6 +16,11 @@ Tekshiruvlar (doc D0/D + P4 qo'shimchalar):
   9. safe-zone: x<100 / x>980 chetlarida subtitr pikseli yo'q
  10. stock segmentlarda OCR matni yo'q
  11. musiqa pauzada eshitiladi: oxirgi oynada mean_volume -33..-24 dB
+ 12. V2 (topshiriq #5): 0.33s kadr ekstraksiya + OCR/piksel:
+     - ZONA A statik sarlavha (bor, barqaror, 72px+, dup=0)
+     - ZONA B faqat subtitr (<=6 so'z), kesilgan matn = 0
+     - fill <=35%, element ekranda, ZONA tekshiruvlari (events.json)
+     - bir xil kadr >2.2s = 0 (frame-diff)
 """
 import json
 import os
@@ -97,9 +102,276 @@ def _ocr_clean(path, t):
     jp = f"/tmp/qc_ocr_{int(t*10)}.jpg"
     if not _frame(path, t, jp):
         return True                      # kadr olinmadi -> tekshirilmaydi
+    # V2: ZONA B (y 660-900, subtitr doim turadi) ni bo'yab tashlaymiz —
+    # subtitr stock-OCR'ga "matn bor" deb false-positive berdi (saboq)
+    try:
+        from PIL import Image, ImageDraw
+        im = Image.open(jp).convert("RGB")
+        ImageDraw.Draw(im).rectangle([0, 660, 1080, 900], fill=(0, 0, 0))
+        im.save(jp)
+    except Exception:
+        pass
     o = _run(["tesseract", jp, "stdout", "--psm", "6"])
     words = [w for w in re.findall(r"[A-Za-z]{4,}", o) if not w.islower()]
     return len(words) == 0, " ".join(words[:6])
+
+
+# ---------- V2 (topshiriq #5): kadr-darajasidagi tekshiruvlar ----------
+
+ZONE_A = (120, 320)     # style.py bilan bir xil (mustaqil nusxa — review
+ZONE_B = (700, 860)     # ham shunday; atayin hardcode-emas, pastda sync)
+ZONE_C = (1400, 1750)
+
+
+def _extract_frames(path, out_dir, fps=3.0):
+    """Butun videodan fps=kadrlar (0.33s) — bitta ffmpeg chaqiruv."""
+    os.makedirs(out_dir, exist_ok=True)
+    for fn in os.listdir(out_dir):
+        if fn.endswith(".jpg"):
+            os.remove(os.path.join(out_dir, fn))
+    r = subprocess.run(
+        ["ffmpeg", "-y", "-i", path, "-vf", f"fps={fps}",
+         os.path.join(out_dir, "f_%05d.jpg")],
+        capture_output=True, text=True, timeout=600)
+    fs = sorted(f for f in os.listdir(out_dir) if f.endswith(".jpg"))
+    return [os.path.join(out_dir, f) for f in fs]
+
+
+def _strip(img_p, y0, y1, out_p):
+    """Kadrning gorizontal yo'lakasini kesib saqlaydi (OCR uchun)."""
+    from PIL import Image
+    im = Image.open(img_p)
+    im.crop((0, y0, im.size[0], y1)).save(out_p)
+    return out_p
+
+
+def _ocr_words(img_p, min_len=3):
+    """[(so'z, x, y, w, h, conf)] — tesseract TSV (conf bilan)."""
+    o = _run(["tesseract", img_p, "stdout", "--psm", "6", "tsv"])
+    out = []
+    for ln in o.splitlines():
+        p = ln.split("\t")
+        if len(p) < 12 or not p[11].strip():
+            continue
+        try:
+            conf = float(p[10])
+        except ValueError:
+            continue
+        w = p[11].strip().strip(".,:;!?")
+        if conf < 55 or len(w) < min_len or not re.search(r"[A-Za-z]", w):
+            continue
+        try:
+            out.append((w.upper(), int(p[6]), int(p[7]),
+                        int(p[8]), int(p[9]), conf))
+        except ValueError:
+            continue
+    return out
+
+
+def _hard_edge_white(img_p, y0, y1):
+    """Zonadagi 'oq piksel + yaqin qora qo'shni' soni (konturli oq matn).
+    Satellite fonda OCR mo'rt — bu piksel metrikasi deterministik
+    (sarlavha: oq + borderw 6 qora; qor/bulut yumshoq gradyan)."""
+    from PIL import Image
+    im = Image.open(img_p).convert("L")
+    st = im.crop((0, y0, im.size[0], y1))
+    w, h = st.size
+    px = st.load()
+    cnt = 0
+    for y in range(6, h - 6):
+        for x in range(7, w - 7):
+            if px[x, y] > 200:
+                if (px[x, y - 6] < 90 or px[x, y + 6] < 90
+                        or px[x - 7, y] < 90 or px[x + 7, y] < 90):
+                    cnt += 1
+    return cnt
+
+
+def _edge_text_pixels(img_p, y0, y1):
+    """Chetka ustunlardagi oq+qora-konturli piksellar — haqiqiy kesilgan
+    matn belgisi (OCR bbox'iga yopishgan fon artefaktlariga aldanmaydi:
+    WEUROPE'S x=0 conf89 -> piksel 0)."""
+    from PIL import Image
+    im = Image.open(img_p).convert("L")
+    st = im.crop((0, y0, im.size[0], y1))
+    w, h = st.size
+    px = st.load()
+    cnt = 0
+    for y in range(6, h - 6):
+        for x in list(range(0, 14)) + list(range(w - 14, w)):
+            if px[x, y] > 200:
+                if (px[x, y - 6] < 90 or px[x, y + 6] < 90
+                        or (x >= 7 and px[x - 7, y] < 90)
+                        or (x < w - 7 and px[x + 7, y] < 90)):
+                    cnt += 1
+    return cnt
+
+
+def _gray_small(img_p, w=54, h=96):
+    from PIL import Image
+    im = Image.open(img_p).convert("L").resize((w, h))
+    return list(im.getdata())
+
+
+def v2_frame_checks(path, dur, ev, checks, step=0.333):
+    """V2 qo'shimcha: OCR + piksel. checks ro'yxatiga qo'shib boradi."""
+    try:
+        from PIL import Image
+    except ImportError:
+        checks.append(("V2 kadr tekshiruvi", False, "PIL yo'q"))
+        return
+    # PID-asosli: parallel qc/review chaqiruvlari bir-birining
+    # kadrlarini o'chirmasin (proof+compare poygasi saboq)
+    fdir = f"/tmp/qc_v2_frames_{os.getpid()}"
+    frames = _extract_frames(path, fdir, fps=round(1.0 / step, 2))
+    if len(frames) < 8:
+        checks.append(("V2 kadrlar olindi", False, f"{len(frames)} kadr"))
+        return
+    evs = ev.get("events") or []
+    ttl_ev = [e for e in evs if str(e.get("type")) == "title"]
+    ttl_txt = str(ttl_ev[0].get("text", "")) if ttl_ev else ""
+    ttl_tokens = {w for w in re.findall(r"[A-Z0-9]{4,}", ttl_txt)}
+
+    # --- events.json asosidagi (deterministik) V2 tekshiruvlari ---
+    if ttl_ev:
+        t0 = ttl_ev[0]
+        in_a = (ZONE_A[0] - 40 <= int(t0.get("y", 0))
+                <= ZONE_A[1] - int(t0.get("h", 0)) + 60)
+        checks.append(("V2 sarlavha ZONA A + 72px+",
+                       in_a and int(t0.get("size", 0)) >= 72,
+                       f"y={t0.get('y')} h={t0.get('h')} "
+                       f"size={t0.get('size')}px"))
+    else:
+        checks.append(("V2 sarlavha ZONA A + 72px+", False, "title yo'q"))
+
+    # bayroq fill maydoni <=35% — FAQAT bayroq teksturali fill'lar
+    # uchun (light rejim: >35% yoki <2% -> kontur+tint, V2-2 ruxsat)
+    areas = [float(e.get("area") or 0) for e in evs
+             if str(e.get("type")) == "flag_fill" and e.get("area")
+             and not e.get("light")]
+    lights = [(str(e.get("iso")), float(e.get("area") or 0)) for e in evs
+              if str(e.get("type")) == "flag_fill" and e.get("light")]
+    light_ok = all(a > 0.34 or a < 0.03 for _i, a in lights)
+    checks.append(("V2 bayroq fill <=35% ekr",
+                   all(a <= 0.36 for a in areas) and light_ok,
+                   (f"bayroq max {max(areas) if areas else 0:.0%}; "
+                    + (f"light: {lights[:2]}" if lights else "light yo'q"))))
+
+    # ko'rinish qutilari: ekranda + ZONA B bilan kesishmasin
+    off, clash = [], []
+    for e in evs:
+        if str(e.get("type")) in ("icon", "arrow", "pin", "label",
+                                  "screen"):
+            vx, vy = e.get("vx"), e.get("vy")
+            vw, vh = e.get("vw"), e.get("vh")
+            if None in (vx, vy, vw, vh):
+                continue
+            if vx < 0 or vy < 0 or vx + vw > 1080 or vy + vh > 1920:
+                off.append(f"{e.get('type')}@{e.get('t'):.1f}s")
+            if vy < ZONE_B[1] and vy + vh > ZONE_B[0]:
+                clash.append(f"{e.get('type')}@{e.get('t'):.1f}s")
+            if str(e.get("type")) in ("icon", "arrow") and e.get(
+                    "y") is not None:
+                y, sz = int(e["y"]), int(e.get("s") or 320)
+                if not (ZONE_C[0] - 60 <= y <= ZONE_C[1]):
+                    off.append(f"{e.get('type')}-zonadan@{e.get('t'):.1f}s")
+    checks.append(("V2 element ekrandan chiqmadi", not off,
+                    ",".join(off[:3]) or "ok"))
+    checks.append(("V2 ZONA B boshqalar bilan to'qnashmadi", not clash,
+                    ",".join(clash[:3]) or "ok"))
+
+    # title <-> ko'rinish qutilari kesishuvi (matn-matn/matn-ikonka = 0)
+    overlap = []
+    if ttl_ev:
+        tb = ttl_ev[0]
+        tx0, ty0 = int(tb.get("x", 0)), int(tb.get("y", 0))
+        tx1, ty1 = tx0 + int(tb.get("w", 0)), ty0 + int(tb.get("h", 0))
+        for e in evs:
+            if str(e.get("type")) in ("icon", "arrow", "pin", "label",
+                                      "screen") and None not in (
+                    e.get("vx"), e.get("vy"), e.get("vw"), e.get("vh")):
+                if (int(e["vx"]) < tx1 and int(e["vx"]) + int(e["vw"]) > tx0
+                        and int(e["vy"]) < ty1
+                        and int(e["vy"]) + int(e["vh"]) > ty0):
+                    overlap.append(f"{e.get('type')}@{e.get('t'):.1f}s")
+    checks.append(("V2 sarlavha<->element kesishuv=0", not overlap,
+                    ",".join(overlap[:3]) or "ok"))
+
+    # --- OCR + piksel kadrlar bo'yicha ---
+    pres_a, dup_frames, extra_b, clipped, words_b_max = [], [], [], [], 0
+    grays = []
+    _wb = [re.compile(r"\b" + re.escape(t) + r"\b")
+           for t in sorted(ttl_tokens)]
+    for k, fp in enumerate(frames):
+        a_p = _strip(fp, ZONE_A[0] - 40, ZONE_A[1] + 40,
+                     f"/tmp/qc_v2_a_{k:04d}.png")
+        b_p = _strip(fp, ZONE_B[0] - 40, ZONE_B[1] + 40,
+                     f"/tmp/qc_v2_b_{k:04d}.png")
+        wa = _ocr_words(a_p)
+        wb = _ocr_words(b_p)
+        grays.append(_gray_small(fp))
+        a_txt = " ".join(w for w, *_ in wa)
+        has_ttl = bool(ttl_tokens) and any(
+            t in a_txt for t in ttl_tokens)
+        pres_a.append(has_ttl)
+        b_txt = " ".join(w for w, *_ in wb)
+        # dup: SO'Z CHEGARASI bilan ("RULER" != "RULERS", "EUROPE" !=
+        # "EUROPEAN") — substring noto'g'ri dup berdi (africa 3.7s)
+        if (ttl_tokens and has_ttl
+                and any(r.search(b_txt) for r in _wb)):
+            dup_frames.append(round(k * step, 1))
+        if len(wb) > 6:
+            extra_b.append(round(k * step, 1))
+        # kesilgan: PIKSEL (chetka ustunlarda konturli oq belgi) — OCR
+        # bbox yopishgan artefaktlarga aldanmaydi
+        # chegara 200: xarita shovqini (qor/dengiz cheti) <=141
+        # o'lchandi, haqiqiy kesilgan matn ~286+ (simulyatsiya)
+        if (_edge_text_pixels(fp, ZONE_A[0] - 40, ZONE_A[1] + 40) >= 200
+                or _edge_text_pixels(fp, ZONE_B[0] - 40,
+                                     ZONE_B[1] + 40) >= 200):
+            clipped.append(f"chekka@{k * step:.1f}s")
+        words_b_max = max(words_b_max, len(wb))
+        os.remove(a_p)
+        os.remove(b_p)
+
+    # sarlavha barqarorligi (statik + fade): PIKSEL (oq+kontur) — OCR
+    # band satellite fonda ishonchsiz (us_canada: 44% "yo'q" chiqqan,
+    # holbuki piksel 11-13k barqar). Boshqa frameda esa aksincha.
+    pres_px = [_hard_edge_white(fp, ZONE_A[0] - 40, ZONE_A[1] + 40) > 6000
+               for fp in frames]
+    n = len(pres_px)
+    on_ratio = sum(pres_px) / n if n else 0
+    toggles = sum(1 for a, b in zip(pres_px, pres_px[1:]) if a != b)
+    checks.append(("V2 sarlavha barqar (piksel ZONA A)",
+                   on_ratio >= 0.60 and toggles <= 12,
+                   f"{on_ratio:.0%} kadrdа, {toggles} almashuv"))
+    checks.append(("V2 sarlavha so'zi subtitrda TAKRORLANMASIN",
+                   not dup_frames,
+                   ",".join(str(x) for x in dup_frames[:4]) or "dup=0"))
+    checks.append(("V2 ZONA B faqat subtitr (<=6 so'z)", not extra_b,
+                    f"eng ko'p {words_b_max} so'z"))
+    checks.append(("V2 matn kesilmagan (chekka=0)", not clipped,
+                    ",".join(clipped[:4]) or "ok"))
+
+    # bir xil kadr >2.2s = 0 (frame-diff)
+    same_run = best = 0
+    for g0, g1 in zip(grays, grays[1:]):
+        d = sum(abs(a - b) for a, b in zip(g0, g1)) / len(g0)
+        if d < 2.0:
+            same_run += 1
+            best = max(best, same_run)
+        else:
+            same_run = 0
+    static_s = best * step
+    checks.append(("V2 bir xil kadr >2.2s yo'q", static_s <= 2.2,
+                   f"eng uzun {static_s:.1f}s"))
+
+    # vaqtinchalik kadrlarni tozalash
+    for fp in frames:
+        try:
+            os.remove(fp)
+        except OSError:
+            pass
 
 
 def run_checks(path, cfg=None, work=None):
@@ -344,6 +616,12 @@ def run_checks(path, cfg=None, work=None):
     else:
         checks.append(("musiqa: o'chirilgan (v7 immersive)", True,
                        "pauzalar tabiiy jim (referens)"))
+
+    # --- V2 (topshiriq #5): kadr-darajasidagi tekshiruvlar ---
+    try:
+        v2_frame_checks(path, dur, ev, checks)
+    except Exception as e:
+        checks.append(("V2 kadr tekshiruvi", False, f"xato: {e}"))
 
     bad = 0
     print("== QC (doc P4) ==")
