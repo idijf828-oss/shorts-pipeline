@@ -1,0 +1,125 @@
+{
+  "question": "Why is this tiny town split between two countries?",
+  "place": "Baarle",
+  "country": "BE-NL",
+  "title": "Why Is This Tiny Town Split Between Two Countries?",
+  "headline": "BAARLE PUZZLE",
+  "description": "One town, two countries, and borders that cut through houses. The strange case of Baarle.",
+  "pinned_comment": "Which border would you visit?",
+  "keywords": ["Baarle", "Baarle Hertog", "belgium netherlands border", "strange borders"],
+  "hashtags": ["#geography", "#maps", "#borders", "#shorts"],
+  "scenes": [
+    {
+      "id": 1,
+      "mode": "map",
+      "voice": "Why is this tiny town split between two countries?",
+      "map": {"focus": "Baarle", "lat": 50.6, "lon": 5.0, "zoom_level": 4, "motion": "zoom_in"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "flag_fill", "target": "BE", "at_word": "town"},
+        {"type": "label", "target": "Belgium", "at_word": "town"}
+      ],
+      "highlights": [{"word": "split", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Dutch topographic survey",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 2,
+      "mode": "map",
+      "voice": "Baarle sits between Belgium and the Netherlands.",
+      "map": {"focus": "Baarle", "lat": 51.44, "lon": 4.93, "zoom_level": 6, "motion": "zoom_in"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "flag_fill", "target": "NL", "at_word": "netherlands"},
+        {"type": "label", "target": "Netherlands", "at_word": "netherlands"}
+      ],
+      "highlights": [{"word": "between", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "town tourism office",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 3,
+      "mode": "stock",
+      "voice": "The border runs straight through houses and cafes.",
+      "map": {"focus": "Baarle", "lat": 51.44, "lon": 4.93, "zoom_level": 7, "motion": "pan_left"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [],
+      "highlights": [{"word": "border", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Belgian cadastral maps",
+      "visual_query": ["european small town street", "cafe terrace europe", "dutch brick houses"],
+      "must_contain": ["town"],
+      "reject": ["city skyline night"]
+    },
+    {
+      "id": 4,
+      "mode": "map",
+      "voice": "Your front door picks your country.",
+      "map": {"focus": "Baarle", "lat": 51.443, "lon": 4.927, "zoom_level": 7, "motion": "zoom_in"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "icon", "emoji": "\ud83d\udeaa", "at_word": "door", "pos": [0.5, 0.3]}
+      ],
+      "highlights": [{"word": "door", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "town council FAQ",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 5,
+      "mode": "map",
+      "voice": "Twenty-two Belgian pieces sit inside Dutch streets.",
+      "map": {"focus": "Baarle", "lat": 51.443, "lon": 4.928, "zoom_level": 7, "motion": "pan_right"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "flag_fill", "target": "BE", "at_word": "belgian"}
+      ],
+      "highlights": [{"word": "twenty-two", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Belgian cadastral maps",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 6,
+      "mode": "map",
+      "voice": "Each country runs its own town hall.",
+      "map": {"focus": "Baarle", "lat": 51.4425, "lon": 4.9285, "zoom_level": 9, "motion": "zoom_in"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "pin", "target": "Baarle", "lat": 51.4425, "lon": 4.9285, "at_word": "hall"}
+      ],
+      "highlights": [{"word": "own", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "both municipalities websites",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 7,
+      "mode": "map",
+      "voice": "Which side of the street would you live on?",
+      "map": {"focus": "Baarle", "lat": 51.4425, "lon": 4.9285, "zoom_level": 9, "motion": "zoom_out"},
+      "country_iso_codes": ["BE", "NL"],
+      "events": [
+        {"type": "icon", "emoji": "\ud83e\udd14", "at_word": "which", "pos": [0.5, 0.28]}
+      ],
+      "highlights": [],
+      "sfx_trigger": [],
+      "fact_source": "-",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    }
+  ]
+}
