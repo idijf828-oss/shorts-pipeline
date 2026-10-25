@@ -1,0 +1,274 @@
+{
+ "question": "Why did they build this giant wall?",
+ "place": "Badaling",
+ "country": "CN",
+ "title": "Why Did They Build This Giant Wall?",
+ "headline": "GREAT WALL",
+ "description": "The longest wall on Earth, built by hand across mountains and deserts.",
+ "pinned_comment": "Which old wonder should I explain next?",
+ "keywords": [
+  "great wall of china",
+  "badaling",
+  "ancient wonders",
+  "china history"
+ ],
+ "hashtags": [
+  "#geography",
+  "#history",
+  "#china",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why did they build this giant wall?",
+   "map": {
+    "focus": "",
+    "lat": 40.0,
+    "lon": 113.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚩",
+     "at_word": "wall",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "giant",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "UNESCO heritage records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "China wanted to stop northern invasions.",
+   "map": {
+    "focus": "",
+    "lat": 40.2,
+    "lon": 114.5,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "CN",
+     "at_word": "china"
+    },
+    {
+     "type": "label",
+     "target": "China",
+     "at_word": "china"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "invasions",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "dynasty records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Millions of workers built it by hand.",
+   "map": {
+    "focus": "",
+    "lat": 40.3,
+    "lon": 115.5,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🪧",
+     "at_word": "hand",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "hand",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "It crosses mountains and deserts.",
+   "map": {
+    "focus": "",
+    "lat": 40.34,
+    "lon": 115.9,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "mountains",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "hiking guides",
+   "visual_query": [
+    "great wall on mountain ridge",
+    "stone watchtower old",
+    "wall winding hills"
+   ],
+   "must_contain": [
+    "wall"
+   ],
+   "reject": [
+    "modern city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "If you walked it, you'd need two years.",
+   "map": {
+    "focus": "",
+    "lat": 40.36,
+    "lon": 116.0,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚶",
+     "at_word": "walked",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "years",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "trail length surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Today millions visit every single year.",
+   "map": {
+    "focus": "",
+    "lat": 40.359,
+    "lon": 116.015,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "👥",
+     "at_word": "millions",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "visit",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "tourism statistics",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which old wonder should I explain next?",
+   "map": {
+    "focus": "",
+    "lat": 40.359,
+    "lon": 116.02,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "CN"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Badaling",
+     "lat": 40.359,
+     "lon": 116.02,
+     "at_word": "next"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

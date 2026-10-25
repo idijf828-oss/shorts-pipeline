@@ -1,0 +1,269 @@
+{
+ "question": "Why does this jungle river boil?",
+ "place": "Shanay-timpishka",
+ "country": "PE",
+ "title": "Why Does This Jungle River Boil?",
+ "headline": "BOILING RIVER",
+ "description": "A hot river in the Amazon with no volcano anywhere near it.",
+ "pinned_comment": "Which hidden wonder would you visit next?",
+ "keywords": [
+  "boiling river peru",
+  "shanay-timpishka",
+  "amazon mystery",
+  "geothermal river"
+ ],
+ "hashtags": [
+  "#geography",
+  "#amazon",
+  "#mystery",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does this jungle river boil?",
+   "map": {
+    "focus": "",
+    "lat": -8.0,
+    "lon": -74.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🧊",
+     "at_word": "boil",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "jungle",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "explorer reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "The water gets hot enough to burn.",
+   "map": {
+    "focus": "",
+    "lat": -8.5,
+    "lon": -74.5,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⚠",
+     "at_word": "burn",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "burn",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "temperature measurements",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "No volcano sits anywhere near it.",
+   "map": {
+    "focus": "",
+    "lat": -8.8,
+    "lon": -74.7,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "PE",
+     "at_word": "volcano"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "volcano",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geological maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Scientists still argue about the source.",
+   "map": {
+    "focus": "",
+    "lat": -8.85,
+    "lon": -74.73,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "source",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "research papers",
+   "visual_query": [
+    "steam rising from river",
+    "hot spring forest mist",
+    "amazon jungle aerial"
+   ],
+   "must_contain": [
+    "steam"
+   ],
+   "reject": [
+    "snow mountain"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Deep underground cracks let Earth's heat leak out.",
+   "map": {
+    "focus": "",
+    "lat": -8.88,
+    "lon": -74.75,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌀",
+     "at_word": "heat",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "cracks",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geothermal theory papers",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Ancient local stories warned people away.",
+   "map": {
+    "focus": "",
+    "lat": -8.9,
+    "lon": -74.76,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔮",
+     "at_word": "stories",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "warned",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "local legends",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which hidden wonder would you visit next?",
+   "map": {
+    "focus": "",
+    "lat": -8.9,
+    "lon": -74.77,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Shanay-timpishka",
+     "lat": -8.9,
+     "lon": -74.77,
+     "at_word": "visit"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

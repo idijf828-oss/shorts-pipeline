@@ -1,0 +1,271 @@
+{
+ "question": "Why is the Maldives the lowest country?",
+ "place": "Male",
+ "country": "MV",
+ "title": "Why Is the Maldives the Lowest Country on the Whole Planet?",
+ "headline": "MALDIVES",
+ "description": "The flattest nation on Earth, racing the rising sea.",
+ "pinned_comment": "Which island would you save first?",
+ "keywords": [
+  "maldives",
+  "lowest country",
+  "male sea wall",
+  "sinking islands"
+ ],
+ "hashtags": [
+  "#geography",
+  "#islands",
+  "#climate",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is the Maldives the lowest country?",
+   "map": {
+    "focus": "",
+    "lat": 3.0,
+    "lon": 73.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌏",
+     "at_word": "lowest",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "lowest",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "The whole Maldives are tiny coral islands.",
+   "map": {
+    "focus": "",
+    "lat": 3.2,
+    "lon": 73.2,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "MV",
+     "at_word": "coral"
+    },
+    {
+     "type": "label",
+     "target": "Maldives",
+     "at_word": "islands"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "coral",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "island surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Its tallest point is just eight feet.",
+   "map": {
+    "focus": "",
+    "lat": 3.5,
+    "lon": 73.4,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "📏",
+     "at_word": "feet",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "feet",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "elevation surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "One big wave could flood everything.",
+   "map": {
+    "focus": "",
+    "lat": 4.0,
+    "lon": 73.47,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "flood",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "coastal risk studies",
+   "visual_query": [
+    "tropical island aerial beach",
+    "turquoise lagoon from above",
+    "ocean waves palm beach"
+   ],
+   "must_contain": [
+    "island"
+   ],
+   "reject": [
+    "mountain lake"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "So island builders now raise whole islands.",
+   "map": {
+    "focus": "",
+    "lat": 4.1,
+    "lon": 73.5,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚜",
+     "at_word": "raise",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "raise",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "land reclamation projects",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "The capital city sits behind sea walls.",
+   "map": {
+    "focus": "",
+    "lat": 4.17,
+    "lon": 73.51,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "arrow",
+     "target": "MV",
+     "dir": "up",
+     "at_word": "walls"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "walls",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city infrastructure reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which island would you save first?",
+   "map": {
+    "focus": "",
+    "lat": 4.175,
+    "lon": 73.509,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "MV"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Male",
+     "lat": 4.175,
+     "lon": 73.509,
+     "at_word": "save"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

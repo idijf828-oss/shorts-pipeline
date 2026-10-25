@@ -1,0 +1,268 @@
+{
+ "question": "Why is Sweden moving a whole city?",
+ "place": "Kiruna",
+ "country": "SE",
+ "title": "Why Is Sweden Moving a Whole City?",
+ "headline": "ON THE MOVE",
+ "description": "An iron mine is eating the town from below, so the town drives away.",
+ "pinned_comment": "Would you move your house for a mine?",
+ "keywords": [
+  "kiruna",
+  "sweden mining town",
+  "city relocation",
+  "moving buildings"
+ ],
+ "hashtags": [
+  "#geography",
+  "#mining",
+  "#sweden",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is Sweden moving a whole city?",
+   "map": {
+    "focus": "",
+    "lat": 68.5,
+    "lon": 19.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "SE",
+     "at_word": "sweden"
+    },
+    {
+     "type": "label",
+     "target": "Sweden",
+     "at_word": "sweden"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "whole",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city relocation project",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Under Kiruna sits a giant iron mine.",
+   "map": {
+    "focus": "",
+    "lat": 68.0,
+    "lon": 20.0,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛏",
+     "at_word": "iron",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "giant",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "LKAB mining company",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "The mine keeps growing toward the houses.",
+   "map": {
+    "focus": "",
+    "lat": 67.9,
+    "lon": 20.1,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "arrow",
+     "target": "SE",
+     "dir": "right",
+     "at_word": "growing"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "growing",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "ground deformation studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Crews lift old buildings onto trucks.",
+   "map": {
+    "focus": "",
+    "lat": 67.88,
+    "lon": 20.18,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "trucks",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "relocation news reports",
+   "visual_query": [
+    "house on giant truck",
+    "mining dump truck huge",
+    "northern town in snow"
+   ],
+   "must_contain": [
+    "truck"
+   ],
+   "reject": [
+    "desert"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Some homes travel whole, brick by brick.",
+   "map": {
+    "focus": "",
+    "lat": 67.87,
+    "lon": 20.21,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🏘",
+     "at_word": "homes",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "brick",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "relocation project plans",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "The new town sits three kilometers east.",
+   "map": {
+    "focus": "",
+    "lat": 67.856,
+    "lon": 20.225,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "arrow",
+     "target": "SE",
+     "dir": "right",
+     "at_word": "east"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "east",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city master plan",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Would you move your house for a mine?",
+   "map": {
+    "focus": "",
+    "lat": 67.856,
+    "lon": 20.225,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "SE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Kiruna",
+     "lat": 67.856,
+     "lon": 20.225,
+     "at_word": "house"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

@@ -1,0 +1,266 @@
+{
+ "question": "Why does African sand fall on Europe?",
+ "place": "Canary Islands",
+ "country": "ES",
+ "title": "Why Does African Sand Fall on Europe?",
+ "headline": "ORANGE SKY",
+ "description": "Sahara dust storms cross the ocean and paint faraway skies orange.",
+ "pinned_comment": "Which weird weather should I explain next?",
+ "keywords": [
+  "sahara dust storm",
+  "calima canary islands",
+  "african dust europe",
+  "orange sky weather"
+ ],
+ "hashtags": [
+  "#geography",
+  "#weather",
+  "#nature",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does African sand fall on Europe?",
+   "map": {
+    "focus": "",
+    "lat": 25.0,
+    "lon": -20.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌪",
+     "at_word": "sand",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "african",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "NASA dust tracking",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "The Sahara sends giant dust storms west.",
+   "map": {
+    "focus": "",
+    "lat": 27.0,
+    "lon": -17.0,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💨",
+     "at_word": "storms",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "west",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "meteorology reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Winds carry dust over the Atlantic Ocean.",
+   "map": {
+    "focus": "",
+    "lat": 28.0,
+    "lon": -15.6,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "arrow",
+     "target": "ES",
+     "dir": "left",
+     "at_word": "carry"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "atlantic",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "satellite observations",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Sometimes the sky turns orange.",
+   "map": {
+    "focus": "",
+    "lat": 28.1,
+    "lon": -15.5,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "orange",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "weather photography",
+   "visual_query": [
+    "orange dusty hazy sky",
+    "sandstorm wind desert",
+    "dusty city skyline haze"
+   ],
+   "must_contain": [
+    "sky"
+   ],
+   "reject": [
+    "rain forest"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Canary Islands call this haze the calima.",
+   "map": {
+    "focus": "",
+    "lat": 28.15,
+    "lon": -15.55,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "label",
+     "target": "Spain",
+     "at_word": "calima"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "calima",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "local weather service",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Dust even feeds Amazon trees far away.",
+   "map": {
+    "focus": "",
+    "lat": 28.25,
+    "lon": -16.1,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌳",
+     "at_word": "trees",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "amazon",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "NASA Earth science",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which weird weather should I explain next?",
+   "map": {
+    "focus": "",
+    "lat": 28.29,
+    "lon": -16.62,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Canary Islands",
+     "lat": 28.29,
+     "lon": -16.62,
+     "at_word": "weather"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

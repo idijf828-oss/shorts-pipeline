@@ -1,0 +1,274 @@
+{
+ "question": "Why did they build an island shaped like a palm?",
+ "place": "Palm Jumeirah",
+ "country": "AE",
+ "title": "Why Did They Build an Island Shaped Like a Palm?",
+ "headline": "PALM ISLAND",
+ "description": "Dubai wanted more beach, so it built one from sea sand.",
+ "pinned_comment": "Which man-made wonder beats this one?",
+ "keywords": [
+  "palm jumeirah",
+  "dubai islands",
+  "man-made island",
+  "uae engineering"
+ ],
+ "hashtags": [
+  "#geography",
+  "#engineering",
+  "#dubai",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why did they build an island shaped like a palm?",
+   "map": {
+    "focus": "",
+    "lat": 25.3,
+    "lon": 55.5,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌴",
+     "at_word": "palm",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "island",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "Dubai development records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Dubai wanted more beach for tourists.",
+   "map": {
+    "focus": "",
+    "lat": 25.2,
+    "lon": 55.3,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "AE",
+     "at_word": "dubai"
+    },
+    {
+     "type": "label",
+     "target": "United Arab Emirates",
+     "at_word": "tourists"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "beach",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "tourism statistics",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Engineers sprayed sand from the sea floor.",
+   "map": {
+    "focus": "",
+    "lat": 25.15,
+    "lon": 55.2,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔧",
+     "at_word": "engineers",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "sand",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "construction reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Only the palm's shape keeps the waves calm.",
+   "map": {
+    "focus": "",
+    "lat": 25.13,
+    "lon": 55.16,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "waves",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "coastal engineering studies",
+   "visual_query": [
+    "palm island aerial view",
+    "beach resort aerial shot",
+    "dredging ship sand"
+   ],
+   "must_contain": [
+    "palm"
+   ],
+   "reject": [
+    "mountains"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "The trunk holds tall towers and roads.",
+   "map": {
+    "focus": "",
+    "lat": 25.118,
+    "lon": 55.145,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🏗",
+     "at_word": "towers",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "towers",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city planning maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "You can see the palm best from space.",
+   "map": {
+    "focus": "",
+    "lat": 25.112,
+    "lon": 55.138,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚀",
+     "at_word": "space",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "space",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "satellite imagery",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which man-made wonder beats this one?",
+   "map": {
+    "focus": "",
+    "lat": 25.112,
+    "lon": 55.138,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "AE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Palm Jumeirah",
+     "lat": 25.112,
+     "lon": 55.138,
+     "at_word": "wonder"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

@@ -1,0 +1,274 @@
+{
+ "question": "Why can't anyone visit this island?",
+ "place": "Surtsey",
+ "country": "IS",
+ "title": "Why Can't Anyone Visit This Island?",
+ "headline": "NO ENTRY",
+ "description": "A brand-new island that scientists keep locked. Nature's own laboratory.",
+ "pinned_comment": "Which secret place would you visit?",
+ "keywords": [
+  "surtsey",
+  "iceland volcano island",
+  "forbidden island",
+  "newest island"
+ ],
+ "hashtags": [
+  "#geography",
+  "#islands",
+  "#nature",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why can't anyone visit this island?",
+   "map": {
+    "focus": "",
+    "lat": 63.5,
+    "lon": -19.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌋",
+     "at_word": "island",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "visit",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "UNESCO records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "A volcano pushed it up from the sea.",
+   "map": {
+    "focus": "",
+    "lat": 63.4,
+    "lon": -20.3,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "IS",
+     "at_word": "volcano"
+    },
+    {
+     "type": "label",
+     "target": "Iceland",
+     "at_word": "sea"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "volcano",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geology surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "It was born in nineteen sixty-three.",
+   "map": {
+    "focus": "",
+    "lat": 63.35,
+    "lon": -20.5,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🗓",
+     "at_word": "born",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "born",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "eruption records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Scientists want to watch nature win.",
+   "map": {
+    "focus": "",
+    "lat": 63.3,
+    "lon": -20.55,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "nature",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "research station notes",
+   "visual_query": [
+    "volcanic island ocean",
+    "seagull flying over cliff",
+    "empty rocky shoreline"
+   ],
+   "must_contain": [
+    "island"
+   ],
+   "reject": [
+    "city crowd"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Plants and birds arrived there all alone.",
+   "map": {
+    "focus": "",
+    "lat": 63.31,
+    "lon": -20.58,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌱",
+     "at_word": "plants",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "alone",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "biological studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Too many visitors might ruin the science.",
+   "map": {
+    "focus": "",
+    "lat": 63.305,
+    "lon": -20.59,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔒",
+     "at_word": "ruin",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "science",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "UNESCO protection rules",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which secret place would you visit?",
+   "map": {
+    "focus": "",
+    "lat": 63.303,
+    "lon": -20.598,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Surtsey",
+     "lat": 63.303,
+     "lon": -20.598,
+     "at_word": "place"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}
