@@ -1,0 +1,280 @@
+{
+  "question": "Why is this mountain taller than Everest?",
+  "place": "Chimborazo volcano",
+  "country": "EC",
+  "title": "Why Is This Mountain Taller Than Everest?",
+  "headline": "CHIMBORAZO",
+  "description": "Everest is only tallest above the sea. Measured from space, another mountain wins.",
+  "pinned_comment": "Which mountain would you climb first?",
+  "keywords": [
+    "chimborazo",
+    "ecuador mountains",
+    "everest facts",
+    "highest peak"
+  ],
+  "hashtags": [
+    "#geography",
+    "#maps",
+    "#mountains",
+    "#shorts"
+  ],
+  "scenes": [
+    {
+      "id": 1,
+      "mode": "map",
+      "voice": "Why is this mountain taller than Everest?",
+      "map": {
+        "focus": "South America",
+        "lat": -2.0,
+        "lon": -76.0,
+        "zoom_level": 4,
+        "motion": "zoom_in"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "icon",
+          "emoji": "🏔",
+          "at_word": "mountain",
+          "pos": [
+            0.5,
+            0.3
+          ]
+        }
+      ],
+      "highlights": [
+        {
+          "word": "taller",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "NASA Earth fact sheet",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 2,
+      "mode": "map",
+      "voice": "This is Chimborazo, a giant in Ecuador.",
+      "map": {
+        "focus": "Chimborazo",
+        "lat": -1.5,
+        "lon": -78.0,
+        "zoom_level": 5,
+        "motion": "zoom_in"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "flag_fill",
+          "target": "EC",
+          "at_word": "ecuador"
+        },
+        {
+          "type": "label",
+          "target": "Ecuador",
+          "at_word": "ecuador"
+        }
+      ],
+      "highlights": [
+        {
+          "word": "giant",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "Encyclopaedia Britannica",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 3,
+      "mode": "stock",
+      "voice": "Everest is tallest only above the sea.",
+      "map": {
+        "focus": "Everest",
+        "lat": 27.99,
+        "lon": 86.93,
+        "zoom_level": 6,
+        "motion": "pan_left"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [],
+      "highlights": [
+        {
+          "word": "everest",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "survey records",
+      "visual_query": [
+        "mount everest snow peak",
+        "mountain climber rope",
+        "himalaya mountain range"
+      ],
+      "must_contain": [
+        "mountain"
+      ],
+      "reject": [
+        "desert dunes"
+      ]
+    },
+    {
+      "id": 4,
+      "mode": "map",
+      "voice": "Earth is slightly fat around the middle.",
+      "map": {
+        "focus": "equator",
+        "lat": -1.5,
+        "lon": -78.5,
+        "zoom_level": 6,
+        "motion": "zoom_in"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "icon",
+          "emoji": "🌍",
+          "at_word": "earth",
+          "pos": [
+            0.5,
+            0.3
+          ]
+        }
+      ],
+      "highlights": [
+        {
+          "word": "middle",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "NASA Earth shape data",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 5,
+      "mode": "map",
+      "voice": "Its peak sits right on the fat line.",
+      "map": {
+        "focus": "Chimborazo",
+        "lat": -1.47,
+        "lon": -78.7,
+        "zoom_level": 7,
+        "motion": "zoom_in"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "arrow",
+          "target": "EC",
+          "dir": "up",
+          "at_word": "peak"
+        }
+      ],
+      "highlights": [
+        {
+          "word": "peak",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "Ecuador geophysical institute",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 6,
+      "mode": "map",
+      "voice": "Its top is farthest from Earth's center.",
+      "map": {
+        "focus": "Chimborazo",
+        "lat": -1.4693,
+        "lon": -78.8,
+        "zoom_level": 8,
+        "motion": "zoom_in"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "icon",
+          "emoji": "📏",
+          "at_word": "farthest",
+          "pos": [
+            0.5,
+            0.3
+          ]
+        }
+      ],
+      "highlights": [
+        {
+          "word": "center",
+          "color": "#22D3EE"
+        }
+      ],
+      "sfx_trigger": [],
+      "fact_source": "geodesy studies",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 7,
+      "mode": "map",
+      "voice": "Which mountain would you climb first?",
+      "map": {
+        "focus": "Chimborazo",
+        "lat": -1.4693,
+        "lon": -78.8179,
+        "zoom_level": 9,
+        "motion": "zoom_out"
+      },
+      "country_iso_codes": [
+        "EC"
+      ],
+      "events": [
+        {
+          "type": "pin",
+          "target": "Chimborazo",
+          "lat": -1.4693,
+          "lon": -78.8179,
+          "at_word": "climb"
+        },
+        {
+          "type": "icon",
+          "emoji": "🧗",
+          "at_word": "which",
+          "pos": [
+            0.5,
+            0.28
+          ]
+        }
+      ],
+      "highlights": [],
+      "sfx_trigger": [],
+      "fact_source": "-",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    }
+  ]
+}

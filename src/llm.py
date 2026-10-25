@@ -102,9 +102,11 @@ def chat(cfg, system, user, images=None, json_mode=False,
     allow_gemini = bool((cfg.get("llm") or {}).get("allow_gemini", False))
     if not (akey and akey != "FAKE") and not allow_gemini:
         raise RuntimeError(
-            "ANTHROPIC_API_KEY yo'q — eng kuchli model (Claude Opus) "
-            "shart. Zaif modelga tushish taqiqlangan (user qoidasi). "
-            "Kalitni GitHub secret sifatida qo'shing.")
+            "Skript yozish uchun eng kuchli model = Arena agent (SEED "
+            "mexanizmi). User qoidasi (2026-10-25): 'Anthropic kalit "
+            "kerak emas — o'zingni eng kuchli modelingni ishlat doim'. "
+            "script_pending.json ga seed yozing (Arena agent har "
+            "sessiyada tayyorlaydi). Zaif modelga tushish taqiqlangan.")
     if akey and akey != "FAKE":
         content = [{"type": "text", "text": user}]
         for b in b64s:
