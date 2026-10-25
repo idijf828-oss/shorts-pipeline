@@ -81,6 +81,14 @@ def run(cfg):
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):
+        if script.get("_seed"):
+            # v11-e: SEED mavzusi tarixga yaqin chiqdi — LLM kaliti
+            # bo'lmasa qayta generatsiya mumkin emas (zaif modelga tushish
+            # taqiqlangan). Aniq xato — kuchli model YANGI seed yozsin.
+            raise RuntimeError(
+                "SEED mavzusi tarix bilan juda o'xshash (too_similar) — "
+                "yangi, farqli mavzuda seed yozing. LLM kaliti yo'q, "
+                "zaif modelga tushish taqiqlangan (user qoidasi).")
         print("   mavzu tarix bilan o'xshash -> qayta generatsiya")
         script = script_gen.write_script(
             cfg, tr, history.keywords(hist), avoid_title=script["title"])
