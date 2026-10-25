@@ -682,42 +682,92 @@ def _auto_pin(data, cfg):
 
 
 def _use_pending_script(cfg):
-    """v10.2 (user: 'hozir eng kuchli modeldan foydalan'): repo ildizidagi
-    script_pending.json — kuchli model/agent tayyorlagan skript SEED'i.
-    Mexanizm UMUMIY (mavzuga bog'liq emas): seed bir xil qat'iy
-    _parse + _geo_check + _simple_check lintlaridan o'tishi shart,
-    aks holda rad etiladi. Bir marta ishlatiladi (script_used/ ga
-    ko'chadi) — LLM kaliti paydo bo'lganda oddiy yo'l davom etadi."""
+    """v10.2: script_pending.json — kuchli model (Arena agent) SEED'i.
+    v12 (user 2026-10-26: 'doimiy ishlaydigan qil'): SEED BANKASI —
+    script_bank/ papkasidagi seedlar (alfabit tartibida) birma-bir
+    iste'mol qilinadi; script_pending.json USTUVOR.
+
+    Har bir nomzod xuddi oddiy yo'l kabi qat'iy tekshiriladi:
+    _parse + _geo_check + _simple_check + too_similar (tarix bilan).
+    Rad etilgan nomzod script_used/ ga (rad_ prefiksi bilan) ko'chadi
+    va KEYINGI seed siniladi — bitta yomon seed butun runni o'ldirmaydi.
+
+    Hamma narsa tugasa: run JIMGINA to'xtaydi (exit 0) — TG xato
+    spami yo'q. Anthropic kaliti KERAK EMAS (user 2026-10-25): eng
+    kuchli model = Arena agent, skriptlarni shu mexanizm orqali o'zi
+    yozadi."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    p = os.path.join(root, "script_pending.json")
-    if not os.path.isfile(p):
-        return None
-    print("== 2/7: SKRIPT SEED (script_pending.json — kuchli model) ==")
+    used_dir = os.path.join(root, "script_used")
+    os.makedirs(used_dir, exist_ok=True)
+    bank_dir = os.path.join(root, "script_bank")
+    bank = sorted(f for f in os.listdir(bank_dir)
+                  if f.endswith(".json")) if os.path.isdir(bank_dir) else []
+    cands = []
+    if os.path.isfile(os.path.join(root, "script_pending.json")):
+        cands.append(os.path.join(root, "script_pending.json"))
+    cands += [os.path.join(bank_dir, f) for f in bank]
+    if not cands:
+        print("== 2/7: SEED YO'Q (script_pending.json ham, script_bank/ ham "
+              "bo'sh) ==")
+        print("[seed] Arena agent keyingi seedlarni yozguncha kutish — "
+              "bu XATO emas (TG xatosiz, exit 0). Eng kuchli model = "
+              "Arena agent (user qoidasi 2026-10-25).")
+        import sys
+        sys.exit(0)
+    from . import history as _hist
+    hist = None
     try:
-        with open(p, encoding="utf-8") as f:
-            raw = f.read()
-        data = _parse(raw)
-        gerrs = _geo_check(data, cfg)
-        serrs = _simple_check(data)
-        if gerrs or serrs:
-            print(f"[script] SEED RAD ETILDI: {'; '.join((gerrs + serrs)[:3])}")
-            return None
-        _auto_pin(data, cfg)
-    except Exception as e:
-        print(f"[script] SEED RAD ETILDI (parse): {str(e)[:160]}")
-        return None
-    data["_topic"] = data.get("place") or data.get("country") or "seed"
-    data["_seed"] = True
-    try:
-        used_dir = os.path.join(root, "script_used")
-        os.makedirs(used_dir, exist_ok=True)
+        hist = _hist.load()
+    except Exception:
+        hist = []
+    for src in cands:
+        name = os.path.basename(src)
+        print(f"== 2/7: SKRIPT SEED ({name} — kuchli model) ==")
+        data = None
+        try:
+            with open(src, encoding="utf-8") as f:
+                raw = f.read()
+            data = _parse(raw)
+            gerrs = _geo_check(data, cfg)
+            serrs = _simple_check(data)
+            sim = (_hist.too_similar(data["title"], data["keywords"], hist)
+                   if hist else False)
+            if gerrs or serrs:
+                print(f"[script] SEED RAD ETILDI (lint): "
+                      f"{'; '.join((gerrs + serrs)[:3])}")
+                data = None
+            elif sim:
+                print(f"[script] SEED RAD ETILDI (tarix bilan o'xshash): "
+                      f"{data['title'][:60]}")
+                data = None
+        except Exception as e:
+            print(f"[script] SEED RAD ETILDI (parse): {str(e)[:160]}")
+            data = None
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        os.replace(p, os.path.join(used_dir, f"script_{ts}.json"))
-    except Exception as e:
-        print(f"[script] seed consume xatosi: {e}")
-    print(f"[script] SEED qabul qilindi: {data['title'][:60]} "
-          f"({len(data['scenes'])} sahna) — barcha lintlar PASS")
-    return data
+        if data is None:
+            try:
+                os.replace(src, os.path.join(
+                    used_dir, f"rad_{ts}_{name}"))
+            except Exception:
+                pass
+            continue
+        _auto_pin(data, cfg)
+        data["_topic"] = data.get("place") or data.get("country") or "seed"
+        data["_seed"] = True
+        try:
+            os.replace(src, os.path.join(used_dir, f"script_{ts}.json"))
+        except Exception as e:
+            print(f"[script] seed consume xatosi: {e}")
+        left = sum(1 for c in cands if os.path.exists(c)) - 1
+        print(f"[script] SEED qabul qilindi: {data['title'][:60]} "
+              f"({len(data['scenes'])} sahna) — barcha lintlar PASS "
+              f"(navbatda yana {max(0, left)} ta seed)")
+        return data
+    # hamma nomzod rad etildi — jimgina to'xtash (xato spami yo'q)
+    print("[seed] bankadagi hamma seed rad etildi — Arena agent yangi "
+          "seedlarni yozguncha kutish (exit 0).")
+    import sys
+    sys.exit(0)
 
 
 def write_script(cfg, trends, history_kws, avoid_title=""):

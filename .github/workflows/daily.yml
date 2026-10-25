@@ -60,6 +60,9 @@ jobs:
           if [ -e script_pending.json ] || git ls-files --error-unmatch script_pending.json >/dev/null 2>&1; then
             git add -A -- script_pending.json
           fi
+          if [ -d script_bank ]; then
+            git add -A -- script_bank
+          fi
           if [ -d script_used ]; then
             git add script_used
           fi
