@@ -1,0 +1,124 @@
+{
+  "question": "Why did this giant sea just disappear?",
+  "place": "Moynaq",
+  "country": "UZ-KZ",
+  "title": "Why Did This Giant Sea Just Disappear?",
+  "headline": "VANISHING SEA",
+  "description": "One of the biggest lakes on Earth lost almost all its water in one lifetime. Satellite maps tell the story.",
+  "pinned_comment": "Which lost place should I explore next?",
+  "keywords": ["aral sea", "moynaq ship graveyard", "uzbekistan nature", "disappearing lake"],
+  "hashtags": ["#geography", "#maps", "#nature", "#shorts"],
+  "scenes": [
+    {
+      "id": 1,
+      "mode": "map",
+      "voice": "Why did this giant sea just disappear?",
+      "map": {"focus": "Aral Sea", "lat": 43.5, "lon": 60.0, "zoom_level": 4, "motion": "zoom_in"},
+      "country_iso_codes": ["UZ", "KZ"],
+      "events": [
+        {"type": "label", "target": "Kazakhstan", "at_word": "giant"}
+      ],
+      "highlights": [{"word": "disappear", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "NASA Earth Observatory",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 2,
+      "mode": "map",
+      "voice": "It was one of the biggest lakes on Earth.",
+      "map": {"focus": "Aral Sea", "lat": 44.5, "lon": 60.0, "zoom_level": 5, "motion": "zoom_in"},
+      "country_iso_codes": ["UZ", "KZ"],
+      "events": [
+        {"type": "flag_fill", "target": "UZ", "at_word": "earth"},
+        {"type": "label", "target": "Uzbekistan", "at_word": "earth"}
+      ],
+      "highlights": [{"word": "biggest", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": " Encyclopaedia Britannica",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 3,
+      "mode": "map",
+      "voice": "Two big rivers were its only water source.",
+      "map": {"focus": "Aral Sea rivers", "lat": 44.0, "lon": 60.5, "zoom_level": 6, "motion": "pan_right"},
+      "country_iso_codes": ["UZ", "KZ"],
+      "events": [
+        {"type": "icon", "emoji": "\ud83d\udca7", "at_word": "rivers", "pos": [0.5, 0.3]}
+      ],
+      "highlights": [{"word": "rivers", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "UN water reports",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 4,
+      "mode": "map",
+      "voice": "Farmers took river water for cotton fields.",
+      "map": {"focus": "cotton fields", "lat": 41.5, "lon": 60.8, "zoom_level": 6, "motion": "pan_left"},
+      "country_iso_codes": ["UZ"],
+      "events": [
+        {"type": "icon", "emoji": "\ud83d\ude9c", "at_word": "cotton", "pos": [0.5, 0.3]}
+      ],
+      "highlights": [{"word": "cotton", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "World Bank reports",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 5,
+      "mode": "stock",
+      "voice": "The water level dropped lower every year.",
+      "map": {"focus": "dry seabed", "lat": 44.0, "lon": 59.5, "zoom_level": 7, "motion": "zoom_in"},
+      "country_iso_codes": ["UZ"],
+      "events": [],
+      "highlights": [{"word": "dropped", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "NASA satellite measurements",
+      "visual_query": ["dry cracked desert ground", "abandoned rusty ship", "dusty empty landscape"],
+      "must_contain": ["dry"],
+      "reject": ["ocean waves beach"]
+    },
+    {
+      "id": 6,
+      "mode": "map",
+      "voice": "Now rusty ships sit in a sandy desert.",
+      "map": {"focus": "Moynaq", "lat": 43.766, "lon": 59.021, "zoom_level": 8, "motion": "zoom_in"},
+      "country_iso_codes": ["UZ"],
+      "events": [
+        {"type": "pin", "target": "Moynaq", "lat": 43.766, "lon": 59.021, "at_word": "ships"}
+      ],
+      "highlights": [{"word": "rusty", "color": "#22D3EE"}],
+      "sfx_trigger": [],
+      "fact_source": "Moynaq museum records",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    },
+    {
+      "id": 7,
+      "mode": "map",
+      "voice": "Which lost place should I explore next?",
+      "map": {"focus": "Moynaq", "lat": 43.766, "lon": 59.021, "zoom_level": 9, "motion": "zoom_out"},
+      "country_iso_codes": ["UZ", "KZ"],
+      "events": [
+        {"type": "icon", "emoji": "\ud83e\udded", "at_word": "which", "pos": [0.5, 0.28]}
+      ],
+      "highlights": [],
+      "sfx_trigger": [],
+      "fact_source": "-",
+      "visual_query": [],
+      "must_contain": [],
+      "reject": []
+    }
+  ]
+}
