@@ -77,7 +77,7 @@ def run(cfg):
                           "formats_seen": [], "avg_views_top10": 0,
                           "avg_title_len": 0}, "items": []}
 
-    print("== 2/7: LLM skript: 5-fakt listicle (Claude Opus 5.5 -> Gemini zaxira) ==")
+    print("== 2/7: SKRIPT SEED (script_pending.json / script_bank/ — eng kuchli model = Arena agent) ==")
     hist = history.load()
     script = script_gen.write_script(cfg, tr, history.keywords(hist))
     if history.too_similar(script["title"], script["keywords"], hist):

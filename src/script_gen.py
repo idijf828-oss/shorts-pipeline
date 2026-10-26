@@ -1,4 +1,4 @@
-"""2-qadam: MASTER LLM — MAP EXPLAINER (v10, qo'llanma: map-explainer-video).
+"""2-qadam: SKRIPT — SEED BANKASI (v12.1, LLM yo'li butunlay o'chirilgan).
 
 Format: bitta savol ("Why isn't the US annexing Canada?") + 2-3 sabab +
 CTA savol. 45-70 so'z, 15-35s. Vizuallar: satellite xarita asosiy
@@ -13,171 +13,7 @@ import random
 import re
 import unicodedata
 
-from src import llm
-
-# Hikoya temalari (kun+slot bo'yicha aylanadi; trend so'rovlari
-# config'dagi topics ro'yxatidan alohida)
-THEMES = [
-    # v10 aralash mavzular (user: savol + chegara joyi + hayratlanarli fakt)
-    "a geopolitics why-question (why isn't / why doesn't a country do X)",
-    "a strange border place explained (why is this town in two countries?)",
-    "a surprising geography fact (why does a border/river/island look like this?)",
-    "a tiny country or enclave and why it still exists",
-    "an island, sea or river two countries disagree about",
-    "why a border wall, fence or crossing is exactly there",
-    "how geography made a country rich, safe or isolated",
-    "a weird-looking border on the map and the story behind it",
-    "why two countries share one thing (island, mountain, city, port)",
-    "a place that changed countries and why",
-    "why a huge country has almost no coastline or no neighbors",
-    "a map oddity: panhandles, holes and dead-end borders",
-]
-
-# ================= MASTER SYSTEM PROMPT =================
-SYSTEM = """You are the writer-director of a viral geography and
-geopolitics YouTube Shorts channel. Every short answers ONE surprising
-real-world question on a satellite map — "Why isn't the US annexing
-Canada?", "Why is this village in two countries?". One question, two or
-three concrete reasons, one closing line that invites the next question.
-Fast, clear, factual, neutral on political topics. Perfect American
-English — zero typos, zero filler."""
-
-
-
-# ================= MASTER USER PROMPT =================
-PROMPT_TMPL = """Answer ONE surprising question that fits this theme: {theme}.
-The question must be real, answerable with 2-3 concrete geographical or
-historical reasons, and verifiable. Niche: {niche}. Audience: USA,
-English, ages 13-40. Platform: YouTube Shorts (vertical 1080x1920).
-
-{trend_block}
-Recently covered questions/topics (STRICTLY avoid anything similar): {hist}
-{avoid}
-Write a 15-30 SECOND map-explainer short: 45-70 words total,
-6-8 scenes.
-
-NARRATION — FAST EXPLAINER VOICE (150-170 words/min, no pauses wasted):
-- EVERY line MAX 10 words. Short, punchy, everyday American English
-  that a 7-8 year old fully understands — no legal, academic or
-  technical terms, no jargon. Explain like a friendly teacher.
-  BANNED words (never use, never even imply): jurisdiction, contiguous,
-  exclave, enclave, feudal, sovereignty, sovereign, demarcation,
-  cession, irredentist, condominium, estoppel, pursuant, whereas.
-  Use plain equivalents: "control", "next to", "land inside another
-  country", "who rules it", "border line", "gave/sold land".
-- Scene 1 (HOOK, 6-9 words): a complete, natural, grammatical question
-  that names the place — starting with Why/How/What/Where/Who.
-  Examples: "Why isn't the US simply annexing Canada?"
-            "Why does this town sit in two countries?"
-- Scenes 2-6 (REASONS, 7-10 words each): one reason per beat. Concrete
-  facts, real numbers, real names. Natural flow or "First / Second".
-  The strongest reason LAST. Everyday facts a kid knows.
-- Final scene (CLOSE + CTA, 6-10 words): one-line answer summary, then
-  a short question that invites the next video, ending with "?".
-  The CTA must be a COMPLETE, interesting question about the topic
-  (like "Which border would you visit?") — never a filler fragment
-  like "Which strange..." or "Should I explain next?". A kid must be
-  able to answer it in the comments.
-- Every line must be a COMPLETE phrase. Meaningless fragments are
-  banned ("Which strange", "But wait", "And then?").
-- Active voice. Every line adds NEW information. NEVER "did you know",
-  intros, thank-yous, or hype. No exclamation marks.
-- Neutral, factual tone on political topics — explain, never take sides.
-
-VISUALS — SATELLITE MAP is the star (guide style):
-- Most scenes are map scenes: "mode": "map" with focus/lat/lon and
-  zoom_level (3=continent, 5=whole country, 7=region, 9=city).
-  CAMERA STORY (required): every next map scene zooms CLOSER —
-  zoom_level increases scene by scene (3 or 4 first — continent wide;
-  middle scenes 5-7; last map scene 9-11 right on the exact place).
-  The final map scene must sit on the exact place with REAL city-level
-  lat/lon and carry a "pin" event pointing at it.
-  Use AT LEAST 3 DIFFERENT map views across the video (different
-  places, countries or zoom levels — never the same view twice in a
-  row). Vary "motion": "zoom_in", "zoom_out", "pan_left", "pan_right".
-  The camera moves slowly the whole time; topic change = hard cut.
-- Scenes with "flag_fill" use zoom_level 4-7 so the country polygon
-  stays inside the frame (max ~40% of screen).
-- Give each map scene 1-3 "events" from:
-  "flag_fill" target ISO2 — fills the country with its flag texture
-  (use for the 1-2 main countries);
-  "highlight" target ISO2 — cyan ally/ bloc fill;
-  "arrow" dir up/down/left/right — big yellow arrow (pressure, movement);
-  "icon" emoji — one sticker per event: handshake, siren, money bag, rocket, warning sign, checkered flag (use the actual emoji characters);
-  "label" target — a small black name tag on the country (country name);
-  "pin" target <place> lat/lon — red map pin + place name tag at the
-  EXACT point (final reveal scene; use the real coordinates).
-- EXACTLY 1-2 scenes are stock inserts: "mode": "stock" with a SHORT
-  punch line of 3-6 words (the insert lasts <= 2 seconds) and
-  visual_query = 3 hierarchical phrases (2-3 words each) about filmable
-  real-world b-roll (e.g. ["protest crowd street", "angry crowd signs",
-  "demonstration city"]). Subtitles continue over inserts.
-- "highlights": at most 1 keyword per scene, color "#22D3EE" — the
-  word shown BIG and cyan in the subtitles. Pick the punch words.
-
-OUTPUT — ONE JSON object, no markdown, no commentary:
-{{
-  "question": "<the full question>",
-  "place": "<main place or ''>",
-  "country": "<main country or 'US-CA' style pair>",
-  "title": "<<=70 chars, the question, 'Why ...?' pattern>",
-  "headline": "<=30 chars, UPPERCASE short label of the place/topic, e.g. 'POINT ROBERTS' or 'ONE ROAD IN' — shown the WHOLE video, so make it punchy and specific>",
-  "description": "<2-3 sentences>",
-  "pinned_comment": "<CTA question driving comments>",
-  "keywords": ["<place/question keywords>", "..."],
-  "hashtags": ["<3-4 tags like geopolitics, maps, shorts>"],
-  "scenes": [
-    {{
-      "id": 1,
-      "voice": "<hook question, 5-8 words, ends with ?>",
-      "mode": "map",
-      "map": {{"focus": "<place>", "lat": <real lat>, "lon": <real lon>,
-               "zoom_level": <3-9>, "motion": "zoom_in"}},
-      "country_iso_codes": ["<ISO2>", "<ISO2>"],
-      "events": [{{"type": "flag_fill", "target": "US", "at_word": "..."}},
-                 {{"type": "label", "target": "United States", "at_word": "..."}}],
-      "highlights": [{{"word": "<keyword>", "color": "#22D3EE"}}],
-      "sfx_trigger": [],
-      "fact_source": "<credible source>",
-      "visual_query": [],
-      "must_contain": [],
-      "reject": []
-    }},
-    {{ ... scenes 2-6: reasons; 2 of them "mode": "stock" inserts ... }},
-    {{ ... final scene: close + CTA question ... }}
-  ]
-}}
-"""
-
-
 _WORD_LO, _WORD_HI = 45, 70
-
-
-def _pick_theme():
-    """Kun+slot bo'yicha determin tema (3 run/kun har xil)."""
-    now = datetime.datetime.now(datetime.UTC)
-    slot = (now.hour + 1) // 8                 # 3 run/kun: 0/1/2
-    return THEMES[(now.timetuple().tm_yday * 8 + slot) % len(THEMES)]
-
-
-def _build_prompt(cfg, trends, history_kws, avoid_title=""):
-    ch = cfg["channel"]
-    sm = (trends or {}).get("summary", {})
-    tops = sm.get("top_titles", [])[:6]
-    trend_block = ""
-    if tops:
-        trend_block = (f"Trending in this niche (US, last "
-                       f"{cfg['sources']['days_back']} days):\n"
-                       + "\n".join(f"- {t['title']} ({t['views']:,} views)"
-                                   for t in tops))
-    theme = _pick_theme()
-    hist = ", ".join(history_kws[-20:]) if history_kws else "(none yet)"
-    avoid = (f"DO NOT use the place from this already-generated title "
-             f"today: {avoid_title}\n" if avoid_title else "")
-    prompt = PROMPT_TMPL.format(theme=theme, niche=ch["niche"],
-                                trend_block=trend_block, hist=hist,
-                                avoid=avoid)
-    return prompt, theme
 
 
 def _as_list(v):
@@ -693,7 +529,7 @@ def _use_pending_script(cfg):
     va KEYINGI seed siniladi — bitta yomon seed butun runni o'ldirmaydi.
 
     Hamma narsa tugasa: run JIMGINA to'xtaydi (exit 0) — TG xato
-    spami yo'q. Anthropic kaliti KERAK EMAS (user 2026-10-25): eng
+    spami yo'q. LLM yo'li BUTUNLAY O'CHIRILGAN (user 2026-10-26): eng
     kuchli model = Arena agent, skriptlarni shu mexanizm orqali o'zi
     yozadi."""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -774,51 +610,11 @@ def write_script(cfg, trends, history_kws, avoid_title=""):
     seed = _use_pending_script(cfg)
     if seed is not None:
         return seed
-    prompt, cands = _build_prompt(cfg, trends, history_kws, avoid_title)
-    print(f"   tema: {cands} [{llm.provider(cfg)}]")
-    last_err, last_raw = None, None
-    p = prompt
-    for attempt in range(3):
-        try:
-            raw = llm.chat(cfg, SYSTEM, p, json_mode=True, timeout=150)
-        except Exception as e:
-            raise RuntimeError(f"Skript yozib bo'lmadi: {e}")
-        try:
-            data = _parse(raw, strict_insert=(attempt < 2))
-            # v10.2 (user #3/#4): geo va oddiylik lintlari — feedback
-            # bilan qayta urinishga tushadi (aks holda run o'limi yo'q).
-            gerrs = _geo_check(data, cfg)
-            if gerrs:
-                raise ValueError("; ".join(gerrs[:2]))
-            serrs = _simple_check(data)
-            if serrs:
-                raise ValueError("; ".join(serrs[:2]))
-            data["_topic"] = data.get("place") or data.get("country") \
-                or cands
-            _auto_pin(data, cfg)
-            return data
-        except Exception as e:
-            last_err, last_raw = e, raw
-            print(f"[script] urinish {attempt + 1}: {str(e)[:140]}")
-            # v10.1f: keyingi urinishga ANIQ xato feedback (run 26/27:
-            # bir xil prompt bilan LLM xatosini tuzatmaydi)
-            p = (prompt + "\n\nIMPORTANT: your previous JSON was rejected: "
-                 f"{e}. Rewrite the full JSON fixing exactly this issue "
-                 "and keep every other requirement above.")
-    # zaxira: oxirgi javobni yumshoq oynada qabul qilamiz
-    if last_raw:
-        try:
-            data = _parse_relaxed(last_raw)
-            data["_topic"] = data.get("place") or data.get("country") \
-                or cands
-            gerrs = _geo_check(data, cfg)
-            serrs = _simple_check(data)
-            if gerrs or serrs:
-                print("[script] OGOHLANTIRISH (relaxed): "
-                      + "; ".join((gerrs + serrs)[:3]))
-            _auto_pin(data, cfg)
-            print("[script] zaxira oyna (150-190 so'z) bilan qabul qilindi")
-            return data
-        except Exception:
-            pass
-    raise RuntimeError(f"Skript yozib bo'lmadi: {last_err}")
+    # v12.1 (user 2026-10-26): LLM yo'li BUTUNLAY O'CHIRILGAN.
+    # Skript faqat seed bankadan. _use_pending_script banka bo'sh
+    # bo'lganda exit(0) qiladi, shuning uchun bu joy amalda
+    # erishilmaydi — himoya sifatida qoldirildi.
+    raise RuntimeError(
+        "Skript topilmadi: script_bank/ bo'sh (Arena agent seed "
+        "yozmagan). Bu holatda run allaqachon exit(0) bilan "
+        "jimgina tugagan bo'lishi kerak — LLM yo'li mavjud emas.")

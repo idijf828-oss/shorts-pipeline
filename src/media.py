@@ -224,7 +224,7 @@ def _green_frac(jpg):
 
 
 def _vision_check(cfg, jpg, scene_voice):
-    """LLM vision (Claude -> Gemini zanjiri): kadr sahnaga mosmi?
+    """LLM vision (faqat Gemini zaxira): kadr sahnaga mosmi?
     True/False/None (bilmaymiz)."""
     try:
         from src import llm
