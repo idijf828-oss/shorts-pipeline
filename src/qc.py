@@ -625,31 +625,50 @@ def run_checks(path, cfg=None, work=None):
 
     # v13 (user 3-A): LOOP rejimi — oxirgi kadr ≈ birinchi kadr
     # (faqat render_meta.json ending_mode=loop bo'lsa; boshqa holda skip)
+    # v13.2 (user 4-tuzatish): geokod nuqta davlat poligonida (render_meta)
     try:
         meta_p = os.path.join(work, "render_meta.json")
+        meta = {}
         if os.path.isfile(meta_p):
             meta = json.load(open(meta_p, encoding="utf-8"))
-            if str(meta.get("ending_mode")) == "loop":
-                f0 = os.path.join(work, "qc_loop_first.jpg")
-                fn = os.path.join(work, "qc_loop_last.jpg")
-                _frame(path, 0.0, f0)
-                # konteyner davomiyligi video oqimidan uzun bo'lishi mumkin
-                # (audio tail) — oxirgi HAQIQIY kadrni topguncha orqaga
-                last_ok = False
-                for _dt in (0.04, 0.10, 0.20, 0.35):
-                    if _frame(path, max(0.0, dur - _dt), fn):
-                        last_ok = True
-                        break
-                if not last_ok:
-                    raise RuntimeError("oxirgi kadr olinmadi")
-                from PIL import Image as _I
-                a = _I.open(f0).convert("L").resize((270, 480))
-                b = _I.open(fn).convert("L").resize((270, 480))
-                pa, pb = list(a.getdata()), list(b.getdata())
-                diff = sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa)
-                checks.append(("LOOP oxirgi kadr≈birinchi kadr (tutash)",
-                               diff < 10.0,
-                               f"o'rtacha farq {diff:.1f}/255"))
+        if str(meta.get("ending_mode")) == "loop":
+            f0 = os.path.join(work, "qc_loop_first.jpg")
+            fn = os.path.join(work, "qc_loop_last.jpg")
+            _frame(path, 0.0, f0)
+            # konteyner davomiyligi video oqimidan uzun bo'lishi mumkin
+            # (audio tail) — oxirgi HAQIQIY kadrni topguncha orqaga
+            last_ok = False
+            for _dt in (0.04, 0.10, 0.20, 0.35):
+                if _frame(path, max(0.0, dur - _dt), fn):
+                    last_ok = True
+                    break
+            if not last_ok:
+                raise RuntimeError("oxirgi kadr olinmadi")
+            from PIL import Image as _I
+            a = _I.open(f0).convert("L").resize((270, 480))
+            b = _I.open(fn).convert("L").resize((270, 480))
+            pa, pb = list(a.getdata()), list(b.getdata())
+            diff = sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa)
+            checks.append(("LOOP oxirgi kadr≈birinchi kadr (tutash)",
+                           diff < 10.0,
+                           f"o'rtacha farq {diff:.1f}/255"))
+        _geo_pt = meta.get("geocode")
+        _geo_isos = meta.get("country_iso") or []
+        if _geo_pt and _geo_isos:
+            from src import geo as _g
+            _la, _lo = float(_geo_pt[0]), float(_geo_pt[1])
+            _r = [_g.point_in_country(c, _lo, _la) for c in _geo_isos]
+            if any(v is True for v in _r):
+                checks.append(("geokod nuqta davlat poligonida", True,
+                               f"{_la:.3f}, {_lo:.3f} ∈ {_geo_isos}"))
+            elif _g.point_on_land(_lo, _la):
+                checks.append(("geokod nuqta davlat poligonida", False,
+                               f"({_la:.3f}, {_lo:.3f}) {_geo_isos} "
+                               "poligonlarida emas — noto'g'ri geokod?"))
+            else:
+                checks.append(("geokod nuqta davlat poligonida", True,
+                               "tekshirilmadi (orol/okean — poligon "
+                               f"yetmaydi): {_la:.3f}, {_lo:.3f}"))
     except Exception:
         pass
 

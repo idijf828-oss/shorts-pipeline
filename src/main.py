@@ -154,7 +154,7 @@ def run(cfg):
                         build_description(cfg, script),
                         build_tags(cfg, script))
     history.add(script["title"], script["keywords"], vid,
-                clips=sorted(used_ids))
+                clips=sorted(used_ids), ending_mode=script.get("_ending"))
     pc = script.get("pinned_comment") or ""
     telegram.send_message(
         cfg, f"✅ Yuklandi: {script['title']}\nhttps://youtu.be/{vid}\n"

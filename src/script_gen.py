@@ -271,6 +271,24 @@ def _parse(raw, strict_insert=True, ending="cta"):
     if not re.match(r"^(Why|How|What|Where|Who|When|Which|Is|Are|Do|Does|Did"
                     r"|Can|Could|Would|Will)\b", segs[0]["voice"].strip()):
         raise ValueError("hook Why/How/What/... bilan boshlanishi kerak")
+    # v13.2 (user 3-tuzatish, 2026-10-26): ending endi navbatma-navbat
+    # (50/50) keladi — seed IKKALA rejimni qo'llashi shart. loop_line
+    # bo'lsa S7 o'sha gapga almashtiriladi ('...And that is why.'
+    # ko'prigi bilan hook'ga uzluksiz ulanadi).
+    if ending == "loop" and str(data.get("loop_line") or "").strip():
+        ll = re.sub(r"\s+", " ", str(data["loop_line"])).strip()
+        if not re.search(r"\bwhy\s*[.!]?\s*$", ll.lower()):
+            ll = ll.rstrip(" .!?") + ". And that is why."
+        segs[-1]["voice"] = ll
+        err = _lint_voice(ll, len(segs) - 1)
+        if err:
+            raise ValueError(err)
+        # pin/label so'zi yangi gapda yo'q bo'lsa birinchi so'zga o'tadi
+        words_ll = {w.lower().strip(".,!?") for w in ll.split()}
+        for e in segs[-1].get("events", []):
+            aw = str(e.get("at_word") or "").lower().strip(".,!?")
+            if aw and aw not in words_ll:
+                e["at_word"] = ll.split()[0].lower().strip(".,!?")
     if ending == "loop":
         last_v = str(segs[-1]["voice"]).strip()
         if "?" in last_v:
@@ -423,6 +441,30 @@ def _geo_check(data, cfg):
     if g:
         plat, plon, ptype = g
         data["_place_geo"] = {"lat": plat, "lon": plon}
+        # v13.2 (user 4-tuzatish): render_meta/qc uchun geokod saqlanadi
+        data["_geocode"] = [round(plat, 6), round(plon, 6)]
+        # v13.2 (user 4-tuzatish): geokod nuqta seed davlatlari
+        # poligonida bo'lishi kerak (Hashima->Gifu, Darvaza->UZ,
+        # Lalibela->NYC kabi xatolar ushlanadi; orol/okean nuqtalari
+        # poligon yetmasligi sababli o'tkazib yuboriladi)
+        try:
+            from . import geo as _geo
+            _isos = set()
+            if str(data.get("country") or "").strip():
+                _isos.add(str(data["country"]).upper()[:2])
+            for sc in data.get("scenes", []):
+                for c in (sc.get("country_iso_codes") or []):
+                    _isos.add(str(c).upper()[:2])
+            _res = [_geo.point_in_country(c, plon, plat)
+                    for c in sorted(_isos)]
+            if _isos and not any(r is True for r in _res):
+                if _geo.point_on_land(plon, plat):
+                    errs.append(
+                        f"geokod nuqta ({plat:.3f}, {plon:.3f}) seed "
+                        f"davlatlari {sorted(_isos)} poligonida emas — "
+                        "noto'g'ri geokod bo'lishi mumkin")
+        except Exception as _e:
+            print(f"[geo] poligon tekshiruvi o'tkazildi: {_e}")
         import math
 
         def dist_km(la, lo):
@@ -571,6 +613,21 @@ def _auto_pin(data, cfg):
                     "lat": pg["lat"], "lon": pg["lon"], "at_word": at})
 
 
+def _next_ending(hist):
+    """v13.2 (user 3-tuzatish): loop/cta navbatma-navbat (50/50 A/B).
+
+    history'dagi OXIRGI ending'ga qarab teskarisini qaytaradi;
+    yozuv yo'q bo'lsa "loop" (A/B boshlanishi). Xato bo'sa None."""
+    try:
+        for e in reversed(hist or []):
+            if e.get("ending_mode"):
+                return ("cta" if str(e["ending_mode"]) == "loop"
+                        else "loop")
+        return "loop"
+    except Exception:
+        return None
+
+
 def _use_pending_script(cfg):
     """v10.2: script_pending.json — kuchli model (Arena agent) SEED'i.
     v12 (user 2026-10-26: 'doimiy ishlaydigan qil'): SEED BANKASI —
@@ -617,12 +674,10 @@ def _use_pending_script(cfg):
         try:
             with open(src, encoding="utf-8") as f:
                 raw = f.read()
-            ending = None
-            try:
-                ending = str(json.loads(raw).get("ending_mode")
-                             or "").strip() or None
-            except Exception:
-                ending = None
+            # v13.2 (user 3-tuzatish, 2026-10-26): loop/cta NAVBATMA-NAVBAT
+            # (50/50 A/B) — history'dagi oxirgi ending'ga qaraganda;
+            # seed'dagi ending_mode endi HISOBGA OLINMAYDI.
+            ending = _next_ending(hist)
             if ending not in ("cta", "loop"):
                 ending = str((cfg.get("behavior") or {})
                              .get("ending_mode") or "cta").strip()

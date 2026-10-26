@@ -245,7 +245,7 @@
   {
    "id": 7,
    "mode": "map",
-   "voice": "Midnight splits the two islands. And that is why.",
+   "voice": "Would you cross between these two islands?",
    "map": {
     "focus": "",
     "lat": 65.6,
@@ -273,5 +273,5 @@
    "reject": []
   }
  ],
- "ending_mode": "loop"
+ "loop_line": "Midnight splits the two islands. And that is why."
 }

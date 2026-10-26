@@ -63,10 +63,10 @@ audio:
   tail_pad: 0.5                    # video = ovoz + 0.5s (doc C3)
 
 behavior:
-  dry_run: false
-  ending_mode: "cta"               # v13 (user 3-A): "cta" (savol bilan tugash)
-                                   # yoki "loop" (oxiri hook'ga uzluksiz ulanadi;
-                                   # seed'dagi ending_mode ustuvor)                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)
+  dry_run: false                  # true = render qiladi, YouTube'ga YUKLAMAYDI (test uchun)
+  ending_mode: "cta"               # v13.2: FAQAT ZAXIRA (history o'qilmasa).
+                                   # Asosiy: loop/cta navbatma-navbat (50/50),
+                                   # history'dagi oxirgi ending'ga qarab.
   privacy_status: "private"       # API audit o'tgunicha faqat "private" ishlaydi
   telegram_approval_timeout_min: 120   # Tasdiq kutiladigan vaqt (Actions job 6 soatgacha yuradi)
   schedule_cron: "0 3,11,19 * * *"  # 3 run/kun (UTC). Tashkent: 08/16/24

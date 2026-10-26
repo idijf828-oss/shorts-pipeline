@@ -271,5 +271,6 @@
    "reject": []
   }
  ],
- "hook": "Why does this waterfall never touch the ground?"
+ "hook": "Why does this waterfall never touch the ground?",
+ "loop_line": "The falls never quite land. And that is why."
 }

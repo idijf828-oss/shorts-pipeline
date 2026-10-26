@@ -271,5 +271,6 @@
    "reject": []
   }
  ],
- "hook": "Why are traffic lights banned in this capital?"
+ "hook": "Why are traffic lights banned in this capital?",
+ "loop_line": "The city still flows calmly. And that is why."
 }

@@ -561,8 +561,18 @@ def render(cfg, script, items, work):
                 or "cta")
     try:
         import json as _jm
+        # v13.2 (user 4-tuzatish): geokod + davlatlar ham metaga —
+        # qc.py poligon tekshiruvi uchun
+        _isos = set()
+        if str(script.get("country") or "").strip():
+            _isos.add(str(script["country"]).upper()[:2])
+        for _sc in (script.get("scenes") or []):
+            for _c in (_sc.get("country_iso_codes") or []):
+                _isos.add(str(_c).upper()[:2])
         with open(os.path.join(work, "render_meta.json"), "w") as f:
-            _jm.dump({"ending_mode": _mode}, f)
+            _jm.dump({"ending_mode": _mode,
+                      "geocode": script.get("_geocode"),
+                      "country_iso": sorted(_isos)}, f, indent=1)
     except Exception:
         pass
     if _mode == "loop":

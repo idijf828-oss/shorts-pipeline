@@ -65,13 +65,17 @@ def too_similar(new_title, new_keywords, entries, title_thresh=0.55,
     return False
 
 
-def add(title, keywords_list, video_id="", clips=None):
+def add(title, keywords_list, video_id="", clips=None, ending_mode=None):
     entries = load()
-    entries.append({
+    entry = {
         "date": datetime.datetime.now(datetime.UTC).isoformat(),
         "title": title,
         "keywords": keywords_list,
         "video_id": video_id,
         "clips": sorted(set(clips or []))[:60],
-    })
+    }
+    # v13.2 (user 3-tuzatish): loop/cta A/B — har videoga yoziladi
+    if ending_mode:
+        entry["ending_mode"] = str(ending_mode)
+    entries.append(entry)
     save(entries)

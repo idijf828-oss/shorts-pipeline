@@ -243,7 +243,7 @@
   {
    "id": 7,
    "mode": "map",
-   "voice": "Nothing else glows like this. And that is why.",
+   "voice": "Which natural wonder would you see at night?",
    "map": {
     "focus": "",
     "lat": -8.058,
@@ -271,5 +271,5 @@
    "reject": []
   }
  ],
- "ending_mode": "loop"
+ "loop_line": "Nothing else glows like this. And that is why."
 }

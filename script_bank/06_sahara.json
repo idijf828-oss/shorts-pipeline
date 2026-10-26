@@ -235,7 +235,7 @@
   {
    "id": 7,
    "mode": "map",
-   "voice": "Sand really can cross an ocean. And that is why.",
+   "voice": "Which weird weather should I explain next?",
    "map": {
     "focus": "",
     "lat": 28.29,
@@ -263,5 +263,5 @@
    "reject": []
   }
  ],
- "ending_mode": "loop"
+ "loop_line": "Sand really can cross an ocean. And that is why."
 }
