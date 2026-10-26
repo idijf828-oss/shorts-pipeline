@@ -600,7 +600,9 @@ def _loop_tail(out, work, fade=0.55):
             print("[render] loop: birinchi kadr olinmadi — o'tkazildi")
             return out
         tmp = os.path.join(work, "final_loop.mp4")
-        st = max(0.0, dur - fade)
+        # fade OXIRGI KO'RSATILGAN kadrgacha tugasin (dur - ~2 kadr):
+        # aks holda oxirgi kadr ~94% xolida qolib, QC diff ~12/255 chiqadi
+        st = max(0.0, dur - fade - 0.07)
         fc = ("[1:v]format=rgba,fade=t=in:st=%.3f:d=%.3f:alpha=1[fg];"
               "[0:v][fg]overlay=0:0" % (st, fade))
         r2 = subprocess.run(
