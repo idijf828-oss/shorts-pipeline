@@ -1,0 +1,274 @@
+{
+ "question": "Why has this fire burned for over fifty years?",
+ "place": "Darvaza Gas Crater",
+ "country": "TM",
+ "title": "Why Has This Fire Burned for Over Fifty Years?",
+ "headline": "DOOR TO HELL",
+ "description": "A desert crater that has burned nonstop since 1971.",
+ "pinned_comment": "Would you spend a night beside it?",
+ "keywords": [
+  "darvaza gas crater",
+  "gates of hell turkmenistan",
+  "burning crater",
+  "door to hell"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#desert"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why has this fire burned for over fifty years?",
+   "map": {
+    "focus": "",
+    "lat": 40.2,
+    "lon": 58.4,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔥",
+     "at_word": "fire",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "fifty",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "field reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "It glows in the middle of a desert.",
+   "map": {
+    "focus": "",
+    "lat": 40.23,
+    "lon": 58.42,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "TM",
+     "at_word": "desert"
+    },
+    {
+     "type": "label",
+     "target": "Turkmenistan",
+     "at_word": "desert"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "glows",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "travel reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Scientists lit it by accident long ago.",
+   "map": {
+    "focus": "",
+    "lat": 40.24,
+    "lon": 58.43,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🧪",
+     "at_word": "accident",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "accident",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "soviet archives",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "The ground collapsed into a burning pit.",
+   "map": {
+    "focus": "",
+    "lat": 40.248,
+    "lon": 58.438,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "collapsed",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "expedition reports",
+   "visual_query": [
+    "burning gas crater fire",
+    "desert fire night",
+    "glowing crater flames"
+   ],
+   "must_contain": [
+    "fire"
+   ],
+   "reject": [
+    "forest"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Gas still feeds the flames today.",
+   "map": {
+    "focus": "",
+    "lat": 40.25,
+    "lon": 58.44,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💨",
+     "at_word": "gas",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "feeds",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geology surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Locals gave it a frightening name.",
+   "map": {
+    "focus": "",
+    "lat": 40.251,
+    "lon": 58.4395,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "😱",
+     "at_word": "frightening",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "name",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "local folklore",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Would you spend a night beside it?",
+   "map": {
+    "focus": "",
+    "lat": 40.2512,
+    "lon": 58.4398,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "TM"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Darvaza",
+     "lat": 40.2512,
+     "lon": 58.4398,
+     "at_word": "beside"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

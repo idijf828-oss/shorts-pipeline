@@ -1,0 +1,274 @@
+{
+ "question": "Why were these churches carved upside down?",
+ "place": "Lalibela, Ethiopia",
+ "country": "ET",
+ "title": "Why Were These Churches Carved Upside Down?",
+ "headline": "INVERTED TEMPLES",
+ "description": "Churches dug straight down into the rock.",
+ "pinned_comment": "Which wonder of building amazes you?",
+ "keywords": [
+  "lalibela",
+  "rock churches ethiopia",
+  "lalibela churches",
+  "carved from rock"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#ethiopia"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why were these churches carved upside down?",
+   "map": {
+    "focus": "",
+    "lat": 12.0,
+    "lon": 39.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛪",
+     "at_word": "churches",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "upside",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "archaeology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Ethiopia built them eight hundred years ago.",
+   "map": {
+    "focus": "",
+    "lat": 12.01,
+    "lon": 39.03,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "ET",
+     "at_word": "Ethiopia"
+    },
+    {
+     "type": "label",
+     "target": "Ethiopia",
+     "at_word": "Ethiopia"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "hundred",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Workers dug straight into solid rock.",
+   "map": {
+    "focus": "",
+    "lat": 12.02,
+    "lon": 39.04,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛏️",
+     "at_word": "dug",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "dug",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "construction studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "The roofs sit level with the ground.",
+   "map": {
+    "focus": "",
+    "lat": 12.029,
+    "lon": 39.041,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "level",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "site surveys",
+   "visual_query": [
+    "lalibela rock church",
+    "stone church carved",
+    "ethiopia church aerial"
+   ],
+   "must_contain": [
+    "church"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Tunnels and trenches link them all.",
+   "map": {
+    "focus": "",
+    "lat": 12.031,
+    "lon": 39.0418,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚪",
+     "at_word": "Tunnels",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Tunnels",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "site surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Pilgrims still walk these deep trenches.",
+   "map": {
+    "focus": "",
+    "lat": 12.0315,
+    "lon": 39.042,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🧑‍ﾞ‍╒╕╕╞╰╰",
+     "at_word": "Pilgrims",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Pilgrims",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which wonder of building amazes you?",
+   "map": {
+    "focus": "",
+    "lat": 12.0325,
+    "lon": 39.0435,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "ET"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Lalibela",
+     "lat": 12.0325,
+     "lon": 39.0435,
+     "at_word": "amazes"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

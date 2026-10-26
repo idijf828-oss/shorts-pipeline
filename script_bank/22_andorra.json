@@ -1,0 +1,280 @@
+{
+ "question": "Why does this country have no airport?",
+ "place": "Andorra la Vella",
+ "country": "AD",
+ "title": "Why Has This Tiny Nation Never Built an Airport?",
+ "headline": "PYRENEES TRAP",
+ "description": "A whole country with no runway of its own.",
+ "pinned_comment": "Which mountain country would you visit?",
+ "keywords": [
+  "andorra",
+  "andorra la vella",
+  "country no airport",
+  "pyrenees countries"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#europe"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why has this tiny nation never built an airport?",
+   "map": {
+    "focus": "",
+    "lat": 42.5,
+    "lon": 1.5,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AD"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🛫",
+     "at_word": "airport",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "airport",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "transport maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "It sits high between France and Spain.",
+   "map": {
+    "focus": "",
+    "lat": 42.4,
+    "lon": 1.6,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AD",
+    "FR",
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "label",
+     "target": "France",
+     "at_word": "France"
+    },
+    {
+     "type": "label",
+     "target": "Spain",
+     "at_word": "Spain"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "between",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Mountains wall in every single road.",
+   "map": {
+    "focus": "",
+    "lat": 42.48,
+    "lon": 1.55,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "AD",
+    "FR",
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛰️",
+     "at_word": "Mountains",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Mountains",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "road maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Villages cling to steep green valleys.",
+   "map": {
+    "focus": "",
+    "lat": 42.5,
+    "lon": 1.52,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AD"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "valleys",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "travel guides",
+   "visual_query": [
+    "pyrenees mountain village",
+    "andorra winter snow town",
+    "narrow mountain road europe"
+   ],
+   "must_contain": [
+    "mountain"
+   ],
+   "reject": [
+    "beach"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Building one here would cost too much.",
+   "map": {
+    "focus": "",
+    "lat": 42.505,
+    "lon": 1.518,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AD"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "AD",
+     "at_word": "here"
+    },
+    {
+     "type": "label",
+     "target": "Andorra",
+     "at_word": "here"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "much",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "engineering estimates",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Travelers arrive by bus or by car.",
+   "map": {
+    "focus": "",
+    "lat": 42.506,
+    "lon": 1.516,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AD"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚌",
+     "at_word": "bus",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "bus",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "transport reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which mountain country would you visit?",
+   "map": {
+    "focus": "",
+    "lat": 42.508,
+    "lon": 1.521,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "AD"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Andorra la Vella",
+     "lat": 42.508,
+     "lon": 1.521,
+     "at_word": "visit"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why has this tiny nation never built an airport?"
+}

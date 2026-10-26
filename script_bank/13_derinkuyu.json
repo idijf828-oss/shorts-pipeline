@@ -1,0 +1,274 @@
+{
+ "question": "Why did twenty thousand people live underground?",
+ "place": "Derinkuyu",
+ "country": "TR",
+ "title": "Why Did Twenty Thousand People Live Underground?",
+ "headline": "HIDDEN CITY",
+ "description": "An entire town buried beneath the ground.",
+ "pinned_comment": "Which buried place would you explore?",
+ "keywords": [
+  "derinkuyu",
+  "underground city turkey",
+  "cappadocia hidden city",
+  "ancient underground"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#turkey"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why did twenty thousand people live underground?",
+   "map": {
+    "focus": "",
+    "lat": 38.4,
+    "lon": 34.7,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛏️",
+     "at_word": "underground",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "thousand",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "archaeology papers",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Turkey hides a town beneath the soil.",
+   "map": {
+    "focus": "",
+    "lat": 38.38,
+    "lon": 34.72,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "TR",
+     "at_word": "Turkey"
+    },
+    {
+     "type": "label",
+     "target": "Turkey",
+     "at_word": "Turkey"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "beneath",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "archaeology papers",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Eighteen levels spiral into solid rock.",
+   "map": {
+    "focus": "",
+    "lat": 38.37,
+    "lon": 34.73,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌀",
+     "at_word": "spiral",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "levels",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "site surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Families sheltered there from danger above.",
+   "map": {
+    "focus": "",
+    "lat": 38.373,
+    "lon": 34.732,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "danger",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [
+    "cappadocia cave tunnels",
+    "underground tunnel stone",
+    "ancient stone corridor"
+   ],
+   "must_contain": [
+    "tunnel"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "It had wells, stables, and even churches.",
+   "map": {
+    "focus": "",
+    "lat": 38.3735,
+    "lon": 34.733,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛱️",
+     "at_word": "wells",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "churches",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "site surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Air shafts kept the deep rooms fresh.",
+   "map": {
+    "focus": "",
+    "lat": 38.3735,
+    "lon": 34.7335,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌫️",
+     "at_word": "shafts",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "fresh",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "engineering studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which buried place would you explore?",
+   "map": {
+    "focus": "",
+    "lat": 38.3738,
+    "lon": 34.734,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "TR"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Derinkuyu",
+     "lat": 38.3738,
+     "lon": 34.734,
+     "at_word": "explore"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

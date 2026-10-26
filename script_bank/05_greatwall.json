@@ -1,9 +1,9 @@
 {
- "question": "Why did they build this giant wall?",
+ "question": "Why did this wall take 2,000 years?",
  "place": "Badaling",
  "country": "CN",
- "title": "Why Did They Build This Giant Wall?",
- "headline": "GREAT WALL",
+ "title": "Why Did This Wall Take 2,000 Years?",
+ "headline": "STONE DRAGON",
  "description": "The longest wall on Earth, built by hand across mountains and deserts.",
  "pinned_comment": "Which old wonder should I explain next?",
  "keywords": [
@@ -22,7 +22,7 @@
   {
    "id": 1,
    "mode": "map",
-   "voice": "Why did they build this giant wall?",
+   "voice": "Why did this wall take 2,000 years?",
    "map": {
     "focus": "",
     "lat": 40.0,

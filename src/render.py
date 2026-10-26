@@ -555,6 +555,58 @@ def render(cfg, script, items, work):
     out = os.path.join(work, "final.mp4")
     _mix_music(cfg, joined, out)
     _verify(out, cfg)
+    # v13 (user 3-A): seamless LOOP tugishi + qc uchun meta
+    _mode = str(script.get("_ending")
+                or (cfg.get("behavior") or {}).get("ending_mode")
+                or "cta")
+    try:
+        import json as _jm
+        with open(os.path.join(work, "render_meta.json"), "w") as f:
+            _jm.dump({"ending_mode": _mode}, f)
+    except Exception:
+        pass
+    if _mode == "loop":
+        out = _loop_tail(out, work)
+    return out
+
+
+def _loop_tail(out, work, fade=0.55):
+    """v13 (user 3-A): seamless loop — oxirgi `fade` sekundda kadr
+    BIRINCHI kadrga silliq o'tadi (alpha fade). Davomiylik va audio
+    tail (0.30s) O'ZGARMAYDI; cheksiz takrorlashda tutash nuqta
+    ko'rinmaydi: "...and that is why." -> "Why can't anyone...?"."""
+    try:
+        r = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "csv=p=0", out], capture_output=True, text=True,
+            timeout=30)
+        dur = float(r.stdout.strip())
+        f0 = os.path.join(work, "loop_f0.png")
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-i", out,
+             "-vf", "select=eq(n\\,0)", "-frames:v", "1", f0],
+            capture_output=True, timeout=60)
+        if not os.path.exists(f0):
+            print("[render] loop: birinchi kadr olinmadi — o'tkazildi")
+            return out
+        tmp = os.path.join(work, "final_loop.mp4")
+        st = max(0.0, dur - fade)
+        fc = ("[1:v]format=rgba,fade=t=in:st=%.3f:d=%.3f:alpha=1[fg];"
+              "[0:v][fg]overlay=0:0" % (st, fade))
+        r2 = subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-i", out,
+             "-loop", "1", "-t", "%.3f" % dur, "-i", f0,
+             "-filter_complex", fc, "-c:v", "libx264", "-preset", "medium",
+             "-crf", CRF, "-c:a", "copy", "-movflags", "+faststart", tmp],
+            capture_output=True, text=True, timeout=300)
+        if r2.returncode == 0 and os.path.getsize(tmp) > 10000:
+            os.replace(tmp, out)
+            print(f"[render] LOOP tugishi: oxirgi {fade}s birinchi kadrga "
+                  "silliq o'tdi")
+        else:
+            print("[render] loop xatosi:", (r2.stderr or "")[-200:])
+    except Exception as e:
+        print("[render] loop o'tkazib yuborildi:", e)
     return out
 
 

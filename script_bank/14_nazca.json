@@ -1,0 +1,274 @@
+{
+ "question": "Why can these drawings only be seen from the sky?",
+ "place": "Nazca",
+ "country": "PE",
+ "title": "Why Can These Drawings Only Be Seen From the Sky?",
+ "headline": "GIANT LINES",
+ "description": "Giant desert figures drawn for no one on the ground.",
+ "pinned_comment": "Who really made these shapes long ago?",
+ "keywords": [
+  "nazca lines",
+  "peru geoglyphs",
+  "nazca desert mystery",
+  "ancient desert drawings"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#peru"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why can these drawings only be seen from the sky?",
+   "map": {
+    "focus": "",
+    "lat": -14.7,
+    "lon": -75.1,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "✈️",
+     "at_word": "sky",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "sky",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "archaeology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Peru's desert holds massive ground pictures.",
+   "map": {
+    "focus": "",
+    "lat": -14.73,
+    "lon": -75.12,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "PE",
+     "at_word": "desert"
+    },
+    {
+     "type": "label",
+     "target": "Peru",
+     "at_word": "desert"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "massive",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "archaeology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "A monkey, a spider, and a hummingbird.",
+   "map": {
+    "focus": "",
+    "lat": -14.74,
+    "lon": -75.13,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🐒",
+     "at_word": "monkey",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "monkey",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "site surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Each shape stretches longer than a football field.",
+   "map": {
+    "focus": "",
+    "lat": -14.742,
+    "lon": -75.135,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "longer",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "measurement reports",
+   "visual_query": [
+    "nazca lines aerial",
+    "desert aerial geometric",
+    "peru desert from above"
+   ],
+   "must_contain": [
+    "desert"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "They were scratched out two thousand years ago.",
+   "map": {
+    "focus": "",
+    "lat": -14.745,
+    "lon": -75.138,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🧱",
+     "at_word": "scratched",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "thousand",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "dating studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "From the ground they look like nothing.",
+   "map": {
+    "focus": "",
+    "lat": -14.747,
+    "lon": -75.14,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🤷",
+     "at_word": "nothing",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "nothing",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Who really made these shapes long ago?",
+   "map": {
+    "focus": "",
+    "lat": -14.7485,
+    "lon": -75.142,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "PE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Nazca",
+     "lat": -14.7485,
+     "lon": -75.142,
+     "at_word": "shapes"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

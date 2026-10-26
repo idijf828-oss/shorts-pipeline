@@ -1,0 +1,275 @@
+{
+ "question": "Why can no one climb this rock anymore?",
+ "place": "Uluru",
+ "country": "AU",
+ "title": "Why Is This Famous Climb Now Banned?",
+ "headline": "HANDS OFF",
+ "description": "The famous climb that closed forever.",
+ "pinned_comment": "Which natural wonder should stay protected?",
+ "keywords": [
+  "uluru",
+  "ayers rock",
+  "uluru climbing ban",
+  "sacred rock australia"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#australia"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is this famous climb now banned?",
+   "map": {
+    "focus": "",
+    "lat": -25.3,
+    "lon": 131.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🧗",
+     "at_word": "climb",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "climb",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park announcements",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Australia's red center holds this huge stone.",
+   "map": {
+    "focus": "",
+    "lat": -25.32,
+    "lon": 131.01,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "AU",
+     "at_word": "Australia"
+    },
+    {
+     "type": "label",
+     "target": "Australia",
+     "at_word": "Australia"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "huge",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "For years, tourists walked straight up it.",
+   "map": {
+    "focus": "",
+    "lat": -25.33,
+    "lon": 131.02,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚶",
+     "at_word": "tourists",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "tourists",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "tourism records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "The climb damaged the fragile surface.",
+   "map": {
+    "focus": "",
+    "lat": -25.34,
+    "lon": 131.025,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "fragile",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park studies",
+   "visual_query": [
+    "uluru rock aerial",
+    "red desert monolith",
+    "australia outback sunset"
+   ],
+   "must_contain": [
+    "rock"
+   ],
+   "reject": [
+    "city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Its owners asked visitors to stop.",
+   "map": {
+    "focus": "",
+    "lat": -25.34,
+    "lon": 131.03,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🤛",
+     "at_word": "owners",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "owners",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "board decisions",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "In 2019, the path closed forever.",
+   "map": {
+    "focus": "",
+    "lat": -25.345,
+    "lon": 131.032,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚫",
+     "at_word": "closed",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "closed",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park announcements",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which natural wonder should stay protected?",
+   "map": {
+    "focus": "",
+    "lat": -25.3475,
+    "lon": 131.034,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "AU"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Uluru",
+     "lat": -25.3475,
+     "lon": 131.034,
+     "at_word": "protected"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why is this famous climb now banned?"
+}

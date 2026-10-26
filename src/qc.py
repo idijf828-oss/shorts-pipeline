@@ -623,9 +623,40 @@ def run_checks(path, cfg=None, work=None):
     except Exception as e:
         checks.append(("V2 kadr tekshiruvi", False, f"xato: {e}"))
 
+    # v13 (user 3-A): LOOP rejimi — oxirgi kadr ≈ birinchi kadr
+    # (faqat render_meta.json ending_mode=loop bo'lsa; boshqa holda skip)
+    try:
+        meta_p = os.path.join(work, "render_meta.json")
+        if os.path.isfile(meta_p):
+            meta = json.load(open(meta_p, encoding="utf-8"))
+            if str(meta.get("ending_mode")) == "loop":
+                f0 = os.path.join(work, "qc_loop_first.jpg")
+                fn = os.path.join(work, "qc_loop_last.jpg")
+                _frame(path, 0.0, f0)
+                # konteyner davomiyligi video oqimidan uzun bo'lishi mumkin
+                # (audio tail) — oxirgi HAQIQIY kadrni topguncha orqaga
+                last_ok = False
+                for _dt in (0.04, 0.10, 0.20, 0.35):
+                    if _frame(path, max(0.0, dur - _dt), fn):
+                        last_ok = True
+                        break
+                if not last_ok:
+                    raise RuntimeError("oxirgi kadr olinmadi")
+                from PIL import Image as _I
+                a = _I.open(f0).convert("L").resize((270, 480))
+                b = _I.open(fn).convert("L").resize((270, 480))
+                pa, pb = list(a.getdata()), list(b.getdata())
+                diff = sum(abs(x - y) for x, y in zip(pa, pb)) / len(pa)
+                checks.append(("LOOP oxirgi kadr≈birinchi kadr (tutash)",
+                               diff < 10.0,
+                               f"o'rtacha farq {diff:.1f}/255"))
+    except Exception:
+        pass
+
     bad = 0
     print("== QC (doc P4) ==")
     for name, ok, val in checks:
         print(("PASS" if ok else "FAIL"), name, "->", val)
         bad += (not ok)
+
     return bad == 0, checks

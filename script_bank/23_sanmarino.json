@@ -1,0 +1,272 @@
+{
+ "question": "Why has this tiny country survived 1,700 years?",
+ "place": "San Marino",
+ "country": "SM",
+ "title": "Why Does Europe's Oldest Republic Still Exist?",
+ "headline": "ANCIENT SURVIVOR",
+ "description": "The old republic that outlasted every empire.",
+ "pinned_comment": "Which old republic would you visit?",
+ "keywords": [
+  "san marino",
+  "oldest country europe",
+  "microstate",
+  "mount titano"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#europe"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does Europe's oldest republic still exist?",
+   "map": {
+    "focus": "",
+    "lat": 43.9,
+    "lon": 12.4,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🏰",
+     "at_word": "survived",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "oldest",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "It crowns a single rocky peak.",
+   "map": {
+    "focus": "",
+    "lat": 43.92,
+    "lon": 12.44,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "SM",
+     "at_word": "peak"
+    },
+    {
+     "type": "label",
+     "target": "San Marino",
+     "at_word": "peak"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "peak",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "travel guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Italy completely surrounds it today.",
+   "map": {
+    "focus": "",
+    "lat": 43.94,
+    "lon": 12.45,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "SM",
+    "IT"
+   ],
+   "events": [
+    {
+     "type": "label",
+     "target": "Italy",
+     "at_word": "Italy"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "surrounds",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "border maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Its towers once watched for invaders.",
+   "map": {
+    "focus": "",
+    "lat": 43.936,
+    "lon": 12.447,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "invaders",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [
+    "san marino towers",
+    "medieval stone tower hill",
+    "old fortress walls europe"
+   ],
+   "must_contain": [
+    "tower"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Napoleon and empires simply let it be.",
+   "map": {
+    "focus": "",
+    "lat": 43.9375,
+    "lon": 12.4495,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "👔",
+     "at_word": "Napoleon",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "empires",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "It outlasted Rome's fall and two world wars.",
+   "map": {
+    "focus": "",
+    "lat": 43.9385,
+    "lon": 12.4515,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⏱️",
+     "at_word": "outlasted",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "outlasted",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which old republic would you visit?",
+   "map": {
+    "focus": "",
+    "lat": 43.9395,
+    "lon": 12.4535,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "SM"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "San Marino",
+     "lat": 43.9395,
+     "lon": 12.4535,
+     "at_word": "republic"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why does Europe's oldest republic still exist?"
+}

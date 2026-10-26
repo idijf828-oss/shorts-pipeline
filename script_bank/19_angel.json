@@ -1,0 +1,275 @@
+{
+ "question": "Why does this waterfall vanish before it lands?",
+ "place": "Angel Falls",
+ "country": "VE",
+ "title": "Why Does This Waterfall Never Touch the Ground?",
+ "headline": "TALLEST DROP",
+ "description": "The world's tallest waterfall mostly turns to mist.",
+ "pinned_comment": "Which natural wonder is on your list?",
+ "keywords": [
+  "angel falls",
+  "tallest waterfall",
+  "venezuela waterfalls",
+  "waterfall that vanishes"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#venezuela"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does this waterfall never touch the ground?",
+   "map": {
+    "focus": "",
+    "lat": 5.9,
+    "lon": -62.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💦",
+     "at_word": "waterfall",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "never",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Venezuela's table mountains rise like islands.",
+   "map": {
+    "focus": "",
+    "lat": 5.93,
+    "lon": -62.2,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "VE",
+     "at_word": "mountains"
+    },
+    {
+     "type": "label",
+     "target": "Venezuela",
+     "at_word": "mountains"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "mountains",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geology surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Angel Falls plunges nearly a kilometer.",
+   "map": {
+    "focus": "",
+    "lat": 5.95,
+    "lon": -62.35,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌓",
+     "at_word": "kilometer",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "kilometer",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "measurement reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Its water turns to mist midair.",
+   "map": {
+    "focus": "",
+    "lat": 5.96,
+    "lon": -62.45,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "mist",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [
+    "angel falls waterfall",
+    "tallest waterfall aerial",
+    "waterfall mist jungle"
+   ],
+   "must_contain": [
+    "waterfall"
+   ],
+   "reject": [
+    "city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Most of it drifts away before landing.",
+   "map": {
+    "focus": "",
+    "lat": 5.965,
+    "lon": -62.5,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌫️",
+     "at_word": "ground",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "drifts",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "You feel the spray long before arriving.",
+   "map": {
+    "focus": "",
+    "lat": 5.967,
+    "lon": -62.525,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌦️",
+     "at_word": "spray",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "spray",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which natural wonder is on your list?",
+   "map": {
+    "focus": "",
+    "lat": 5.968,
+    "lon": -62.534,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "VE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Angel Falls",
+     "lat": 5.878,
+     "lon": -62.074,
+     "at_word": "list"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why does this waterfall never touch the ground?"
+}

@@ -1,0 +1,277 @@
+{
+ "question": "Why does a whole day disappear between these islands?",
+ "place": "Little Diomede",
+ "country": "US",
+ "title": "Why Does a Whole Day Disappear Between These Islands?",
+ "headline": "DATE LINE",
+ "description": "Two islands, two countries, and a whole day between them.",
+ "pinned_comment": "Would you cross between these two islands?",
+ "keywords": [
+  "diomede islands",
+  "bering strait",
+  "international date line",
+  "alaska russia border"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#alaska"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does a whole day disappear between these islands?",
+   "map": {
+    "focus": "",
+    "lat": 65.8,
+    "lon": -169.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌊",
+     "at_word": "day",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "day",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Two islands sit just two miles apart.",
+   "map": {
+    "focus": "",
+    "lat": 65.7,
+    "lon": -169.0,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "US",
+     "at_word": "islands"
+    },
+    {
+     "type": "label",
+     "target": "United States",
+     "at_word": "islands"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "miles",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "atlas facts",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "One belongs to America, one to Russia.",
+   "map": {
+    "focus": "",
+    "lat": 65.65,
+    "lon": -168.95,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "US",
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "RU",
+     "at_word": "Russia"
+    },
+    {
+     "type": "label",
+     "target": "Russia",
+     "at_word": "Russia"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Russia",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "cold war history",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "A new day starts on one side first.",
+   "map": {
+    "focus": "",
+    "lat": 65.62,
+    "lon": -168.93,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "side",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "time zone maps",
+   "visual_query": [
+    "arctic ocean ice",
+    "bering strait aerial",
+    "snow islands ocean"
+   ],
+   "must_contain": [
+    "ocean"
+   ],
+   "reject": [
+    "desert"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "One side is a whole day ahead.",
+   "map": {
+    "focus": "",
+    "lat": 65.62,
+    "lon": -168.92,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⏰",
+     "at_word": "ahead",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "ahead",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "time zone maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "People used to shout across the ice.",
+   "map": {
+    "focus": "",
+    "lat": 65.61,
+    "lon": -168.9,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "👋",
+     "at_word": "shout",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "ice",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "local history",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Midnight splits the two islands. And that is why.",
+   "map": {
+    "focus": "",
+    "lat": 65.6,
+    "lon": -168.88,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Little Diomede",
+     "lat": 65.6,
+     "lon": -168.88,
+     "at_word": "once"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "ending_mode": "loop"
+}

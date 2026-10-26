@@ -1,0 +1,274 @@
+{
+ "question": "Why is this lake deeper than five Eiffel Towers?",
+ "place": "Listvyanka",
+ "country": "RU",
+ "title": "Why Is This Lake Deeper Than Five Eiffel Towers?",
+ "headline": "MILE DEEP",
+ "description": "The world's deepest lake hides in Siberia.",
+ "pinned_comment": "Which lake would you dive into first?",
+ "keywords": [
+  "lake baikal",
+  "deepest lake in the world",
+  "siberia lake",
+  "baikal ice"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#russia"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is this lake deeper than five Eiffel Towers?",
+   "map": {
+    "focus": "",
+    "lat": 51.8,
+    "lon": 104.8,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌊",
+     "at_word": "lake",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Eiffel",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "depth surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Siberia hides a lake like no other.",
+   "map": {
+    "focus": "",
+    "lat": 51.84,
+    "lon": 104.85,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "RU",
+     "at_word": "Siberia"
+    },
+    {
+     "type": "label",
+     "target": "Russia",
+     "at_word": "Siberia"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Siberia",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "It holds a fifth of all fresh water.",
+   "map": {
+    "focus": "",
+    "lat": 51.85,
+    "lon": 104.86,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💧",
+     "at_word": "water",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "fifth",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "hydrology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Winters freeze it into singing ice.",
+   "map": {
+    "focus": "",
+    "lat": 51.855,
+    "lon": 104.865,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "singing",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [
+    "lake baikal ice",
+    "frozen lake blue ice",
+    "siberia winter lake"
+   ],
+   "must_contain": [
+    "ice"
+   ],
+   "reject": [
+    "desert"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Cracks stretch across the frozen surface.",
+   "map": {
+    "focus": "",
+    "lat": 51.858,
+    "lon": 104.868,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "❄️",
+     "at_word": "frozen",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Cracks",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "ice reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Unique seals live here and nowhere nearby.",
+   "map": {
+    "focus": "",
+    "lat": 51.861,
+    "lon": 104.872,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🦭",
+     "at_word": "seals",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "seals",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "wildlife surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which lake would you dive into first?",
+   "map": {
+    "focus": "",
+    "lat": 51.8625,
+    "lon": 104.875,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "RU"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Listvyanka",
+     "lat": 51.8625,
+     "lon": 104.875,
+     "at_word": "dive"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

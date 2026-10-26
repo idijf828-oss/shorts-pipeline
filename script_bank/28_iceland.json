@@ -1,0 +1,274 @@
+{
+ "question": "Why are there no mosquitoes in Iceland?",
+ "place": "Reykjavik",
+ "country": "IS",
+ "title": "Why Are There No Mosquitoes in Iceland?",
+ "headline": "ZERO BUGS",
+ "description": "The island where mosquitoes never moved in.",
+ "pinned_comment": "Where would you live without bites?",
+ "keywords": [
+  "iceland mosquitoes",
+  "mosquito free country",
+  "why no mosquitoes",
+  "iceland nature facts"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#iceland"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why are there no mosquitoes in Iceland?",
+   "map": {
+    "focus": "",
+    "lat": 64.1,
+    "lon": -21.9,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🦟",
+     "at_word": "mosquitoes",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "mosquitoes",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "science reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Iceland sits just below the Arctic.",
+   "map": {
+    "focus": "",
+    "lat": 64.13,
+    "lon": -21.92,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "IS",
+     "at_word": "Iceland"
+    },
+    {
+     "type": "label",
+     "target": "Iceland",
+     "at_word": "Iceland"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Arctic",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Its winters flip between freeze and thaw.",
+   "map": {
+    "focus": "",
+    "lat": 64.14,
+    "lon": -21.93,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "❄️",
+     "at_word": "freeze",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "freeze",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "climate data",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Mosquito eggs cannot survive that cycle.",
+   "map": {
+    "focus": "",
+    "lat": 64.145,
+    "lon": -21.935,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "survive",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "science reports",
+   "visual_query": [
+    "iceland landscape waterfall",
+    "mosquito closeup macro",
+    "iceland northern lights"
+   ],
+   "must_contain": [
+    "iceland"
+   ],
+   "reject": [
+    "desert"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "There are simply too few warm days.",
+   "map": {
+    "focus": "",
+    "lat": 64.147,
+    "lon": -21.938,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "☀️",
+     "at_word": "warm",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "warm",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "climate data",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "A single mosquito was once found indoors.",
+   "map": {
+    "focus": "",
+    "lat": 64.148,
+    "lon": -21.94,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔍",
+     "at_word": "found",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "indoors",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "science reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Where would you live without bites?",
+   "map": {
+    "focus": "",
+    "lat": 64.1495,
+    "lon": -21.943,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "IS"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Reykjavik",
+     "lat": 64.1495,
+     "lon": -21.943,
+     "at_word": "bites"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

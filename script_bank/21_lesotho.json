@@ -1,0 +1,272 @@
+{
+ "question": "Why is this whole country trapped inside another?",
+ "place": "Maseru",
+ "country": "LS",
+ "title": "Why Is This Whole Country Trapped Inside Another?",
+ "headline": "ENCIRCLED",
+ "description": "A mountain kingdom boxed in on every side.",
+ "pinned_comment": "Which small country should I cover next?",
+ "keywords": [
+  "lesotho",
+  "maseru",
+  "enclave country",
+  "country inside south africa"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#africa"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is this whole country trapped inside another?",
+   "map": {
+    "focus": "",
+    "lat": -29.3,
+    "lon": 27.5,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "LS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🗺️",
+     "at_word": "trapped",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "trapped",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "This small kingdom sits high in the mountains.",
+   "map": {
+    "focus": "",
+    "lat": -29.25,
+    "lon": 27.4,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "LS",
+    "ZA"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "LS",
+     "at_word": "kingdom"
+    },
+    {
+     "type": "label",
+     "target": "Lesotho",
+     "at_word": "kingdom"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "kingdom",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "travel guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "South Africa wraps around every border.",
+   "map": {
+    "focus": "",
+    "lat": -29.29,
+    "lon": 27.46,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "LS",
+    "ZA"
+   ],
+   "events": [
+    {
+     "type": "label",
+     "target": "South Africa",
+     "at_word": "South"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "wraps",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "border maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Its people herd sheep and ride ponies.",
+   "map": {
+    "focus": "",
+    "lat": -29.3,
+    "lon": 27.47,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "LS"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "ponies",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "culture reports",
+   "visual_query": [
+    "basotho pony herder",
+    "maluti mountains",
+    "african highland village"
+   ],
+   "must_contain": [
+    "mountain"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "It is the largest country inside another.",
+   "map": {
+    "focus": "",
+    "lat": -29.305,
+    "lon": 27.475,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "LS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🎯",
+     "at_word": "largest",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "largest",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "All routes out pass through one neighbor.",
+   "map": {
+    "focus": "",
+    "lat": -29.31,
+    "lon": 27.478,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "LS"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🛤️",
+     "at_word": "routes",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "routes",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "road maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which small country should I cover next?",
+   "map": {
+    "focus": "",
+    "lat": -29.315,
+    "lon": 27.48,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "LS"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Maseru",
+     "lat": -29.315,
+     "lon": 27.48,
+     "at_word": "cover"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

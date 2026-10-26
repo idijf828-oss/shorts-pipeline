@@ -1,9 +1,9 @@
 {
- "question": "Why did they build an island shaped like a palm?",
+ "question": "Why did this island cost 12 billion dollars?",
  "place": "Palm Jumeirah",
  "country": "AE",
- "title": "Why Did They Build an Island Shaped Like a Palm?",
- "headline": "PALM ISLAND",
+ "title": "Why Did This Island Cost 12 Billion Dollars?",
+ "headline": "DUBAI MIRACLE",
  "description": "Dubai wanted more beach, so it built one from sea sand.",
  "pinned_comment": "Which man-made wonder beats this one?",
  "keywords": [
@@ -22,7 +22,7 @@
   {
    "id": 1,
    "mode": "map",
-   "voice": "Why did they build an island shaped like a palm?",
+   "voice": "Why did this island cost 12 billion dollars?",
    "map": {
     "focus": "",
     "lat": 25.3,
@@ -59,7 +59,7 @@
   {
    "id": 2,
    "mode": "map",
-   "voice": "Dubai wanted more beach for tourists.",
+   "voice": "Workers built it from the sea floor.",
    "map": {
     "focus": "",
     "lat": 25.2,
@@ -97,7 +97,7 @@
   {
    "id": 3,
    "mode": "map",
-   "voice": "Engineers sprayed sand from the sea floor.",
+   "voice": "Engineers sprayed sand in a special pattern.",
    "map": {
     "focus": "",
     "lat": 25.15,

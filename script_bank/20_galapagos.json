@@ -1,0 +1,274 @@
+{
+ "question": "Why do animals here have no fear of humans?",
+ "place": "Puerto Ayora",
+ "country": "EC",
+ "title": "Why Do Animals Here Have No Fear of Humans?",
+ "headline": "FEARLESS",
+ "description": "Islands where wild animals walk right past you.",
+ "pinned_comment": "Which animal would you high five?",
+ "keywords": [
+  "galapagos animals",
+  "fearless animals",
+  "galapagos islands",
+  "wildlife no fear"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#animals"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why do animals here have no fear of humans?",
+   "map": {
+    "focus": "",
+    "lat": -0.7,
+    "lon": -90.3,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🦊",
+     "at_word": "animals",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "fear",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "wildlife studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Ecuador guards these faraway islands.",
+   "map": {
+    "focus": "",
+    "lat": -0.72,
+    "lon": -90.33,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "EC",
+     "at_word": "islands"
+    },
+    {
+     "type": "label",
+     "target": "Ecuador",
+     "at_word": "islands"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "faraway",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "park guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Sea lions nap beside visiting tourists.",
+   "map": {
+    "focus": "",
+    "lat": -0.74,
+    "lon": -90.35,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🐫",
+     "at_word": "lions",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "lions",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Giant tortoises live for over a hundred years.",
+   "map": {
+    "focus": "",
+    "lat": -0.745,
+    "lon": -90.355,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "hundred",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "wildlife studies",
+   "visual_query": [
+    "galapagos giant tortoise",
+    "sea lion beach animals",
+    "iguana rock closeup"
+   ],
+   "must_contain": [
+    "animal"
+   ],
+   "reject": [
+    "city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Predators never reached these shores.",
+   "map": {
+    "focus": "",
+    "lat": -0.749,
+    "lon": -90.358,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🦖",
+     "at_word": "Predators",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Predators",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "ecology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "So wildlife never learned to run away.",
+   "map": {
+    "focus": "",
+    "lat": -0.752,
+    "lon": -90.36,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🏃",
+     "at_word": "run",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "run",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "ecology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which animal would you high five?",
+   "map": {
+    "focus": "",
+    "lat": -0.754,
+    "lon": -90.3615,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "EC"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Puerto Ayora",
+     "lat": -0.754,
+     "lon": -90.3615,
+     "at_word": "five"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

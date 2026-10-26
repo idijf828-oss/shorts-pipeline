@@ -1,0 +1,274 @@
+{
+ "question": "Why is it illegal to die in this town?",
+ "place": "Longyearbyen",
+ "country": "NO",
+ "title": "Why Is It Illegal to Die in This Town?",
+ "headline": "BURIAL BAN",
+ "description": "The Arctic town where dying is against the rules.",
+ "pinned_comment": "Could you live above the Arctic Circle?",
+ "keywords": [
+  "longyearbyen",
+  "svalbard",
+  "illegal to die",
+  "arctic town rules"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#arctic"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why is it illegal to die in this town?",
+   "map": {
+    "focus": "",
+    "lat": 78.2,
+    "lon": 15.6,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "☠️",
+     "at_word": "die",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "illegal",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "local law reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "This is Longyearbyen, far inside the Arctic.",
+   "map": {
+    "focus": "",
+    "lat": 76.0,
+    "lon": 12.0,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "NO",
+     "at_word": "Arctic"
+    },
+    {
+     "type": "label",
+     "target": "Norway",
+     "at_word": "Arctic"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Arctic",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "travel guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "The ground here stays frozen all year.",
+   "map": {
+    "focus": "",
+    "lat": 77.5,
+    "lon": 14.0,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "❄️",
+     "at_word": "frozen",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "frozen",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "climate data",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "The cold preserves almost everything forever.",
+   "map": {
+    "focus": "",
+    "lat": 78.0,
+    "lon": 15.3,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "cold",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "science reports",
+   "visual_query": [
+    "arctic town snow",
+    "svalbard colorful houses",
+    "snow mountains village"
+   ],
+   "must_contain": [
+    "snow"
+   ],
+   "reject": [
+    "beach"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "So graves are not allowed here.",
+   "map": {
+    "focus": "",
+    "lat": 78.1,
+    "lon": 15.5,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚫",
+     "at_word": "allowed",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "graves",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "town rules",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Sick people must fly to the mainland.",
+   "map": {
+    "focus": "",
+    "lat": 78.15,
+    "lon": 15.58,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "✈️",
+     "at_word": "fly",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "mainland",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "hospital policy",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Could you live above the Arctic Circle?",
+   "map": {
+    "focus": "",
+    "lat": 78.22,
+    "lon": 15.63,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "NO"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Longyearbyen",
+     "lat": 78.22,
+     "lon": 15.63,
+     "at_word": "Circle"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

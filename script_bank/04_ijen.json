@@ -59,7 +59,7 @@
   {
    "id": 2,
    "mode": "map",
-   "voice": "Kawah Ijen sits on Java island.",
+   "voice": "It sits on Java, in Indonesia.",
    "map": {
     "focus": "",
     "lat": -7.8,
@@ -243,7 +243,7 @@
   {
    "id": 7,
    "mode": "map",
-   "voice": "Which natural wonder would you see at night?",
+   "voice": "Nothing else glows like this. And that is why.",
    "map": {
     "focus": "",
     "lat": -8.058,
@@ -260,7 +260,7 @@
      "target": "Kawah Ijen",
      "lat": -8.058,
      "lon": 114.242,
-     "at_word": "see"
+     "at_word": "glow"
     }
    ],
    "highlights": [],
@@ -270,5 +270,6 @@
    "must_contain": [],
    "reject": []
   }
- ]
+ ],
+ "ending_mode": "loop"
 }

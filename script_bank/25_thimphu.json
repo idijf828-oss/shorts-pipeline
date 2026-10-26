@@ -1,0 +1,275 @@
+{
+ "question": "Why does this capital have no traffic lights?",
+ "place": "Thimphu",
+ "country": "BT",
+ "title": "Why Are Traffic Lights Banned in This Capital?",
+ "headline": "QUIET STREETS",
+ "description": "A capital city that runs without a single signal.",
+ "pinned_comment": "Could your city live without signals?",
+ "keywords": [
+  "thimphu",
+  "bhutan traffic lights",
+  "bhutan capital",
+  "himalayan kingdom"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#bhutan"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why are traffic lights banned in this capital?",
+   "map": {
+    "focus": "",
+    "lat": 27.4,
+    "lon": 89.6,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚦",
+     "at_word": "traffic",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "banned",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Bhutan hides between India and China.",
+   "map": {
+    "focus": "",
+    "lat": 27.45,
+    "lon": 89.62,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "BT",
+     "at_word": "Bhutan"
+    },
+    {
+     "type": "label",
+     "target": "Bhutan",
+     "at_word": "Bhutan"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Bhutan",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Police officers direct every junction.",
+   "map": {
+    "focus": "",
+    "lat": 27.47,
+    "lon": 89.64,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "👮",
+     "at_word": "Police",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Police",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "A tiny booth controls the whole flow.",
+   "map": {
+    "focus": "",
+    "lat": 27.472,
+    "lon": 89.638,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "booth",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city reports",
+   "visual_query": [
+    "thimphu bhutan traffic",
+    "himalayan city prayer flags",
+    "bhutan fortress dzong"
+   ],
+   "must_contain": [
+    "city"
+   ],
+   "reject": [
+    "highway"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Even big billboards are mostly banned.",
+   "map": {
+    "focus": "",
+    "lat": 27.473,
+    "lon": 89.64,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚫",
+     "at_word": "banned",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "banned",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "city rules",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "The city measures happiness instead of money.",
+   "map": {
+    "focus": "",
+    "lat": 27.474,
+    "lon": 89.6415,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "😊",
+     "at_word": "happiness",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "happiness",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "policy reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Could your city live without signals?",
+   "map": {
+    "focus": "",
+    "lat": 27.4755,
+    "lon": 89.6425,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "BT"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Thimphu",
+     "lat": 27.4755,
+     "lon": 89.6425,
+     "at_word": "signals"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why are traffic lights banned in this capital?"
+}

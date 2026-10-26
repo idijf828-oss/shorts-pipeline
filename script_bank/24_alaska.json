@@ -1,0 +1,274 @@
+{
+ "question": "Why did Russia sell Alaska for two cents an acre?",
+ "place": "Sitka",
+ "country": "US",
+ "title": "Why Did Russia Sell Alaska for Two Cents an Acre?",
+ "headline": "FROZEN DEAL",
+ "description": "The biggest land sale that almost nobody wanted.",
+ "pinned_comment": "Was it the biggest mistake in history?",
+ "keywords": [
+  "alaska purchase",
+  "russia sold alaska",
+  "sitka alaska history",
+  "1867 alaska deal"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#alaska"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why did Russia sell Alaska for two cents an acre?",
+   "map": {
+    "focus": "",
+    "lat": 57.0,
+    "lon": -135.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💰",
+     "at_word": "sell",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "cents",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "treaty records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Alaska is bigger than many countries.",
+   "map": {
+    "focus": "",
+    "lat": 57.1,
+    "lon": -135.2,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "US",
+     "at_word": "Alaska"
+    },
+    {
+     "type": "label",
+     "target": "United States",
+     "at_word": "Alaska"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "bigger",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "The year was eighteen sixty-seven.",
+   "map": {
+    "focus": "",
+    "lat": 57.15,
+    "lon": -135.28,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "📜",
+     "at_word": "year",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "sixty",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "treaty records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "The price was cheaper than a lunch.",
+   "map": {
+    "focus": "",
+    "lat": 57.17,
+    "lon": -135.3,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "cheaper",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "treaty records",
+   "visual_query": [
+    "alaska glacier aerial",
+    "snow mountains fjord",
+    "alaska wilderness forest"
+   ],
+   "must_contain": [
+    "glacier"
+   ],
+   "reject": [
+    "city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Russia needed money and feared war.",
+   "map": {
+    "focus": "",
+    "lat": 57.175,
+    "lon": -135.297,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⚔️",
+     "at_word": "war",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "war",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Nobody knew gold and oil waited below.",
+   "map": {
+    "focus": "",
+    "lat": 57.178,
+    "lon": -135.295,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🟡",
+     "at_word": "gold",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "gold",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Was it the biggest mistake in history?",
+   "map": {
+    "focus": "",
+    "lat": 57.1795,
+    "lon": -135.301,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "US"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Sitka",
+     "lat": 57.1795,
+     "lon": -135.301,
+     "at_word": "mistake"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

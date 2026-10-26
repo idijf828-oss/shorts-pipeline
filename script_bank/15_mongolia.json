@@ -1,0 +1,275 @@
+{
+ "question": "Why does this country have a navy but no sea?",
+ "place": "Ulaanbaatar",
+ "country": "MN",
+ "title": "Why Does Mongolia Keep a Navy with No Sea?",
+ "headline": "STEPPE FLEET",
+ "description": "A landlocked nation that keeps a navy anyway.",
+ "pinned_comment": "Which country fact surprised you most?",
+ "keywords": [
+  "mongolia navy",
+  "landlocked country",
+  "country with no sea",
+  "gobi desert"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#mongolia"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does Mongolia keep a navy with no sea?",
+   "map": {
+    "focus": "",
+    "lat": 47.9,
+    "lon": 106.9,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⚓",
+     "at_word": "navy",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "navy",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "military history",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Mongolia is locked between two huge neighbors.",
+   "map": {
+    "focus": "",
+    "lat": 47.7,
+    "lon": 106.5,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "MN",
+     "at_word": "Mongolia"
+    },
+    {
+     "type": "label",
+     "target": "Mongolia",
+     "at_word": "Mongolia"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "locked",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Its navy once had a single ship.",
+   "map": {
+    "focus": "",
+    "lat": 47.85,
+    "lon": 106.9,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚢",
+     "at_word": "ship",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "ship",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "military history",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "That ship patrolled a distant lake.",
+   "map": {
+    "focus": "",
+    "lat": 47.88,
+    "lon": 106.91,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "lake",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "navy records",
+   "visual_query": [
+    "lake boat mountains",
+    "mongolia landscape steppe",
+    "sail boat calm lake"
+   ],
+   "must_contain": [
+    "lake"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "The nearest ocean is thousands of miles away.",
+   "map": {
+    "focus": "",
+    "lat": 47.9,
+    "lon": 106.92,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🗺️",
+     "at_word": "miles",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "miles",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "distance maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Today the navy exists mostly on paper.",
+   "map": {
+    "focus": "",
+    "lat": 47.905,
+    "lon": 106.915,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "📄",
+     "at_word": "paper",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "paper",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "news reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which country fact surprised you most?",
+   "map": {
+    "focus": "",
+    "lat": 47.906,
+    "lon": 106.917,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "MN"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Ulaanbaatar",
+     "lat": 47.906,
+     "lon": 106.917,
+     "at_word": "surprised"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "hook": "Why does Mongolia keep a navy with no sea?"
+}

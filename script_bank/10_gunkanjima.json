@@ -1,0 +1,274 @@
+{
+ "question": "Why did everyone suddenly vanish from this island?",
+ "place": "Hashima, Nagasaki",
+ "country": "JP",
+ "title": "Why Did Everyone Suddenly Vanish From This Island?",
+ "headline": "EMPTY CITY",
+ "description": "A crowded island city that turned into a ghost.",
+ "pinned_comment": "Which abandoned place would you explore?",
+ "keywords": [
+  "gunkanjima",
+  "hashima island",
+  "abandoned island japan",
+  "japan ghost island"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#japan"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why did everyone suddenly vanish from this island?",
+   "map": {
+    "focus": "",
+    "lat": 32.6,
+    "lon": 129.7,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "👻",
+     "at_word": "vanish",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "vanish",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "history records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Japan once packed workers onto this rock.",
+   "map": {
+    "focus": "",
+    "lat": 32.63,
+    "lon": 129.73,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "JP",
+     "at_word": "Japan"
+    },
+    {
+     "type": "label",
+     "target": "Japan",
+     "at_word": "Japan"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "workers",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "industrial history",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Five thousand people lived in tower blocks.",
+   "map": {
+    "focus": "",
+    "lat": 32.63,
+    "lon": 129.74,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🏗️",
+     "at_word": "tower",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "thousand",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "census records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Coal mines ran far below the waves.",
+   "map": {
+    "focus": "",
+    "lat": 32.628,
+    "lon": 129.737,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "below",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "mining records",
+   "visual_query": [
+    "abandoned concrete buildings island",
+    "japan island aerial",
+    "old apartment towers"
+   ],
+   "must_contain": [
+    "building"
+   ],
+   "reject": [
+    "forest"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "The mine closed in nineteen seventy-four.",
+   "map": {
+    "focus": "",
+    "lat": 32.628,
+    "lon": 129.738,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⛏️",
+     "at_word": "mine",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "closed",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "company archives",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Everyone left within a few months.",
+   "map": {
+    "focus": "",
+    "lat": 32.627,
+    "lon": 129.738,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🛃",
+     "at_word": "left",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "months",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "newspaper archives",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which abandoned place would you explore?",
+   "map": {
+    "focus": "",
+    "lat": 32.6275,
+    "lon": 129.7385,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "JP"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Hashima",
+     "lat": 32.6275,
+     "lon": 129.7385,
+     "at_word": "blocks"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

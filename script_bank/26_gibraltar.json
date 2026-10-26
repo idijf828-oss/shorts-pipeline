@@ -1,0 +1,271 @@
+{
+ "question": "Why does a highway cross this runway?",
+ "place": "Gibraltar",
+ "country": "GI",
+ "title": "Why Does a Highway Cross This Runway?",
+ "headline": "STOP FOR PLANES",
+ "description": "The airport where cars and jets share the road.",
+ "pinned_comment": "Would you drive across an active runway?",
+ "keywords": [
+  "gibraltar airport",
+  "runway crosses road",
+  "rock of gibraltar",
+  "gibraltar border spain"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#travel"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does a highway cross this runway?",
+   "map": {
+    "focus": "",
+    "lat": 36.1,
+    "lon": -5.3,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "✈️",
+     "at_word": "runway",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "runway",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "airport guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "Gibraltar belongs to the United Kingdom.",
+   "map": {
+    "focus": "",
+    "lat": 36.12,
+    "lon": -5.33,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "GI",
+     "at_word": "Gibraltar"
+    },
+    {
+     "type": "label",
+     "target": "Gibraltar",
+     "at_word": "Gibraltar"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Kingdom",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Spain surrounds it on one side.",
+   "map": {
+    "focus": "",
+    "lat": 36.13,
+    "lon": -5.34,
+    "zoom_level": 6,
+    "motion": "pan_right"
+   },
+   "country_iso_codes": [
+    "GI",
+    "ES"
+   ],
+   "events": [
+    {
+     "type": "label",
+     "target": "Spain",
+     "at_word": "Spain"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Spain",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "border maps",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "A busy road cuts right across the runway.",
+   "map": {
+    "focus": "",
+    "lat": 36.135,
+    "lon": -5.345,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "busy",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "airport guides",
+   "visual_query": [
+    "gibraltar airport runway road",
+    "plane landing closeup",
+    "airport runway cars crossing"
+   ],
+   "must_contain": [
+    "runway"
+   ],
+   "reject": [
+    "ocean"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Barriers close it for every takeoff.",
+   "map": {
+    "focus": "",
+    "lat": 36.138,
+    "lon": -5.347,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚧",
+     "at_word": "Barriers",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Barriers",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "airport guides",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "Drivers wait as jets roll past.",
+   "map": {
+    "focus": "",
+    "lat": 36.14,
+    "lon": -5.349,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🚘",
+     "at_word": "Drivers",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "jets",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Would you drive across an active runway?",
+   "map": {
+    "focus": "",
+    "lat": 36.142,
+    "lon": -5.351,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "GI"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Gibraltar",
+     "lat": 36.142,
+     "lon": -5.351,
+     "at_word": "runway"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}

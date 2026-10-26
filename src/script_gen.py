@@ -127,7 +127,7 @@ def _lint_voice(v, i):
     return None
 
 
-def _parse(raw, strict_insert=True):
+def _parse(raw, strict_insert=True, ending="cta"):
     txt = raw.strip()
     txt = re.sub(r"^```(?:json)?\s*|\s*```$", "", txt, flags=re.S)
     a, b = txt.find("{"), txt.rfind("}")
@@ -271,7 +271,15 @@ def _parse(raw, strict_insert=True):
     if not re.match(r"^(Why|How|What|Where|Who|When|Which|Is|Are|Do|Does|Did"
                     r"|Can|Could|Would|Will)\b", segs[0]["voice"].strip()):
         raise ValueError("hook Why/How/What/... bilan boshlanishi kerak")
-    if "?" not in segs[-1]["voice"]:
+    if ending == "loop":
+        last_v = str(segs[-1]["voice"]).strip()
+        if "?" in last_v:
+            raise ValueError("loop: oxirgi gap savol EMAS — "
+                             "'...And that is why.' ko'prigi kerak")
+        if not re.search(r"\bwhy\s*[.!]?\s*$", last_v.lower()):
+            raise ValueError("loop: oxirgi gap '...and that is why.' bilan "
+                             "tugasin — hook'ga uzluksiz ulanadi")
+    elif "?" not in segs[-1]["voice"]:
         raise ValueError("oxirgi gap CTA savol bilan tugasin ('?')")
     # v10.1 (user): kamida 3 XIL xarita ko'rinishi
     views = {(round(s["map"]["lat"], 1), round(s["map"]["lon"], 1),
@@ -458,6 +466,49 @@ def _geo_check(data, cfg):
     return errs
 
 
+# v13 (user 3-B, 2026-10-26): HOOK KUCHI — taajjub/paradoks/taqiq/raqam.
+# Kuchsiz shakl ("Why did they build X?") rad etiladi.
+_HOOK_PATTERNS = [
+    ("taqiq/inkor", r"\b(can'?t|cannot|nobody|no one|never|illegal|banned|"
+     r"forbidden|stopped|vanish(es|ed|ing)?|disappear(s|ed|ing)?|nowhere)\b"),
+    ("'yoq' paradoksi", r"\b(no|zero|without)\s+[a-z]+\b"),
+    ("qiyosiy/superlativ", r"\b(taller|shorter|bigger|smaller|faster|slower|"
+     r"older|newer|lower|higher|deeper|longer|stronger)\s+than\b|"
+     r"\b(oldest|newest|biggest|smallest|tallest|lowest|highest|deepest|"
+     r"longest|fastest)\b"),
+    ("hayratlanarli raqam", r"\b(two|three|four|five|six|seven|eight|nine|"
+     r"ten|twenty|fifty|hundred|thousand|\d[\d,]*)\s+(billion\s+|million\s+)?"
+     r"(years?|feet|ft|miles?|km|kilometers?|meters?|metres?|seconds?|minutes?|hours?|"
+     r"days?|weeks?|months?|cents?|acres?|times|dollars?)\b"),
+    ("this+paradoks-fe'l", r"\bthis\b[^?]*\b(boil|burn|move|sink|float|"
+     r"freeze|grow|shrink|cross|fall|vanish|disappear|die|switch|change|"
+     r"flip|trapped|locked|surrounded)\w*\b"
+     r"|\b(boil|burn|move|sink|float|"
+     r"freeze|grow|shrink|cross|fall|vanish|disappear|die|switch|change|"
+     r"flip|trapped|locked|surrounded)\w*\b[^?]*\bthis\b"),
+    ("faqat/yagona", r"\bonly\b"),
+    ("qit'a-g'alatiligi", r"\b(fall|falls|falling|lands?|travels?|"
+     r"reaches?|blows?)\s+(on|over|in|across)\s+(europe|america|asia|"
+     r"africa|australia|another)\b"),
+    ("joy-paradoksi", r"\b(upside.?down|backwards?|inside.?out|"
+     r"underground|underwater|below sea level|beneath)\b"),
+]
+
+
+def _hook_check(data):
+    """v13: hook kamida bitta KUCHLI shablonga mos bo'lishi kerak."""
+    scs = data.get("scenes") or []
+    hook = str((scs[0].get("voice") if scs else "") or "").lower()
+    for name, pat in _HOOK_PATTERNS:
+        if re.search(pat, hook):
+            return None
+    return ("hook kuchsiz — taajjub yo'q (paradoks/taqiq/raqam/qiyos "
+            "kerak). Kuchli namunalar: 'Why can\'t anyone visit...?', "
+            "'Why is this mountain taller than Everest?', 'Why has this "
+            "fire burned for 50 years?', 'Why is it illegal to die "
+            "here?', 'Why does African sand fall on Europe?'")
+
+
 def _simple_check(data):
     """User #4: 7-8 yosh tili — qiyin so'z yo'q, gap <=10 so'z."""
     errs = []
@@ -475,6 +526,9 @@ def _simple_check(data):
     for b in BLACKLIST:
         if b in t:
             errs.append(f"title: qiyin so'z '{b}'")
+    herr = _hook_check(data)
+    if herr:
+        errs.append(herr)
     return errs
 
 
@@ -563,7 +617,16 @@ def _use_pending_script(cfg):
         try:
             with open(src, encoding="utf-8") as f:
                 raw = f.read()
-            data = _parse(raw)
+            ending = None
+            try:
+                ending = str(json.loads(raw).get("ending_mode")
+                             or "").strip() or None
+            except Exception:
+                ending = None
+            if ending not in ("cta", "loop"):
+                ending = str((cfg.get("behavior") or {})
+                             .get("ending_mode") or "cta").strip()
+            data = _parse(raw, ending=ending)
             gerrs = _geo_check(data, cfg)
             serrs = _simple_check(data)
             sim = (_hist.too_similar(data["title"], data["keywords"], hist)
@@ -588,6 +651,7 @@ def _use_pending_script(cfg):
                 pass
             continue
         _auto_pin(data, cfg)
+        data["_ending"] = ending
         data["_topic"] = data.get("place") or data.get("country") or "seed"
         data["_seed"] = True
         try:

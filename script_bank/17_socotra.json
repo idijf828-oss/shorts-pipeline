@@ -1,0 +1,274 @@
+{
+ "question": "Why do these trees grow nowhere else on Earth?",
+ "place": "Hadibu",
+ "country": "YE",
+ "title": "Why Do These Trees Grow Nowhere Else on Earth?",
+ "headline": "ALIEN FOREST",
+ "description": "An island where the trees look like umbrellas.",
+ "pinned_comment": "Which remote island would you visit?",
+ "keywords": [
+  "socotra",
+  "dragon blood tree",
+  "socotra island yemen",
+  "alien looking plants"
+ ],
+ "hashtags": [
+  "#geography",
+  "#maps",
+  "#shorts",
+  "#nature"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why do these trees grow nowhere else on Earth?",
+   "map": {
+    "focus": "",
+    "lat": 12.6,
+    "lon": 54.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌳",
+     "at_word": "trees",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "trees",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "botany studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "This island belongs to Yemen.",
+   "map": {
+    "focus": "",
+    "lat": 12.63,
+    "lon": 54.01,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "YE",
+     "at_word": "Yemen"
+    },
+    {
+     "type": "label",
+     "target": "Yemen",
+     "at_word": "Yemen"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "Yemen",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography references",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Dragon blood trees look like umbrellas.",
+   "map": {
+    "focus": "",
+    "lat": 12.64,
+    "lon": 54.02,
+    "zoom_level": 6,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💧",
+     "at_word": "umbrellas",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "umbrellas",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "botany studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Their red sap earned them a spooky name.",
+   "map": {
+    "focus": "",
+    "lat": 12.65,
+    "lon": 54.03,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "spooky",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "botany studies",
+   "visual_query": [
+    "dragon blood tree socotra",
+    "strange umbrella trees",
+    "socotra island landscape"
+   ],
+   "must_contain": [
+    "tree"
+   ],
+   "reject": [
+    "city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Alone for ages, species turned strange.",
+   "map": {
+    "focus": "",
+    "lat": 12.655,
+    "lon": 54.04,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🤖",
+     "at_word": "strange",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "strange",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "evolution studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "A third of its plants exist only here.",
+   "map": {
+    "focus": "",
+    "lat": 12.658,
+    "lon": 54.043,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌿",
+     "at_word": "plants",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "third",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "biodiversity surveys",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which remote island would you visit?",
+   "map": {
+    "focus": "",
+    "lat": 12.66,
+    "lon": 54.046,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "YE"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Hadibu",
+     "lat": 12.66,
+     "lon": 54.046,
+     "at_word": "visit"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ]
+}
