@@ -67,7 +67,10 @@ behavior:
   ending_mode: "cta"               # v13.2: FAQAT ZAXIRA (history o'qilmasa).
                                    # Asosiy: loop/cta navbatma-navbat (50/50),
                                    # history'dagi oxirgi ending'ga qarab.
-  privacy_status: "private"       # API audit o'tgunicha faqat "private" ishlaydi
+  privacy_status: "public"        # v13.3 (user 2026-10-26): public.
+                                   # API audit private'ga majbur qilsa,
+                                   # videos.update bilan public qilinadi;
+                                   # scope yetmasa TG'da ogohlantiriladi.
   telegram_approval_timeout_min: 120   # Tasdiq kutiladigan vaqt (Actions job 6 soatgacha yuradi)
   schedule_cron: "0 3,11,19 * * *"  # 3 run/kun (UTC). Tashkent: 08/16/24
                                   # DIQQAT: cron faqat .github/workflows/daily.yml'da o'zgaradi

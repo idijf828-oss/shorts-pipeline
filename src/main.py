@@ -65,6 +65,22 @@ def run(cfg):
     work = cfg["_paths"]["work"]
     os.makedirs(work, exist_ok=True)
 
+    # v13.3 (user so'rovi, 2026-10-26): eski private videolarni
+    # avtomatik public qilish (tasdiqlangan, lekin public bo'lmaganlar)
+    try:
+        hist_pre = history.load()
+        ids_pre = [e.get("video_id") for e in hist_pre[-10:]
+                   if e.get("video_id")]
+        pub_res = upload.publish_pending(cfg, ids_pre)
+        if pub_res:
+            for vid, ok, why in pub_res:
+                telegram.send_message(
+                    cfg, ("🔓 Eski video public qilindi: "
+                          f"https://youtu.be/{vid}" if ok else
+                          f"⚠️ {vid} public BO'LMADI: {why[:120]}"))
+    except Exception as e:
+        print(f"   [OGOX] publish_pending: {str(e)[:160]}")
+
     print("== 1/7: YouTube trend tahlili (US, 30 kun) ==")
     try:
         tr = trends.fetch_trending(cfg)
@@ -138,27 +154,40 @@ def run(cfg):
         qc_txt = (qc_txt + "\n" + ln) if qc_txt else ln
         used_len += add
     cap = (cap + "\n\nQC:\n" + qc_txt) if qc_txt else cap
-    approved = telegram.send_video_and_wait(
+    verdict = telegram.send_video_and_wait(
         cfg, out, cap, cfg["behavior"]["telegram_approval_timeout_min"])
-    if not approved:
-        telegram.send_message(cfg, "⛔ Video bekor qilindi yoki vaqt "
-                                   "tugadi. Hech narsa yuklanmadi.")
-        print("Tasdiq berilmadi — yuklanmadi.")
+    # v13.3 (user so'rovi, 2026-10-26): reject = bekor; timeout =
+    # baribir PUBLIC qilib yuklash (uxlab qolgan holda yo'qolmasin)
+    if verdict == "reject":
+        telegram.send_message(cfg, "⛔ Video bekor qilildi. "
+                                   "Hech narsa yuklanmadi.")
+        print("Foydalanuvchi BEKOR QILDI — yuklanmadi.")
         return
+    if verdict == "timeout":
+        telegram.send_message(
+            cfg, "⏱ Tasdiq kutilmadi (uxlayapsiz?) — video baribir "
+                 "PUBLIC qilib yuklanadi (user qoidasi 2026-10-26).")
+        print("Tasdiq vaqti tugadi — baribir yuklanadi (public).")
 
     if cfg["behavior"]["dry_run"]:
         print("dry_run=ON: yuklash o'chirilgan. Tayyor:", out)
         return
 
-    vid = upload.upload(cfg, out, script["title"],
-                        build_description(cfg, script),
-                        build_tags(cfg, script))
+    vid, public_ok = upload.upload(cfg, out, script["title"],
+                                   build_description(cfg, script),
+                                   build_tags(cfg, script))
     history.add(script["title"], script["keywords"], vid,
                 clips=sorted(used_ids), ending_mode=script.get("_ending"))
     pc = script.get("pinned_comment") or ""
-    telegram.send_message(
-        cfg, f"✅ Yuklandi: {script['title']}\nhttps://youtu.be/{vid}\n"
-             + (f"\n📌 Pinned comment (qo'lda qo'ying):\n{pc}" if pc else ""))
+    head = ("⏱ (tasdiqsiz — baribir yuklandi)" if verdict == "timeout"
+            else "✅")
+    msg = (f"{head} Yuklandi: {script['title']}\n"
+           f"https://youtu.be/{vid}\n"
+           + (f"\n📌 Pinned comment (qo'lda qo'ying):\n{pc}" if pc else ""))
+    if not public_ok:
+        msg += ("\n⚠️ API public qila olmadi — Studio'dan qo'lda "
+                "public qiling.")
+    telegram.send_message(cfg, msg)
     print("TAYYOR:", f"https://youtu.be/{vid}")
 
 

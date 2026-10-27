@@ -48,13 +48,16 @@ def caption(cfg, trends, script, duration_s):
     pc = script.get("pinned_comment") or ""
     if pc:
         lines += ["", f"📌 Pinned comment: {html.escape(pc)}"]
-    lines += ["", "Tasdiqlaysizmi?"]
+    lines += ["", "Tasdiqlaysizmi?",
+              "(javob bermasangiz — video baribir public qilib yuklanadi)"]
     return "\n".join(lines)
 
 
 def send_video_and_wait(cfg, video_path, text, timeout_min):
     """Video yuboradi va tasdiq callback'ini kutadi.
-    True = yuklash, False = bekor/timeout."""
+
+    v13.3: "approve" | "reject" | "timeout" qaytaradi
+    (timeout = baribir public yuklanadi — user qoidasi 2026-10-26)."""
     tok = cfg["secrets"]["tg_bot_token"]
     chat = cfg["secrets"]["tg_chat_id"]
     # getUpdates webhook bilan bir vaqtda ishlay olmaydi (409 konflikt) —
@@ -110,9 +113,9 @@ def send_video_and_wait(cfg, video_path, text, timeout_min):
                       callback_query_id=cb["id"])
                 data = cb.get("data")
                 print(f"[tg] foydalanuvchi: {data}")
-                return data == "approve"
+                return "approve" if data == "approve" else "reject"
         except Exception as e:
             print(f"[tg] polling xatosi: {e}")
         time.sleep(4)
-    print("[tg] vaqt tugadi -> xavfsizlik uchun BEKOR")
-    return False
+    print("[tg] vaqt tugadi -> baribir yuklanadi (public)")
+    return "timeout"
