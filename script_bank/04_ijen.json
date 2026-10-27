@@ -1,0 +1,275 @@
+{
+ "question": "Why does this volcano burn blue?",
+ "place": "Kawah Ijen",
+ "country": "ID",
+ "title": "Why Does This Volcano Burn Blue?",
+ "headline": "KAWAH IJEN",
+ "description": "A crater with blue flames and the world's most acid lake.",
+ "pinned_comment": "Which natural wonder would you see at night?",
+ "keywords": [
+  "kawah ijen",
+  "blue lava volcano",
+  "indonesia crater",
+  "sulfur miners"
+ ],
+ "hashtags": [
+  "#geography",
+  "#volcano",
+  "#indonesia",
+  "#shorts"
+ ],
+ "scenes": [
+  {
+   "id": 1,
+   "mode": "map",
+   "voice": "Why does this volcano burn blue?",
+   "map": {
+    "focus": "",
+    "lat": -6.5,
+    "lon": 112.0,
+    "zoom_level": 4,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🔥",
+     "at_word": "burn",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "blue",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "volcano observatory reports",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 2,
+   "mode": "map",
+   "voice": "It sits on Java, in Indonesia.",
+   "map": {
+    "focus": "",
+    "lat": -7.8,
+    "lon": 113.8,
+    "zoom_level": 5,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "flag_fill",
+     "target": "ID",
+     "at_word": "java"
+    },
+    {
+     "type": "label",
+     "target": "Indonesia",
+     "at_word": "island"
+    }
+   ],
+   "highlights": [
+    {
+     "word": "java",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "geography records",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 3,
+   "mode": "map",
+   "voice": "Its crater holds the world's most acid lake.",
+   "map": {
+    "focus": "",
+    "lat": -8.0,
+    "lon": 114.1,
+    "zoom_level": 6,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "🌊",
+     "at_word": "lake",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "acid",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "volcanology studies",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 4,
+   "mode": "stock",
+   "voice": "Miners climb there carrying torches at night.",
+   "map": {
+    "focus": "",
+    "lat": -8.03,
+    "lon": 114.2,
+    "zoom_level": 7,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [],
+   "highlights": [
+    {
+     "word": "night",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "documentary reports",
+   "visual_query": [
+    "blue fire volcano night",
+    "sulfur miner carrying basket",
+    "smoking crater mountain"
+   ],
+   "must_contain": [
+    "volcano"
+   ],
+   "reject": [
+    "daylight city"
+   ]
+  },
+  {
+   "id": 5,
+   "mode": "map",
+   "voice": "Burning sulfur makes the bright blue flames.",
+   "map": {
+    "focus": "",
+    "lat": -8.05,
+    "lon": 114.23,
+    "zoom_level": 7,
+    "motion": "pan_left"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "⚠",
+     "at_word": "sulfur",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "sulfur",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "chemistry of combustion",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 6,
+   "mode": "map",
+   "voice": "The glow is visible from far away.",
+   "map": {
+    "focus": "",
+    "lat": -8.058,
+    "lon": 114.242,
+    "zoom_level": 8,
+    "motion": "zoom_in"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "icon",
+     "emoji": "💡",
+     "at_word": "glow",
+     "pos": [
+      0.5,
+      0.3
+     ]
+    }
+   ],
+   "highlights": [
+    {
+     "word": "glow",
+     "color": "#22D3EE"
+    }
+   ],
+   "sfx_trigger": [],
+   "fact_source": "visitor accounts",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  },
+  {
+   "id": 7,
+   "mode": "map",
+   "voice": "Which natural wonder would you see at night?",
+   "map": {
+    "focus": "",
+    "lat": -8.058,
+    "lon": 114.242,
+    "zoom_level": 9,
+    "motion": "zoom_out"
+   },
+   "country_iso_codes": [
+    "ID"
+   ],
+   "events": [
+    {
+     "type": "pin",
+     "target": "Kawah Ijen",
+     "lat": -8.058,
+     "lon": 114.242,
+     "at_word": "glow"
+    }
+   ],
+   "highlights": [],
+   "sfx_trigger": [],
+   "fact_source": "-",
+   "visual_query": [],
+   "must_contain": [],
+   "reject": []
+  }
+ ],
+ "loop_line": "Nothing else glows like this. And that is why."
+}
