@@ -468,5 +468,39 @@
       "pix:86746"
     ],
     "ending_mode": "cta"
+  },
+  {
+    "date": "2026-10-27T18:13:15.102002+00:00",
+    "title": "Why Did This Wall Take 2,000 Years? (Badaling)",
+    "keywords": [
+      "CN",
+      "great wall of china",
+      "badaling",
+      "ancient wonders",
+      "china history"
+    ],
+    "video_id": "hP1uFCshLsA",
+    "clips": [
+      "pix:117192",
+      "pix:173555",
+      "pix:18386",
+      "pix:21118",
+      "pix:216951",
+      "pix:2174",
+      "pix:24745",
+      "pix:277143",
+      "pix:277145",
+      "pix:28303",
+      "pix:28766",
+      "pix:32115",
+      "pix:34203",
+      "pix:355017",
+      "pix:43731",
+      "pix:48688",
+      "pix:4973",
+      "pix:6456",
+      "pix:86746"
+    ],
+    "ending_mode": "loop"
   }
 ]
