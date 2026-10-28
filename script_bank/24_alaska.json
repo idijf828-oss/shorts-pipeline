@@ -75,11 +75,6 @@
      "type": "flag_fill",
      "target": "US",
      "at_word": "Alaska"
-    },
-    {
-     "type": "label",
-     "target": "United States",
-     "at_word": "Alaska"
     }
    ],
    "highlights": [

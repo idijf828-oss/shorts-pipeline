@@ -43,19 +43,35 @@ def clip_ids(entries=None):
     return out
 
 
+_TITLE_STOP = {"why", "does", "did", "is", "are", "do", "can", "could",
+               "would", "will", "this", "that", "the", "a", "an", "its",
+               "have", "has", "whole", "so", "much", "really", "just"}
+
+
+def _title_sig(t):
+    """v13.5: sarlavhadan shablon so'zlarini olib tashlaydi — 'Why Does
+    This Jungle River Boil?' vs 'Why Does This Country Have 3 Capitals?'
+    shablon tufayli 0.60 o'xshash chiqardi (mavzular butunlay boshqa)."""
+    import re as _re
+    return " ".join(w for w in _re.findall(r"[a-z0-9']+", str(t).lower())
+                    if w not in _TITLE_STOP and len(w) > 2)
+
+
 def too_similar(new_title, new_keywords, entries, title_thresh=0.55,
                 kw_overlap=3):
     """Yangi mavzu oldingi videolardan juda o'xshashmi?
 
     v9: OXIRGI 5 videoda BITTA umumiy kalit so'z ham takrorlanmaydi
     (bir davlat ketma-ket chiqmasin). Eski videolar bilan 3 ta
-    overlap / 0.55 title o'xshashligi cheki."""
+    overlap / 0.55 title o'xshashligi cheki.
+    v13.5: title ratio — stopword'lardan tozalangan matn ustida."""
+    sig_new = _title_sig(new_title)
     new_kw = set(k.lower() for k in new_keywords)
     n = len(entries)
     for idx, e in enumerate(entries):
         old = e.get("title", "")
-        if old and difflib.SequenceMatcher(None, new_title.lower(),
-                                           old.lower()).ratio() > title_thresh:
+        if old and sig_new and difflib.SequenceMatcher(
+                None, sig_new, _title_sig(old)).ratio() > title_thresh:
             return True
         shared = new_kw & set(k.lower() for k in e.get("keywords", []))
         if len(shared) >= kw_overlap:

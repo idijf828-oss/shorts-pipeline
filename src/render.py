@@ -161,7 +161,17 @@ def _render_map_states(vis, fulls, punches, dur, on_screen, work, i):
         active = [l["path"] for l in fulls if int(round(l["t"] * FPS)) <= f0]
         png = _compose_state(vis["base"], active, work, f"{i:02d}_{k}")
         sd = n / FPS
-        xexpr, yexpr = _pan_xy(motion, N, f0)
+        if motion not in ("pan_left", "pan_right", "pan_up", "pan_down") \
+                and vis.get("anchor"):
+            # v13.5 (user #1): zoom FOKUSGA anchor. Fokus canvas (720,960)
+            # da = ekranda (540,720) — 37.5% balandlik. Butun zoom (va
+            # punch) davomida fokus nuqta ekranda QOTIB TURADI; pin
+            # overlay (0.75*canvas) bilan aynan ustma-ust tushadi.
+            # z>=1 uchun 1080-1080/z va 1440-1440/z har doim [0, iw-iw/z]
+            # klamp ichida — qora chetlar hech qachon chiqmaydi.
+            xexpr, yexpr = "'1080-1080/zoom'", "'1440-1440/zoom'"
+        else:
+            xexpr, yexpr = _pan_xy(motion, N, f0)
         vf = (
             "scale=2160:3840:force_original_aspect_ratio=increase,"
             "crop=2160:3840,"
@@ -255,27 +265,40 @@ def _screen_fc(screens, dur, sub_y=None):
     """v11 (V2-1): ZONALI joylashtirish.
     - ikonka/strelka: ZONA C qatori (y=1430), bir nechtasi bo'lsa X bo'ylab
       yoyiladi (bir-biriga tegishmaydi);
-    - pin: xarita koordinatasida (bias bilan yuqorida), ZONA B'ga tushsa
-      avtomatik siljiydi;
+    - pin: xarita koordinatasida, v13.5: UCHI (tip) aniq nishonga tegadi,
+      balandlik bo'yicha masshtablanadi (label bilan cho'zilmaydi);
     - label: xarita koordinatasida, ekranda TO'LIQ, ZONA B'dan tashqarida.
-    -> (inputs, fc, last, boxes); boxes = (x, y, s, vx, vy, vw, vh)
-    (to'liq quti + ko'rinadigan quti)."""
+    v13.5 (user #4): ZONA B bandasi ±130px (2 qatorli subtitr ham sig'adi).
+    -> (inputs, fc, last, boxes); boxes = (x, y, s, vx, vy, vw, vh, tx, ty)
+    (to'liq quti + ko'rinadigan quti + pin uchi; tx=-1 pin emas)."""
     inputs, fc, last, boxes = [], [], "[0:v]", []
-    B0, B1 = (sub_y - 80, sub_y + 80) if sub_y else (None, None)
+    B0, B1 = (sub_y - 130, sub_y + 130) if sub_y else (None, None)
     # ko'rinadigan quti (kvadrat kanvas markazidagi grafika ulushi)
     VIS = {"icon": (0.10, 0.10, 0.80, 0.80),
            "arrow": (0.10, 0.10, 0.80, 0.80),
-           "pin": (0.08, 0.08, 0.84, 0.84),
+           "pin": (0.0, 0.0, 1.0, 1.0),
            "label": (0.06, 0.36, 0.88, 0.28)}
     kinds = [str(ly.get("kind") or "") for ly in screens[:4]]
     n_stick = sum(1 for k in kinds if k in ("icon", "arrow"))
     i_stick = 0
-    for k, ly in enumerate(screens[:4]):
+    # v13.5: PINLAR birinchi o'tishda joylashadi (uchi geografiyaga
+    # qotadi, siljiymaydi); LABEL/IKONKA keyin — label pin qutisi va
+    # ZONA_A (sarlavha) bilan kesishsa suriladi (Canada test S7:
+    # z7 kadrdan tashqaridagi 'Canada' labeli sarlavhaga clamp bo'lgan).
+    order = ([i for i, k in enumerate(kinds) if k == "pin"]
+             + [i for i, k in enumerate(kinds) if k != "pin"])
+    pin_boxes = []
+    box_by_idx = {}
+    n_in = 0
+    for k in order:
+        ly = screens[k]
         t0 = float(ly.get("t", 0.2))
         px, py = ly.get("pos") or (0.5, 0.35)
         kind = kinds[k]
         S = 420 if kind == "label" else 380 if kind == "arrow" else 340
         half = S // 2
+        Sw = S
+        tx = ty = -1
         if kind in ("icon", "arrow"):
             # ZONA C: bitta qatorda, X bo'ylab yoyilgan
             S = 320
@@ -283,6 +306,20 @@ def _screen_fc(screens, dur, sub_y=None):
             i_stick += 1
             X = max(20, min(W - S - 20, int(cx) - S // 2))
             Y = style.ZONE_C[0] + 10
+        elif kind == "pin":
+            # v13.5 (user #3): pin uchi nishonga aniq tegadi; kenglik
+            # balandlikka nisbatan (label yozuvi siqilmaydi)
+            tx = int(px * W / 1440.0)
+            ty = int(py * H / 2560.0)
+            try:
+                from PIL import Image as _Im
+                iw, ih = _Im.open(ly["path"]).size
+            except Exception:
+                iw, ih = 512, 512
+            kscale = S / 512.0
+            Sw = max(S, int(iw * kscale))
+            X = tx - int(256 * kscale)          # uch (tip) x=256/512
+            Y = ty - int(480 * kscale)          # uch (tip) y=480/512
         elif isinstance(px, (int, float)) and px <= 1.0:     # nisbiy
             X = max(20, min(W - S - 20, int(px * W) - half))
             Y = max(90, min(H - S - 160, int(py * H) - half))
@@ -293,8 +330,8 @@ def _screen_fc(screens, dur, sub_y=None):
         fx, fy, fw, fh = VIS.get(kind, (0.1, 0.1, 0.8, 0.8))
         # ZONA B (subtitr) bilan kesishsa - pin/label siljiydi
         if kind in ("pin", "label") and B0 is not None:
-            vx, vy = X + int(S * fx), Y + int(S * fy)
-            vw, vh = int(S * fw), int(S * fh)
+            vx, vy = X + int(Sw * fx), Y + int(S * fy)
+            vw, vh = int(Sw * fw), int(S * fh)
             if vy < B1 and vy + vh > B0:
                 up = B0 - 8 - vh - int(S * fy)          # tepaga
                 down = B1 + 8 - int(S * fy)             # pastga
@@ -302,20 +339,51 @@ def _screen_fc(screens, dur, sub_y=None):
                     Y = up
                 elif down + int(S * (fy + fh)) <= H - 60:
                     Y = down
+        if kind == "pin":
+            pin_boxes.append((X, Y, X + Sw, Y + S))
+        # v13.5: label ZONA A (sarlavha) va PIN qutilaridan qochsin
+        if kind == "label":
+            vx, vy = X + int(Sw * fx), Y + int(S * fy)
+            vw, vh = int(Sw * fw), int(S * fh)
+            if vy < style.ZONE_A[1] and vy + vh > style.ZONE_A[0]:
+                Y = style.ZONE_A[1] + 8 - int(S * fy)   # sarlavha ostiga
+                vy = Y + int(S * fy)
+            for (bx0, by0, bx1, by1) in pin_boxes:
+                if vx < bx1 and vx + vw > bx0 and vy < by1 and vy + vh > by0:
+                    # VIS quti koordinatasida tekshiramiz (fy ofset bilan)
+                    below = by1 + 8 - int(S * fy)       # pin ostiga
+                    above = by0 - 8 - int(S * (fy + fh))
+                    bvy, avy = below + int(S * fy), above + int(S * fy)
+                    if below + int(S * (fy + fh)) <= H - 60 \
+                            and not (bvy < (B1 or H) and bvy + vh > (B0 or 0)):
+                        Y = below
+                    elif above >= 90 and not (avy < (B1 or H)
+                                             and avy + vh > (B0 or 0)):
+                        Y = above
+                    vy = Y + int(S * fy)
+                    break
         # pin/label ekranda TO'LIQ (qirqilmasin)
-        X = max(6, min(W - S - 6, X))
+        X = max(6, min(W - Sw - 6, X))
         Y = max(6, min(H - S - 6, Y))
-        vx, vy = X + int(S * fx), Y + int(S * fy)
-        boxes.append((int(X), int(Y), int(S),
-                      int(vx), int(vy), int(S * fw), int(S * fh)))
+        vx, vy = X + int(Sw * fx), Y + int(S * fy)
+        box_by_idx[k] = (int(X), int(Y), int(S),
+                         int(vx), int(vy), int(Sw * fw), int(S * fh),
+                         int(tx), int(ty))
+        # n_in: inputs tartibida (order bo'yicha) qo'shilgan fayl
+        # indeksi — [0:v] asosiy video, keyingilar 1,2,... (k emas:
+        # pin-lar birinchi o'tishda joylashgani uchun k tartibi farq
+        # qiladi — almashtirilgan indeks Canada testda labelni
+        # yo'qotdi)
+        n_in += 1
         inputs += ["-loop", "1", "-framerate", str(FPS),
                    "-t", f"{max(0.5, dur):.2f}", "-i", ly["path"]]
-        fc.append(f"[{k + 1}:v]scale={S}:{S},format=rgba,"
+        fc.append(f"[{n_in}:v]scale={Sw}:{S},format=rgba,"
                   f"fade=t=in:st={t0:.2f}:d=0.15:alpha=1[ic{k}]")
         fc.append(f"{last}[ic{k}]overlay=x={X}:"
                   f"y='{Y} - (1 - min(1,(t-{t0:.2f})/0.20))*80':"
                   f"enable='gte(t,{t0:.2f})'[v{k}]")
         last = f"[v{k}]"
+    boxes = [box_by_idx[i] for i in range(len(order))]
     return inputs, fc, last, boxes
 
 
@@ -492,11 +560,18 @@ def render(cfg, script, items, work):
         sub_y = caption_y(cfg, mode)
         seg_t0 = seg_start - dur          # segment boshi (seg_start allaqachon ++)
         sin, fc, last, scr_boxes = _screen_fc(screens, dur, sub_y)
-        for ly, (bx, by, bs, vx, vy, vw, vh) in zip(screens[:4], scr_boxes):
-            ev_log.append({"t": round(seg_t0 + float(ly.get("t", 0.2)), 3),
-                           "type": str(ly.get("kind") or "screen"), "seg": i,
-                           "x": bx, "y": by, "s": bs,
-                           "vx": vx, "vy": vy, "vw": vw, "vh": vh})
+        for ly, bx in zip(screens[:4], scr_boxes):
+            _e = {"t": round(seg_t0 + float(ly.get("t", 0.2)), 3),
+                  "type": str(ly.get("kind") or "screen"), "seg": i,
+                  "x": bx[0], "y": bx[1], "s": bx[2],
+                  "vx": bx[3], "vy": bx[4], "vw": bx[5], "vh": bx[6]}
+            if bx[7] >= 0:                  # v13.5: pin uchi (tip)
+                _e["tip_x"], _e["tip_y"] = bx[7], bx[8]
+            if ly.get("early"):             # v13.5: erta pin (boshidan)
+                _e["early"] = True
+            if ly.get("text"):              # v13.5: label matni (QC OCR)
+                _e["text"] = str(ly["text"])
+            ev_log.append(_e)
         a_idx = len(screens) + 1
         fc.append(f"{last}ass='{ass}'[assv]")
         # v11 (V2-1): ZONA A — bitta STATIK sarlavha butun video davomida

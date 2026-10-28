@@ -325,9 +325,10 @@ def _parse(raw, strict_insert=True, ending="cta"):
         data["title"] = new_t
         print(f"[script] title savolga aylantirildi: {new_t[:70]}")
     data["title"] = str(data.get("title", "A strange place"))[:100]
-    if place and place.lower() not in data["title"].lower() \
-            and len(data["title"]) < 58:
-        data["title"] = f"{data['title']} ({place})"[:100]
+    # v13.5 (user #5): sarlavhaga "(Joy nomi)" QO'SHILMAYDI — qavsdagi
+    # qiyin joy nomlari CTR va qiziqishni pasaytiradi. Joy nomi
+    # DESCRIPTION'da bo'ladi (main.build_description kafolatlaydi);
+    # _geo_checkda doimiy lint ham rad etadi.
     data["hook"] = str(data.get("hook", segs[0]["voice"]))[:200]
     data["script"] = str(data.get("script",
                                   " ".join(s["voice"] for s in segs)))[:2000]
@@ -436,6 +437,13 @@ def _geocode(place, cfg):
 def _geo_check(data, cfg):
     """User #3 lint. -> xatolik ro'yxati (bo'sh = OK)."""
     errs = []
+    # v13.5 (user #5): sarlavha qavsdagi joy nomi bilan tugalamasin —
+    # CTR pasayadi; joy nomi description'da bo'ladi
+    _ttl = str(data.get("title") or "").strip()
+    if re.search(r"\s*\([^)]{2,40}\)\s*$", _ttl):
+        errs.append("sarlavha qavsdagi joy nomi bilan tugaydi — CTR uchun "
+                    "yomon; qavsni olib tashlang (joy nomi "
+                    "description'ga yoziladi)")
     place = str(data.get("place") or "").strip()
     g = _geocode(place, cfg) if place else None
     if g:
@@ -493,13 +501,18 @@ def _geo_check(data, cfg):
         # v13.4 (2026-10-28): label render-geometriyasi — 06_sahara
         # tungi QC 3x FAIL: label(Spain) ZONA A'ga tushib sarlavha bilan
         # to'qnashgan (label@13.1s). Endi seed darajasida ushlanadi.
+        # v13.5: kamera endi apply_focus bilan (fokus canvas (720,960));
+        # zonalar yangi layout bo'yicha: ZONA A ekran [120,320] ->
+        # canvas [160,430]; ZONA B (subtitr 1114) ekran [984,1244] ->
+        # canvas [1310,1660].
         try:
             from . import geo as _g
             for j, sc in enumerate(data.get("scenes", [])):
                 m2 = sc.get("map") or {}
                 if not m2:
                     continue
-                for e in (sc.get("events") or []):
+                _evs2 = sc.get("events") or []
+                for e in _evs2:
                     if str(e.get("type")) != "label":
                         continue
                     tgt = str(e.get("target") or "").strip()
@@ -508,13 +521,14 @@ def _geo_check(data, cfg):
                     cen = _g.country_centroid(tgt)
                     if cen is None:
                         continue
-                    lx, ly = _g.project_point(m2, cen[0], cen[1])
-                    if 40 <= ly <= 400:
+                    _m2 = _g.apply_focus(dict(m2), _evs2)
+                    lx, ly = _g.project_point(_m2, cen[0], cen[1])
+                    if 160 <= ly <= 430:
                         errs.append(
                             f"sahna {j}: label '{tgt}' ZONA A (sarlavha "
                             f"chizig'i) bilan to'qnashadi (y={ly:.0f}px) — "
                             "labelni olib tashlang yoki kamerani yaqinlashtiring")
-                    elif 620 <= ly <= 940:
+                    elif 1310 <= ly <= 1660:
                         errs.append(
                             f"sahna {j}: label '{tgt}' ZONA B (subtitr) "
                             f"bilan to'qnashadi (y={ly:.0f}px)")
@@ -522,6 +536,12 @@ def _geo_check(data, cfg):
                         errs.append(
                             f"sahna {j}: label '{tgt}' kadrdan chiqib ketadi "
                             f"(x={lx:.0f}, y={ly:.0f}px)")
+                # v13.5 (user #1) IZOH: "davlat tepadan chiqib ketmasin"
+                # talabi anchor bilan GEOMETRIK KAFOLATLANGAN: fokus
+                # canvas (720,960) da qotgani uchun oyna ichidagi har
+                # qanday davlat tepasi ko'pi bilan 0.375*hd*(1-1/1.42)
+                # = ko'rinadigan balandlikning 16% ichida chiqadi —
+                # "yarim kesilish" (Surtsey'dagi 56%) imkonsiz.
         except Exception as _e:
             print(f"[geo] label-lint o'tkazildi: {_e}")
     maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
@@ -616,13 +636,40 @@ def _auto_pin(data, cfg):
     maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
     if not pg or not maps:
         return
-    best = max(maps, key=lambda sc: int(sc["map"]["zoom_level"]))
+    # v13.5: pin faqat KO'rinadigan sahnaga qo'yiladi — geokod nuqta
+    # sahna oynasidan tashqarida bo'lsa ("US-Canada border" kabi
+    # chiziqsimon joy -> Nominatim ixtiyoriy nuqta qaytaradi: 55.9,
+    # -130) off-screen pin -> "element ekrandan chiqmadi" rad etadi.
+    from . import geo as _g
+
+    def _sees(sc, lat, lon):
+        try:
+            m = sc.get("map") or {}
+            wd, hd = _g._window(max(3, min(12, int(m.get("zoom_level", 5)))))
+            return (abs(float(lat) - float(m.get("lat", 1e9))) <= hd / 2
+                    and abs(float(lon) - float(m.get("lon", 1e9))) <= wd / 2)
+        except Exception:
+            return False
+
+    vis_maps = [sc for sc in maps if _sees(sc, pg["lat"], pg["lon"])]
+    best = (max(vis_maps, key=lambda sc: int(sc["map"]["zoom_level"]))
+            if vis_maps else None)
+    if best is None:
+        # hech bir sahna joy nuqtasini ko'rsatmaydi — off-screen pin
+        # qo'ymaymiz (bank seedlarida pin bor, bu faqat zaxira yo'l)
+        print(f"[script] _auto_pin: '{place[:24]}' ({pg['lat']:.2f},"
+              f"{pg['lon']:.2f}) hech bir sahna oynasida emas — pin "
+              "qo'shilmadi")
+        return
     evs = best.setdefault("events", [])
     pins = [e for e in evs if str(e.get("type")) == "pin"]
     if pins:
         # Kuchli model koordinatasi geocode nuqtasiga yaqin (<3km) bo'lsa
         # uni ishonamiz (markaz nuqta aniqroq bo'lishi mumkin); uzoq
-        # bo'lsa (xato koordinata) geocode qiymati bosib yoziladi.
+        # bo'lsa (xato koordinata) geocode qiymati bosib yoziladi —
+        # v13.5: faqat geocode nuqta shu sahna oynasida KO'RINSA
+        # (Hashima->Gifu tuzatiladi; ko'rinadigan to'g'ri pin esa
+        # saqlanadi).
         import math
         try:
             p0 = (float(pins[0].get("lat")), float(pins[0].get("lon")))
@@ -633,9 +680,12 @@ def _auto_pin(data, cfg):
                 * math.sin(math.radians(pg["lon"] - p0[1]) / 2) ** 2)))
         except Exception:
             d = 1e9
-        if d > 3.0:
+        if d > 3.0 and _sees(best, pg["lat"], pg["lon"]):
             pins[0]["lat"] = pg["lat"]
             pins[0]["lon"] = pg["lon"]
+        elif d > 3.0:
+            print(f"[script] pin koordinatasi saqlandi — geocode "
+                  f"({pg['lat']:.2f},{pg['lon']:.2f}) kadrda ko'rinmaydi")
         else:
             print(f"[script] pin seed koordinatasi saqlandi "
                   f"(geocode'dan {d:.2f}km)")

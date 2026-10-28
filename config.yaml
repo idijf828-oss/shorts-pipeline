@@ -30,8 +30,9 @@ video:
 
 captions:
   enabled: true       # v10 map-explainer: so'zma-so'z markaz subtitr (qo'llanma: eng muhim element)
-  y_map: 780              # ekran markazi atrofi (0.40H, past 20% safe-zone'dan yuqori)
-  y_stock: 780            # insert kadrlarida ham markazda (subtitr uzluksiz)
+  y_map: 1114             # v13.5 (user #4): pastki-o'rta, 0.58H — pin (0.35H) bilan
+                         # to'qnashmaydi, xarita/pin yuqorida erkin
+  y_stock: 1114           # insert kadrlarida ham bir xil (subtitr uzluksiz)
   safe_w: 840            # maksimal matn kengligi (yon chetlar 8% safe zone)
   font_size: 100         # qalin oq + qora kontur (qo'llanma uslubi)
   max_words: 2           # qo'llanma: har kadrda 1-2 so'z

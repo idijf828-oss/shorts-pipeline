@@ -177,7 +177,8 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
             png = geo.label_png(target, work)
             if png:
                 layers.append({"path": png, "t": t, "full": False, "pos": pos,
-                               "sfx": None, "kind": "label", "word_t": t})
+                               "sfx": None, "kind": "label", "word_t": t,
+                               "text": str(target)[:22]})
         elif k == "arrow":
             # v10.2 (user #3): strelka FAQAT haqiqiy manzilga. Pozitsiya va
             # yo'nalish koordinatadan: ko'rinish markazi -> manzil vektori.
@@ -279,4 +280,59 @@ def build(cfg, scene, ctx, words, work, seg_i, dur=None):
                 layers.append({"path": png, "t": 0.0, "full": True,
                                "pos": None, "sfx": None, "kind": "flag_fill",
                                "iso": iso2, "word_t": 0.0, "sticky": True})
+    # v13.5 (user #3): ERTA pin — skript darajasidagi pin (o'z sahnasida
+    # faqat video oxirida chiqardi) endi boshidan ko'rinadi: birinchi
+    # xarita sahnada ~2-3s (ob'ekt haqida gap boshlanishi), keyingi
+    # sahnalarda kesishdan keyin darhol. Pin o'z sahnasida so'z vaqtida
+    # alohida (drop SFX bilan) chiqaveradi — bu yerda faqat BOSHQA
+    # sahnalar uchun qo'shamiz. Kadrdan tashqaridagi sahnalarda chiqmaydi.
+    sp = ctx.get("script_pin")
+    if sp and not any(l.get("kind") == "pin" for l in layers):
+        pos = None
+        try:
+            pos = ctx["to_px"](float(sp["lon"]), float(sp["lat"]))
+        except Exception:
+            pos = None
+        # v13.5: sahna labeli pin nuqtasining atrofida bo'lsa (~260px
+        # canvas) — erta pin CHIQMAYDI: label allaqachon joyni
+        # belgilaydi, ikkalasi bir-birining ustiga tushib qolmaydi
+        # (Moynaq S0: KZ label + early pin; Canada test S4).
+        near_lbl = False
+        if pos is not None:
+            for l in layers:
+                if l.get("kind") == "label" and l.get("pos"):
+                    dx = abs(float(l["pos"][0]) - float(pos[0]))
+                    dy = abs(float(l["pos"][1]) - float(pos[1]))
+                    if (dx * dx + dy * dy) ** 0.5 < 260:
+                        near_lbl = True
+                        break
+        png = geo.pin_png(work, label=str(sp.get("label") or "")[:18]) \
+            if (pos is not None and not near_lbl) else None
+        # v13.5: quti TO'LIQ sig'masa (chetga clamp -> pin noto'g'ri
+        # joyda ko'rinadi) yoki kadrdan tashqarida bo'lsa — chiqarmaymiz.
+        # _screen_fc: tx=pos_x*0.75, X=tx-256*k, Sw=max(340, iw*k),
+        # k=340/512; Y=ty-480*k, balandlik 340. ZONA_A (sarlavha
+        # [120,320]) bilan kesishmasin: box tepasi >= 332.
+        ok_pos = False
+        if pos is not None and png:
+            try:
+                from PIL import Image as _Im
+                iw, _ih = _Im.open(png).size
+                _k = 340.0 / 512.0
+                _sw = max(340, int(iw * _k))
+                tx = pos[0] * 1080.0 / 1440.0
+                ty = pos[1] * 1920.0 / 2560.0
+                ok_pos = (170 + 6 <= tx <= 1080 - _sw + 170 - 6
+                          and ty - 319 >= 332 and ty <= 1890)
+            except Exception:
+                ok_pos = False
+        if ok_pos:
+            first = not sp.get("shown_once")
+            t = max(2.0, min(3.0, _first_highlight_time(scene, words, 2.2))) \
+                if first else 0.15
+            if png:
+                layers.append({"path": png, "t": t, "full": False,
+                               "pos": pos, "sfx": "drop" if first else None,
+                               "kind": "pin", "word_t": t, "early": True})
+                sp["shown_once"] = True
     return layers, punches

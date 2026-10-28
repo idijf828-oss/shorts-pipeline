@@ -26,6 +26,11 @@ def build_description(cfg, script):
         facts = " ".join(s["voice"] for s in segs[1:7])
         pc = script.get("pinned_comment") or "Which place should I cover next? 👇"
         desc = f"{hook}\n{facts}\n\n{pc}\nOne question, three reasons, every day.\n"
+    # v13.5 (user #5): joy nomi sarlavhada emas — DESCRIPTION'da bo'lishi
+    # kafolatlanadi (sarlavha qisqa va intrigali qoladi).
+    _place = str(script.get("place") or "").strip()
+    if _place and _place.lower() not in desc.lower():
+        desc = desc.rstrip() + f"\n\n📍 {_place}"
     hashtags = script.get("hashtags") or ["shorts", "geography", "facts"]
     import re as _re
     clean = []
@@ -262,6 +267,23 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
 
     print("== 5/7: Vizual: xarita + bayroq-fill + events / stock ==")
     used_ids = set(history.clip_ids())
+    # v13.5 (user #3): ERTA pin — pin faqat oxirgi sahnada emas, videoning
+    # boshidan (2-3s, ob'ekt haqida gap boshlanishi bilan) ko'rinadi.
+    # Skript darajasidagi birinchi pin event (lat/lon bilan) topiladi.
+    _script_pin = None
+    for _sc in segs:
+        for _e in (_sc.get("events") or []):
+            if (str(_e.get("type")) == "pin"
+                    and _e.get("lat") is not None
+                    and _e.get("lon") is not None):
+                _script_pin = {"lat": float(_e["lat"]),
+                               "lon": float(_e["lon"]),
+                               "label": str(_e.get("target")
+                                            or (_sc.get("map") or {})
+                                            .get("focus") or "")}
+                break
+        if _script_pin:
+            break
     shift = 0.15 if gtts else 0.0                   # doc B3: gTTS -> -0.15s
     _sticky_flags = []
     for i, it in enumerate(items):
@@ -287,32 +309,22 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 print(f"   sahna {i + 1}: stock xatosi ({e}) -> xarita")
         if vis is None:
             try:
-                # v10.2 (user #3): pin/label kamera markazida bo'lsa — bias:
-                # fokus nuqta kadrda pastroqda (0.35H) tursin, subtitr
-                # ustiga tushmasin. (diapazon: zoom oynasining 30%.)
-                _m = dict(sc.get("map") or {})
-                if "bias" not in _m:
-                    _pin_ev = [e for e in (sc.get("events") or [])
-                               if str(e.get("type")) in ("pin", "label")
-                               and e.get("lat") is not None]
-                    if _pin_ev:
-                        try:
-                            _wd, _hd = geo._window(max(3, min(
-                                12, int(_m.get("zoom_level", 5)))))
-                            _dlat = abs(float(_pin_ev[0]["lat"])
-                                        - float(_m.get("lat", 1e9)))
-                            _dlon = abs(float(_pin_ev[0]["lon"])
-                                        - float(_m.get("lon", 1e9)))
-                            if (_dlat <= 0.30 * _hd and _dlon <= 0.30 * _wd):
-                                # 0.22: nuqta canvas 0.28H'ga chiqadi
-                                # (subtitr bandasi [0.31H,0.50H])
-                                _m["bias"] = 0.22
-                        except Exception:
-                            pass
+                # v13.5 (user #1): kamera oynasi FOKUS atrofida markazlanadi
+                # (pin/label nuqtasi yoki kamera markazi) — fokus canvas
+                # (720, 960) = ekranning 37.5% balandligiga tushadi.
+                # render.py zoompan shu nuqtaga anchor: zoom davomida
+                # fokus/pin ekranda qotib turadi, davlat/ob'ekt tepadan
+                # chiqib ketmaydi. (Eski: bias 0.22 + markazga zoom —
+                # yakuniy zoomda fokus ~19% ga chiqib, Surtsey'da
+                # Islandiya yarmi tepada kesilgan, 80% bo'sh okean.)
+                _m = geo.apply_focus(dict(sc.get("map") or {}),
+                                     sc.get("events") or [])
                 ctx = geo.compose_map(_m, sc.get("country_iso_codes"), work)
                 # v10.2 (user #3): bayroq doimiyligi — oldingi sahna
                 # flaglari (hali kadrda ko'rinsa) t=0 qatlam sifatida.
                 ctx["sticky_fills"] = list(_sticky_flags)
+                # v13.5 (user #3): erta pin (skript darajasidagi)
+                ctx["script_pin"] = _script_pin
             except Exception as e:
                 from src import maps
                 img = os.path.join(work, f"m_{i:02d}.png")
@@ -338,6 +350,7 @@ def produce(cfg, script, no_stock=False, tts_cache=None):
                 punches = [max(2, p - int(shift * 30)) for p in punches]
             vis = {"type": "map", "base": ctx["base"],
                    "zs": ctx["zs"], "ze": ctx["ze"],
+                   "anchor": True,      # v13.5: zoom fokusga anchor (37.5%)
                    "motion": (sc.get("map") or {}).get("motion", "zoom_in")}
         it["visual"] = vis
         it["layers"] = layers

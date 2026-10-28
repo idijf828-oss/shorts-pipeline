@@ -102,12 +102,14 @@ def _ocr_clean(path, t):
     jp = f"/tmp/qc_ocr_{int(t*10)}.jpg"
     if not _frame(path, t, jp):
         return True                      # kadr olinmadi -> tekshirilmaydi
-    # V2: ZONA B (y 660-900, subtitr doim turadi) ni bo'yab tashlaymiz —
-    # subtitr stock-OCR'ga "matn bor" deb false-positive berdi (saboq)
+    # V2: ZONA B (subtitr doim turadi) ni bo'yab tashlaymiz — subtitr
+    # stock-OCR'ga "matn bor" deb false-positive berdi (saboq).
+    # v13.5: subtitr 0.58H=1114 -> banda [984, 1244]
     try:
         from PIL import Image, ImageDraw
         im = Image.open(jp).convert("RGB")
-        ImageDraw.Draw(im).rectangle([0, 660, 1080, 900], fill=(0, 0, 0))
+        ImageDraw.Draw(im).rectangle([0, ZONE_B[0], 1080, ZONE_B[1]],
+                                     fill=(0, 0, 0))
         im.save(jp)
     except Exception:
         pass
@@ -119,7 +121,8 @@ def _ocr_clean(path, t):
 # ---------- V2 (topshiriq #5): kadr-darajasidagi tekshiruvlar ----------
 
 ZONE_A = (120, 320)     # style.py bilan bir xil (mustaqil nusxa — review
-ZONE_B = (700, 860)     # ham shunday; atayin hardcode-emas, pastda sync)
+ZONE_B = (984, 1244)    # ham shunday; atayin hardcode-emas, pastda sync)
+                        # v13.5: subtitr 0.58H=1114 (user #4)
 ZONE_C = (1400, 1750)
 
 
@@ -205,6 +208,34 @@ def _edge_text_pixels(img_p, y0, y1):
                         or (x < w - 7 and px[x + 7, y] < 90)):
                     cnt += 1
     return cnt
+
+
+def _edge_glyph_rows(img_p, y0, y1, thr=200, min_run=6):
+    """v13.5: chetki 14px da >=6px uzluksiz YORQIN GORIZONTAL run bor
+    qatorlar soni — matn glifi qalin gorizontal kesim beradi (pozitiv
+    nazorat: subtitr x=0'da 26 qator), muz/qor diagonali 0-2 qator."""
+    from PIL import Image
+    im = Image.open(img_p).convert("L")
+    st = im.crop((0, y0, im.size[0], y1))
+    w, h = st.size
+    px = st.load()
+    rows = 0
+    for y in range(6, h - 6):
+        hit = False
+        for xs, xe in ((0, 14), (w - 14, w)):
+            run = best = 0
+            for x in range(xs, xe):
+                if px[x, y] > thr:
+                    run += 1
+                    best = max(best, run)
+                else:
+                    run = 0
+            if best >= min_run:
+                hit = True
+                break
+        if hit:
+            rows += 1
+    return rows
 
 
 def _gray_small(img_p, w=54, h=96):
@@ -297,6 +328,63 @@ def v2_frame_checks(path, dur, ev, checks, step=0.333):
     checks.append(("V2 sarlavha<->element kesishuv=0", not overlap,
                     ",".join(overlap[:3]) or "ok"))
 
+    # v13.5 (user #1): pin uchi (tip) 35-40% balandlikda — O'Z sahnasida
+    # (erta pin boshqa sahnalarda geografik joyida turadi, bu tekshiruv
+    # unga qo'llanmaydi; faqat ekranda bo'lishi tekshiriladi yuqorida)
+    pins_real = [e for e in evs if str(e.get("type")) == "pin"
+                 and e.get("tip_y") is not None and not e.get("early")]
+    bad_pin = [f"@{float(e['t']):.1f}s y={int(e['tip_y'])}"
+               for e in pins_real if not (640 <= int(e["tip_y"]) <= 800)]
+    checks.append(("V2 pin uchi 35-40% balandlikda",
+                   not bad_pin,
+                   ",".join(bad_pin[:3])
+                   or (f"ok ({int(pins_real[0]['tip_y'])}px)"
+                       if pins_real else "pin yo'q")))
+
+    # v13.5 (user #2): davlat yorlig'i TO'LIQ o'qiladi — kesilgan oxirgi
+    # harf ("KAZAKHSTA") yoki yashirin label ushlanadi
+    lbl_bad = []
+    for e in evs:
+        if str(e.get("type")) != "label" or not e.get("text"):
+            continue
+        vx, vy, vw, vh = (e.get("vx"), e.get("vy"), e.get("vw"), e.get("vh"))
+        if None in (vx, vy, vw, vh):
+            continue
+        t = float(e.get("t", 0)) + 0.5
+        jp = f"/tmp/qc_lbl_{int(t * 10)}.jpg"
+        if not _frame(path, t, jp):
+            continue
+        try:
+            from PIL import Image as _Im
+            im = _Im.open(jp).crop((max(0, int(vx) - 24), max(0, int(vy) - 24),
+                                    min(1080, int(vx + vw) + 24),
+                                    min(1920, int(vy + vh) + 24)))
+            # binarizatsiya: sun'iy yo'llovchi fon (sun'iy yo'ldosh) ustida
+            # xom OCR 1-2 harfni yo'qotadi (Iceland dalili: xom psm6='',
+            # binar -> 'ICELAND' to'liq)
+            im = im.convert("L").point(lambda v: 255 if v > 175 else 0)
+            im.save(jp)
+        except Exception:
+            pass
+        # psm6: qora qutili label'da psm7 bo'sh qaytardi (Moynaq
+        # dalili: psm6 '| KAZAKHSTAN }' to'liq o'qidi)
+        o = _run(["tesseract", jp, "stdout", "--psm", "6"])
+        want = re.sub(r"[^A-Z]", "", str(e["text"]).upper())
+        got = re.sub(r"[^A-Z]", "", (o or "").upper())
+        if not want:
+            continue
+        from collections import Counter as _Cnt
+        miss = list((_Cnt(want) - _Cnt(got)).elements())
+        if len(miss) >= 2 or (len(miss) == 1 and miss[0] == want[-1]):
+            lbl_bad.append(f"{str(e['text'])[:12]}@{t:.1f}s "
+                           f"(yo'q: {''.join(miss[:3])})")
+        try:
+            os.remove(jp)
+        except Exception:
+            pass
+    checks.append(("V2 label to'liq o'qiladi (kesik yo'q)", not lbl_bad,
+                   "; ".join(lbl_bad[:3]) or "ok"))
+
     # --- OCR + piksel kadrlar bo'yicha ---
     pres_a, dup_frames, extra_b, clipped, words_b_max = [], [], [], [], 0
     grays = []
@@ -326,9 +414,25 @@ def v2_frame_checks(path, dur, ev, checks, step=0.333):
         # bbox yopishgan artefaktlarga aldanmaydi
         # chegara 200: xarita shovqini (qor/dengiz cheti) <=141
         # o'lchandi, haqiqiy kesilgan matn ~286+ (simulyatsiya)
-        if (_edge_text_pixels(fp, ZONE_A[0] - 40, ZONE_A[1] + 40) >= 200
-                or _edge_text_pixels(fp, ZONE_B[0] - 40,
-                                     ZONE_B[1] + 40) >= 200):
+        # v13.5: ZONA_B pastga siljishi (984-1244) + merkator kamera
+        # tufayli muz/shohli chetlar 352 pikselgacha chiqdi (Canada
+        # test: 21.3s, 23.6s). Uchlik konfirmatsiya: piksel >= 200 VA
+        # glif-qatorlar >= 3 VA (chetda OCR so'zi YOKI piksel >= 500 —
+        # ochiq kesilish zaxira). Shovqin: OCR=0, glif=0-2 -> o'tadi.
+        _clip_hit = False
+        for (z0, z1, zw) in ((ZONE_A[0] - 40, ZONE_A[1] + 40, wa),
+                             (ZONE_B[0] - 40, ZONE_B[1] + 40, wb)):
+            _pc = _edge_text_pixels(fp, z0, z1)
+            if _pc < 200:
+                continue
+            if _edge_glyph_rows(fp, z0, z1) < 3:
+                continue
+            _ew = any(x <= 6 or x + w_ >= 1074
+                      for (_w_, x, _y_, w_, _h_, _c) in zw)
+            if _ew or _pc >= 500:
+                _clip_hit = True
+                break
+        if _clip_hit:
             clipped.append(f"chekka@{k * step:.1f}s")
         words_b_max = max(words_b_max, len(wb))
         os.remove(a_p)

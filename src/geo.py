@@ -459,6 +459,7 @@ def compose_map(cam, iso_codes, work_dir):
         for (c_iso3, _nm, rings, cen) in _countries():
             if c_iso3 != iso3 or not _in_window(rings, win):
                 continue
+            _tint_rings = []
             for r in rings:
                 pts = [to_px(x, y) for (x, y) in r]
                 if len(pts) <= 2:
@@ -484,9 +485,21 @@ def compose_map(cam, iso_codes, work_dir):
                         fw, fh = max(2, int(bw * s)), max(2, int(bh * s))
                         f = flag.resize((fw, fh))
                         ox, oy = int((vx0 - x0) * s), int((vy0 - y0) * s)
-                        ow = max(2, min(fw - ox, int((vx1 - vx0) * s) + 2))
-                        oh = max(2, min(fh - oy, int((vy1 - vy0) * s) + 2))
-                        fvis = f.crop((ox, oy, ox + ow, oy + oh))
+                        # v13.5 (user #2): flag nusxasi CANVAS masshtabida
+                        # yopishtiriladi. Eski kodda s<1 (ulkan davlat:
+                        # Xitoy/Rossiya z7+) bo'lganda kichraytirilgan
+                        # flag canvas'ga 1:1 yopishilib, ko'rinadigan
+                        # hududning faqat bir qismini qoplagan — poligon
+                        # ichida to'rtburchak kesilar edi (Badaling
+                        # 00:14-00:18: qizil 81-86% to'rtburchak,
+                        # chap-tepa burchak).
+                        cw, ch = max(2, int(vx1 - vx0) + 2), \
+                            max(2, int(vy1 - vy0) + 2)
+                        kx = min(fw - ox, max(2, int(cw * s) + 1))
+                        ky = min(fh - oy, max(2, int(ch * s) + 1))
+                        fvis = f.crop((ox, oy, ox + kx, oy + ky))
+                        if fvis.size != (cw, ch):
+                            fvis = fvis.resize((cw, ch), Image.LANCZOS)
                         mask = Image.new("L", layer.size, 0)
                         ImageDraw.Draw(mask).polygon(pts, fill=255)
                         a0 = 0.30 if light_mode else 0.75
@@ -496,18 +509,25 @@ def compose_map(cam, iso_codes, work_dir):
                         layer.paste(
                             fvis, (int(vx0), int(vy0)),
                             mask.crop((int(vx0), int(vy0),
-                                       int(vx0) + ow, int(vy0) + oh)))
-            if light_mode:
+                                       int(vx0) + cw, int(vy0) + ch)))
+                # v13.5: har ring uchun oq kontur (eski kodda faqat
+                # OXIRGI ring chizilar edi — pts loopdan oqib kelardi)
+                dl.line(pts + [pts[0]], fill=(255, 255, 255, 255),
+                        width=6 if light_mode else 3)
+                if light_mode:
+                    _tint_rings.append(pts)
+            if light_mode and _tint_rings:
                 # V2-2: kichik joy / juda katta davlat — davlat rangi
-                # yengil to'ldirish + qalin oq kontur (bayroq emas)
+                # yengil to'ldirish + qalin oq kontur (bayroq emas).
+                # v13.5: BARCHA ko'rinadigan ringlar bo'yacha (eski:
+                # faqat oxirgi ring).
                 fill_c = _FLAG_TINT.get(iso3, (120, 170, 255))
                 mask2 = Image.new("L", layer.size, 0)
-                ImageDraw.Draw(mask2).polygon(pts, fill=70)
+                dm2 = ImageDraw.Draw(mask2)
+                for _tp in _tint_rings:
+                    dm2.polygon(_tp, fill=70)
                 layer.paste(Image.new("RGBA", layer.size,
                                       fill_c + (255,)), (0, 0), mask2)
-                dl.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=6)
-            else:
-                dl.line(pts + [pts[0]], fill=(255, 255, 255, 255), width=3)
             centroids[iso2] = to_px(cen[0], cen[1])
         if centroids.get(iso2):
             lp = os.path.join(work_dir, f"fill_{iso2}_{abs(hash((lat, lon, z))) % 10**8}.png")
@@ -597,7 +617,10 @@ def pin_png(work_dir, color=YELLOW, label=""):
 
 def label_png(name, work_dir):
     """v10: davlat nomi yorlig'i — kvadrat kanvasda markazda kichik
-    qora lavha + oq qalin matn (screen-layer 260px scale uchun KVADRAT)."""
+    qora lavha + oq qalin matn (screen-layer 260px scale uchun KVADRAT).
+    v13.5 (user #2): matn HECH QACHON kesilmaydi — uzun nomda shrift
+    avtomatik kichrayadi ("KAZAKHSTAN" 72px->60px), quti matnga mos
+    kenglikda (width: auto, padding 32px)."""
     import re as _re
     txt = _re.sub(r"[^A-Za-z0-9 .'-]", "", str(name or "")).strip()[:22]
     if not txt:
@@ -611,8 +634,20 @@ def label_png(name, work_dir):
         S = 512
         img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
         d = ImageDraw.Draw(img)
+        # v13.5: shrift narvoni — matn 444px (508-64) ga sig'guncha
+        # kichrayadi; sig'sa 72px qoladi. Kesilish imkonsiz.
+        size = 72
+        while size > 40:
+            fnt = ImageFont.truetype(
+                "/usr/share/fonts/truetype/montserrat/"
+                "Montserrat-ExtraBold.ttf", size)
+            tw = int(d.textlength(txt.upper(), font=fnt))
+            if tw <= 444:
+                break
+            size -= 4
         fnt = ImageFont.truetype(
-            "/usr/share/fonts/truetype/montserrat/Montserrat-ExtraBold.ttf", 72)
+            "/usr/share/fonts/truetype/montserrat/"
+            "Montserrat-ExtraBold.ttf", size)
         tw = int(d.textlength(txt.upper(), font=fnt))
         w, h = min(508, tw + 64), 118
         x0, y0 = (S - w) // 2, (S - h) // 2
@@ -625,6 +660,124 @@ def label_png(name, work_dir):
         return out
     except Exception:
         return None
+
+
+def country_bbox(target):
+    """v13.5: resolve(target) -> (top_lat, bottom_lat, west_lon, east_lon)
+    yoki None. Lint: davlat tepasi kadrdan kesilmasin tekshiruvi."""
+    iso3s = resolve(target)
+    if not iso3s:
+        return None
+    tops, bottoms, wests, easts = [], [], [], []
+    for (i3, _nm, rings, _c) in _countries():
+        if i3 not in iso3s:
+            continue
+        for r in rings:
+            for (x, y) in r:
+                tops.append(y); bottoms.append(y)
+                wests.append(x); easts.append(x)
+    if not tops:
+        return None
+    return (max(tops), min(bottoms), min(wests), max(easts))
+
+
+def scene_focus(cam, events):
+    """v13.5 (user #1): sahna FOKUS nuqtasi — pin/label event koordinati
+    (label'da geokod yo'q bo'lsa target davlat centroidi), kamera oynasining
+    30% radiusida bo'lsa. Aks holda None (fokus = kamera markazi).
+    main.py (render) VA script_gen (lint) bir xil natijani oladi."""
+    try:
+        cam = cam or {}
+        z = max(3, min(12, int(cam.get("zoom_level", 5))))
+        wd, hd = _window(z)
+        lat = float(cam.get("lat", 0))
+        lon = float(cam.get("lon", 0))
+        for ev in (events or []):
+            k = str(ev.get("type") or "")
+            if k not in ("pin", "label"):
+                continue
+            flon, flat = None, None
+            if ev.get("lat") is not None and ev.get("lon") is not None:
+                try:
+                    flat, flon = float(ev["lat"]), float(ev["lon"])
+                except Exception:
+                    pass
+            if flon is None:
+                c = country_centroid(str(ev.get("target") or ""))
+                if c:
+                    flon, flat = c[0], c[1]
+            if flon is None:
+                continue
+            if abs(flat - lat) <= 0.30 * hd and abs(flon - lon) <= 0.30 * wd:
+                return flon, flat
+    except Exception:
+        pass
+    return None
+
+
+def _merc_y(lat, n):
+    """Web-mercator Y (tile birlik): _esri_base _ty bilan bir xil."""
+    l = math.radians(max(-85.05, min(85.05, lat)))
+    return (1.0 - math.log(math.tan(l) + 1.0 / math.cos(l)) / math.pi) \
+        / 2.0 * n
+
+
+def _merc_inv_y(t, n):
+    """_merc_y teskarisi (tile birlik -> lat)."""
+    v = (1.0 - 2.0 * t / n) * math.pi
+    return math.degrees(math.atan(math.sinh(v)))
+
+
+def apply_focus(cam, events):
+    """v13.5 (user #1): kamera oynasini FOKUS atrofida markazlaydi.
+
+    Fokus (pin/label nuqtasi yoki kamera markazi) canvas (720, 960) ga,
+    ya'ni ekranning 37.5% balandligiga tushadi (user: pin 35-40%).
+    render.py zoompan shu nuqtaga anchor bo'ladi — zoom davomida fokus
+    ekranda QOTIB TURADI (eski: markazga zoom + bias 0.22 -> yakuniy
+    zoomda fokus ~19% ga chiqib, ob'ekt tepadan kesilardi).
+
+    lat_c MERCATOR fazida yechiladi (_esri_base proyektsiyasi bilan
+    bir xil fixed-point iteratsiya — chiziqli gradusda yechilsa z3-4
+    keng oynalarda 300px gacha xato chiqardi).
+    Qaytgan cam: lat/lon = OYNA MARKAZI, bias=0 (compose_map va
+    project_point o'zgarmasdan ishlaydi)."""
+    m = dict(cam or {})
+    try:
+        z = max(3, min(12, int(m.get("zoom_level", 5))))
+        wd, hd = _window(z)
+        f = scene_focus(m, events)
+        flon, flat = f if f else (float(m.get("lon", 0)),
+                                  float(m.get("lat", 0)))
+        lat_c = flat - 0.125 * hd          # chiziqli boshlang'ich
+        for _ in range(5):
+            tz = 2
+            for cand in range(2, 14):
+                n = 2 ** cand
+                ls = ((flon + wd / 2 + 180.0) / 360.0 * n
+                      - (flon - wd / 2 + 180.0) / 360.0 * n)
+                ts = _merc_y(lat_c - hd / 2, n) - _merc_y(lat_c + hd / 2, n)
+                rwt = max(ls, ts * W / H)
+                if rwt <= 5.0 and rwt * H / W <= 9.0:
+                    tz = cand
+                else:
+                    break
+            n = 2 ** tz
+            ls = ((flon + wd / 2 + 180.0) / 360.0 * n
+                  - (flon - wd / 2 + 180.0) / 360.0 * n)
+            ts = _merc_y(lat_c - hd / 2, n) - _merc_y(lat_c + hd / 2, n)
+            rht = max(ls, ts * W / H) * H / W
+            lat_new = _merc_inv_y(_merc_y(flat, n) + 0.125 * rht, n)
+            if abs(lat_new - lat_c) < 1e-7:
+                lat_c = lat_new
+                break
+            lat_c = lat_new
+        lat_c = max(-84.0, min(84.0, lat_c))
+        m["lat"], m["lon"], m["bias"] = lat_c, flon, 0.0
+        m["_focus"] = [round(flon, 6), round(flat, 6)]
+    except Exception:
+        m.setdefault("bias", 0.0)
+    return m
 
 
 def project_point(cam, lon, lat):

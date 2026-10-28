@@ -27,14 +27,14 @@ MID_SIZE = 132              # v7: o'rtadagi katta "reveal" so'zi (IN FRANCE)
 MID_Y = 1080                # (eski - v11'da MID ishlatilmaydi)
 # --- v11 (V2): qat'iy layout zonalalari (1080x1920) ---
 ZONE_A = (120, 320)          # statik sarlavha
-ZONE_B = (700, 860)          # so'zma-so'z subtitr
+ZONE_B = (984, 1244)         # v13.5 (user #4): subtitr 0.58H=1114 atrofida
 ZONE_C = (1420, 1750)        # ikonka / sticker / strelka
 TITLE_MAX_W = 920            # sarlavha kenglik budjeti                # ~56% balandlikda (referens: 625/1080)
 MID_DUR = 1.5               # ~1.5s ko'rinadi
 
-# --- subtitr joyi ---
-CAP_Y_MAP = 950
-CAP_Y_STOCK = 1150
+# --- subtitr joyi (v13.5: pastki-o'rta 58%) ---
+CAP_Y_MAP = 1114
+CAP_Y_STOCK = 1114
 SAFE_W = 860                # x: 110..970
 
 # --- motion ---
