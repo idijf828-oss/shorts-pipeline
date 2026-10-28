@@ -627,6 +627,59 @@ def label_png(name, work_dir):
         return None
 
 
+def project_point(cam, lon, lat):
+    """v13.4 (2026-10-28): kamera ostida nuqtaning (x, y) pikseli.
+
+    Esri mercator matematikasining TARMOSIQ nusxasi (_esri_base'dan) —
+    seed-lint uchun (CI'da doim esri proyeksiyasi ishlaydi)."""
+    import math as _m
+
+    def _tx(x, n):
+        return (x + 180.0) / 360.0 * n
+
+    def _ty(y, n):
+        l = _m.radians(max(-85.05, min(85.05, y)))
+        return (1.0 - _m.log(_m.tan(l) + 1.0 / _m.cos(l)) / _m.pi) / 2.0 * n
+
+    z = max(3, min(12, int(cam.get("zoom_level", 5))))
+    la = max(-84.0, min(84.0, float(cam.get("lat", 0))))
+    lo = float(cam.get("lon", 0))
+    wd, hd = _window(z)
+    bias = max(0.0, min(0.4, float(cam.get("bias") or 0.0)))
+    la_c = la - bias * hd
+    tz = 2
+    for cand in range(2, 14):
+        n = 2 ** cand
+        ls = _tx(lo + wd / 2, n) - _tx(lo - wd / 2, n)
+        ts = _ty(la_c - hd / 2, n) - _ty(la_c + hd / 2, n)
+        rwt = max(ls, ts * W / H)
+        if rwt <= 5.0 and rwt * H / W <= 9.0:
+            tz = cand
+        else:
+            break
+    n = 2 ** tz
+    cxt, cyt = _tx(lo, n), _ty(la_c, n)
+    ls = _tx(lo + wd / 2, n) - _tx(lo - wd / 2, n)
+    ts = _ty(la_c - hd / 2, n) - _ty(la_c + hd / 2, n)
+    rwt = max(ls, ts * W / H)
+    rht = rwt * H / W
+    rw, rh = rwt * 256, rht * 256
+    x = (_tx(lon, n) - cxt + rwt / 2) * 256 * W / rw
+    y = (_ty(lat, n) - cyt + rht / 2) * 256 * H / rh
+    return x, y
+
+
+def country_centroid(target):
+    """resolve(target) -> world.geo.json centroid (lon, lat) | None."""
+    iso3s = resolve(target)
+    if not iso3s:
+        return None
+    for (i3, _nm, _rings, cen) in _countries():
+        if i3 in iso3s:
+            return cen
+    return None
+
+
 def snap_to_land(lon, lat, max_deg=0.032, step=0.004):
     """Suvga tushgan nuqtani ENG YAQIN quruqlikka suradi (halqa qidiruv,
     ~400m qadam, ~3km gacha). Kichik yarimorollar NE 110m'da yo'q bo'lsa

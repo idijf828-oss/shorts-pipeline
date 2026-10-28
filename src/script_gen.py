@@ -490,6 +490,40 @@ def _geo_check(data, cfg):
             errs.append(
                 f"aniq nuqta (reveal) sahna yo'q: {place} z>={need_z} "
                 "va joydan <=60km kamera kerak")
+        # v13.4 (2026-10-28): label render-geometriyasi — 06_sahara
+        # tungi QC 3x FAIL: label(Spain) ZONA A'ga tushib sarlavha bilan
+        # to'qnashgan (label@13.1s). Endi seed darajasida ushlanadi.
+        try:
+            from . import geo as _g
+            for j, sc in enumerate(data.get("scenes", [])):
+                m2 = sc.get("map") or {}
+                if not m2:
+                    continue
+                for e in (sc.get("events") or []):
+                    if str(e.get("type")) != "label":
+                        continue
+                    tgt = str(e.get("target") or "").strip()
+                    if not tgt:
+                        continue
+                    cen = _g.country_centroid(tgt)
+                    if cen is None:
+                        continue
+                    lx, ly = _g.project_point(m2, cen[0], cen[1])
+                    if 40 <= ly <= 400:
+                        errs.append(
+                            f"sahna {j}: label '{tgt}' ZONA A (sarlavha "
+                            f"chizig'i) bilan to'qnashadi (y={ly:.0f}px) — "
+                            "labelni olib tashlang yoki kamerani yaqinlashtiring")
+                    elif 620 <= ly <= 940:
+                        errs.append(
+                            f"sahna {j}: label '{tgt}' ZONA B (subtitr) "
+                            f"bilan to'qnashadi (y={ly:.0f}px)")
+                    elif not (60 <= lx <= _g.W - 60 and 60 <= ly <= _g.H - 60):
+                        errs.append(
+                            f"sahna {j}: label '{tgt}' kadrdan chiqib ketadi "
+                            f"(x={lx:.0f}, y={ly:.0f}px)")
+        except Exception as _e:
+            print(f"[geo] label-lint o'tkazildi: {_e}")
     maps = [sc for sc in data["scenes"] if sc.get("mode") == "map"]
     if maps and int(maps[0]["map"]["zoom_level"]) > 5:
         errs.append("birinchi xarita sahna z<=5 kerak (joriy z"

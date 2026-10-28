@@ -75,11 +75,6 @@
      "type": "flag_fill",
      "target": "US",
      "at_word": "islands"
-    },
-    {
-     "type": "label",
-     "target": "United States",
-     "at_word": "islands"
     }
    ],
    "highlights": [
@@ -113,11 +108,6 @@
     {
      "type": "flag_fill",
      "target": "RU",
-     "at_word": "Russia"
-    },
-    {
-     "type": "label",
-     "target": "Russia",
      "at_word": "Russia"
     }
    ],
