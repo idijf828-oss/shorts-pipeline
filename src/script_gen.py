@@ -605,9 +605,40 @@ def _hook_check(data):
             "here?', 'Why does African sand fall on Europe?'")
 
 
+def _title_dup_check(data):
+    """v13.6 (07_boiling QC 3x FAIL, 2026-10-29): statik sarlavha
+    (ZONA A) so'zi subtitrda TAKRORLANMASIN — runtime QC
+    'V2 sarlavha so'zi subtitrda TAKRORLANMASIN' rad etadi (16.0s).
+    Sarlavha manbai render._static_title bilan BIR XIL (headline ->
+    place -> question[:4]). 06_sahara protokoli: QC 3x FAIL = doimiy
+    lint. -> [(so'z, sahna_idx), ...]"""
+    try:
+        from . import render as _r
+        ttl = _r._static_title(data)
+    except Exception:
+        ttl = str(data.get("headline") or data.get("place") or "")
+    import unicodedata as _ud
+    ttl = "".join(c for c in _ud.normalize("NFKD", str(ttl))
+                  if not _ud.combining(c))
+    toks = {w for w in re.findall(r"[A-Z0-9]{4,}", ttl.upper())}
+    hits = []
+    if toks:
+        for j, sc in enumerate(data.get("scenes") or []):
+            low = " " + re.sub(r"[^a-z0-9]+", " ",
+                               str(sc.get("voice") or "").lower()) + " "
+            for t in toks:
+                if f" {t.lower()} " in low:
+                    hits.append((t, j))
+    return hits
+
+
 def _simple_check(data):
     """User #4: 7-8 yosh tili — qiyin so'z yo'q, gap <=10 so'z."""
     errs = []
+    for t, j in _title_dup_check(data):
+        errs.append(f"sahna {j+1}: sarlavha so'zi '{t}' subtitrda "
+                    "takrorlanadi (runtime QC rad etadi) — headline "
+                    "yoki voiceni o'zgartiring")
     for j, sc in enumerate(data.get("scenes") or []):
         for fld in ("voice", "mid_text"):
             txt = str(sc.get(fld) or "")
@@ -768,11 +799,19 @@ def _use_pending_script(cfg):
             data = _parse(raw, ending=ending)
             gerrs = _geo_check(data, cfg)
             serrs = _simple_check(data)
+            # v13.6 (07_boiling): IKKALA ending tekshiriladi — loop_line
+            # S7 matnini almashtiradi va sarlavha so'zi bilan takror
+            # bo'lishi faqat bitta rejimda ko'rinadi (run 56: 3x QC FAIL)
+            other = "cta" if ending == "loop" else "loop"
+            try:
+                oerrs = _simple_check(_parse(raw, ending=other))
+            except Exception as e:
+                oerrs = [f"{other} rejimi parse: {str(e)[:80]}"]
             sim = (_hist.too_similar(data["title"], data["keywords"], hist)
                    if hist else False)
-            if gerrs or serrs:
+            if gerrs or serrs or oerrs:
                 print(f"[script] SEED RAD ETILDI (lint): "
-                      f"{'; '.join((gerrs + serrs)[:3])}")
+                      f"{'; '.join((gerrs + serrs + oerrs)[:3])}")
                 data = None
             elif sim:
                 print(f"[script] SEED RAD ETILDI (tarix bilan o'xshash): "
