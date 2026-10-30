@@ -1,0 +1,11 @@
+⏰ YT_REFRESH_TOKEN {{AGE}} kun bo'ldi — 7 kunda O'CHADI! Hozir yangilang (~2 daqiqa):
+
+1️⃣ developers.google.com/oauthplayground → ⚙️ (o'ng yuqori) → "Use your own OAuth credentials" (Client ID + Secret)
+2️⃣ Scapes maydoniga: youtube.upload va youtube.force-ssl → Authorize API
+3️⃣ KANAL EGASI hisobiga kiring → Advanced → "Go to {app} (unsafe)" → Allow
+4️⃣ "Exchange authorization code for tokens" → refresh_token qiymatini nusxalang
+5️⃣ github.com/idijf828-oss/shorts-pipeline → Settings → Secrets and variables → Actions → YT_REFRESH_TOKEN → Update secret
+
+✅ Yangilaganingizdan keyin eslatma avtomatik to'xtaydi (keyingi pipeline rundayoq sezadi).
+
+💡 BUTUNLAY hal qilish (bir marta): GCP Console → APIs & Services → OAuth consent screen → "Publish app" → 7 kunlik muddat umuman yo'qoladi.

@@ -25,6 +25,50 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: YT token yoshi eslatmasi (v13.6)
+        env:
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          set -e
+          SHA=$(printf '%s' "$YT_REFRESH_TOKEN" | sha256sum | cut -d' ' -f1)
+          NOW=$(date -u +%s); TODAY=$(date -u +%F)
+          OLD=""; FIRST=0; LASTREM=""
+          if [ -f token_state.json ]; then
+            OLD=$(python3 -c "import json;print(json.load(open('token_state.json')).get('sha',''))" 2>/dev/null || true)
+            FIRST=$(python3 -c "import json;print(int(json.load(open('token_state.json')).get('first_seen',0)))" 2>/dev/null || echo 0)
+            LASTREM=$(python3 -c "import json;print(json.load(open('token_state.json')).get('last_reminded',''))" 2>/dev/null || true)
+          fi
+          if [ "$SHA" != "$OLD" ]; then
+            printf '{\n "sha": "%s",\n "first_seen": %s,\n "last_reminded": ""\n}\n' "$SHA" "$NOW" > token_state.json
+            git config user.name "shorts-bot"; git config user.email "bot@users.noreply.github.com"
+            git add token_state.json
+            git commit -m "token_state: YT_REFRESH_TOKEN qayd etildi" || true
+            git pull --rebase || true
+            git push || true
+            echo "[token] yangi token qayd etildi (eslatma yuborilmadi)"
+            exit 0
+          fi
+          AGE=$(( (NOW - FIRST) / 86400 ))
+          echo "[token] token yoshi: ${AGE} kun (first_seen: ${FIRST})"
+          if [ "$AGE" -ge 5 ] && [ "$LASTREM" != "$TODAY" ]; then
+            MSG=$(sed "s/{{AGE}}/${AGE}/" scripts/token_message.txt)
+            curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT_ID}" \
+              --data-urlencode "text=${MSG}" -o /tmp/tg_resp.json -w "TG HTTP %{http_code}\n" || true
+            head -c 200 /tmp/tg_resp.json || true; echo
+            python3 -c "import json; s=json.load(open('token_state.json')); s['last_reminded']='$TODAY'; json.dump(s, open('token_state.json','w'), indent=1)"
+            git config user.name "shorts-bot"; git config user.email "bot@users.noreply.github.com"
+            git add token_state.json
+            git commit -m "token_state: eslatma yuborildi ($TODAY)" || true
+            git pull --rebase || true
+            git push || true
+            echo "[token] eslatma yuborildi (${AGE} kun, $TODAY)"
+          else
+            echo "[token] eslatma shart emas: yoshi ${AGE}/5 kun, oxirgi eslatma: ${LASTREM:-yoq}"
+          fi
+
       - name: Install ffmpeg
         run: |
           sudo apt-get update
