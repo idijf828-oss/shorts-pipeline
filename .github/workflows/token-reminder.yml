@@ -7,7 +7,7 @@
 # vaqtni kuzatadi va eslatadi. Butunlay yechim: GCP Console -> OAuth
 # consent screen -> Publish app (In production) — 7 kunlik muddat yo'qoladi.
 name: YT Token eslatma
-on:
+"on":
   workflow_dispatch:
   schedule:
     - cron: "20 17 * * *"   # 17:20 UTC = 22:20 Toshkent, har kuni
