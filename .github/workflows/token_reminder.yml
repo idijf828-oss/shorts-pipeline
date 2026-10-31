@@ -18,10 +18,33 @@ jobs:
       - name: Token yoshini tekshirish (6 kun -> TG eslatma)
         env:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: |
           set -e
+          # ===== v13.9 JONLILIK TESTI: o'lik token -> darhol xabar =====
+          RESP=$(curl -s -X POST https://oauth2.googleapis.com/token \
+            --data-urlencode "client_id=${YT_CLIENT_ID}" \
+            --data-urlencode "client_secret=${YT_CLIENT_SECRET}" \
+            --data-urlencode "refresh_token=${YT_REFRESH_TOKEN}" \
+            --data-urlencode "grant_type=refresh_token" \
+            -w "\nHTTP_CODE:%{http_code}")
+          HTTP_CODE=$(printf '%s' "$RESP" | sed -n 's/^HTTP_CODE://p' | tail -1)
+          BODY=$(printf '%s' "$RESP" | grep -v '^HTTP_CODE:' | head -c 300)
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "[token] JONLILIK: OK — access token olindi"
+          elif printf '%s' "$BODY" | grep -q "invalid_grant\|invalid_client"; then
+            echo "[token] JONLILIK: O'LIK (HTTP ${HTTP_CODE}) — ${BODY}"
+            MSG_DEAD=$(cat scripts/token_dead.txt)
+            curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TG_CHAT_ID}" \
+              --data-urlencode "text=${MSG_DEAD}" -o /dev/null -w "TG HTTP %{http_code}\n" || true
+            exit 0
+          else
+            echo "[token] JONLILIK: noma'lum (HTTP ${HTTP_CODE})"
+          fi
           SHA=$(printf '%s' "$YT_REFRESH_TOKEN" | sha256sum | cut -d' ' -f1)
           NOW=$(date -u +%s); TODAY=$(date -u +%F)
           OLD=""; FIRST=0; LASTREM=""

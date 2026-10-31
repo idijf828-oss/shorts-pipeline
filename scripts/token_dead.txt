@@ -1,0 +1,21 @@
+🚨 YT_TOKEN O'LGAN — pipeline to'xtadi (seed saqlanib qoldi, video yo'qotilmadi)!
+
+GitHub'dagi token bor, lekin Google uni qabul qilmayapti (invalid_grant). Ko'pincha sabab — quyidagi 4 tuzoqdan biri:
+
+1️⃣ Playground'da ⚙️ (o'ng yuqori) → "Use your own OAuth credentials" belgilanganmi?
+   Client ID/Secret GCP Console → APIs & Services → Credentials'dagi OAuth client bilan BIR XIL bo'lishi shart.
+   ⚠️ Agar GCP'da client secret RESET qilingan bo'lsa — GitHub → YT_CLIENT_SECRET ham yangilanishi shart!
+
+2️⃣ "Exchange authorization code for tokens" bosilgach — aynan REFRESH TOKEN nusxalanganmi?
+   U "1//" bilan boshlanadi. Authorization code ("4/0A...") EMAS — u 10 daqiqada o'ladi!
+
+3️⃣ Google hisobda app access olib tashlanmaganmi? myaccount.google.com → Security → Third-party apps → shorts-pipeline qolganmi?
+
+4️⃣ KANAL EGASI hisobiga kirilganmi (boshqa Gmail emas)?
+
+✅ To'g'ri tartib (2 daqiqa):
+developers.google.com/oauthplayground → ⚙️ → Use your own OAuth credentials (GCP'dagi Client ID + Secret) → Scopes: youtube.upload + youtube.force-ssl → Authorize API → kanal egasi hisobi → Advanced → Go to (unsafe) → Allow → Exchange authorization code for tokens → Refresh token ("1//...") nusxalash → github.com/idijf828-oss/shorts-pipeline → Settings → Secrets and variables → Actions → YT_REFRESH_TOKEN → Update secret.
+
+Keyingi pipeline run 1-daqiqadayoq tokenni tekshiradi va TG'ga xabar yuboradi.
+
+💡 BUTUNLAY YECHIM (bir marta): GCP Console → APIs & Services → OAuth consent screen → "Publish app" → app "In production" bo'ladi va refresh token 7 kun emas, uzoq muddat ishlaydi.

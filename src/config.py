@@ -11,15 +11,17 @@ def load(path=None):
         cfg = yaml.safe_load(f)
 
     sec = {
-        "yt_api_key": os.environ.get("YT_API_KEY", ""),
-        "gemini_api_key": os.environ.get("GEMINI_API_KEY", ""),
-        "pexels_api_key": os.environ.get("PEXELS_API_KEY", ""),
-        "pixabay_api_key": os.environ.get("PIXABAY_API_KEY", ""),
-        "tg_bot_token": os.environ.get("TG_BOT_TOKEN", ""),
-        "tg_chat_id": os.environ.get("TG_CHAT_ID", ""),
-        "yt_client_id": os.environ.get("YT_CLIENT_ID", ""),
-        "yt_client_secret": os.environ.get("YT_CLIENT_SECRET", ""),
-        "yt_refresh_token": os.environ.get("YT_REFRESH_TOKEN", ""),
+        # v13.9: strip() — sekret qiymati atrofidagi tasodifiy bo'sh joy/qator
+        # invalid_grant'ning yashirin sababi bo'lgani uchun kesib tashlanadi
+        "yt_api_key": (os.environ.get("YT_API_KEY") or "").strip(),
+        "gemini_api_key": (os.environ.get("GEMINI_API_KEY") or "").strip(),
+        "pexels_api_key": (os.environ.get("PEXELS_API_KEY") or "").strip(),
+        "pixabay_api_key": (os.environ.get("PIXABAY_API_KEY") or "").strip(),
+        "tg_bot_token": (os.environ.get("TG_BOT_TOKEN") or "").strip(),
+        "tg_chat_id": (os.environ.get("TG_CHAT_ID") or "").strip(),
+        "yt_client_id": (os.environ.get("YT_CLIENT_ID") or "").strip(),
+        "yt_client_secret": (os.environ.get("YT_CLIENT_SECRET") or "").strip(),
+        "yt_refresh_token": (os.environ.get("YT_REFRESH_TOKEN") or "").strip(),
     }
 
     missing = [
